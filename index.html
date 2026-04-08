@@ -450,7 +450,8 @@
         <p>Ngân hàng: <strong id="bi-bank-name">—</strong></p>
         <p>Số tài khoản: <strong id="bi-stk">—</strong></p>
         <p>Chủ tài khoản: <strong id="bi-owner">—</strong></p>
-        <img id="bi-qr" src="" alt="VietQR" style="display:none" />
+        <img id="bi-qr" src="" alt="VietQR" style="display:none;max-width:220px;border-radius:8px" />
+        <p id="bi-qr-note" style="font-size:.8rem;color:#888;margin-top:4px;display:none">QR cập nhật theo tổng tiền giỏ hàng</p>
       </div>
 
       <button type="submit" class="btn-submit" id="btn-order">Đặt hàng ngay</button>
@@ -527,11 +528,10 @@
       if (cfg.bank_name)   document.getElementById('bi-bank-name').textContent = cfg.bank_name;
       if (cfg.bank_stk)    document.getElementById('bi-stk').textContent       = cfg.bank_stk;
       if (cfg.bank_owner)  document.getElementById('bi-owner').textContent     = cfg.bank_owner;
-      if (cfg.vietqr_url) {
-        const qrImg = document.getElementById('bi-qr');
-        qrImg.src   = cfg.vietqr_url;
-        qrImg.style.display = 'block';
-      }
+      // Lưu bank info để tạo QR động khi cần
+      if (cfg.bank_bin)  window._bankBin    = cfg.bank_bin;
+      if (cfg.bank_stk)  window._bankStk    = cfg.bank_stk;
+      if (cfg.bank_owner) window._bankOwner = cfg.bank_owner;
     } catch (err) {
       console.error('Lỗi tải cấu hình:', err);
     }
@@ -647,14 +647,31 @@
     listEl.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
     });
+
+    // Cập nhật QR nếu đang chọn chuyển khoản
+    if (document.getElementById('payment-method').value === 'transfer') updateQR();
   }
 
   // ==================================================
   // THANH TOÁN: Toggle hiển thị thông tin ngân hàng
   // ==================================================
+  function updateQR() {
+    if (window._bankBin && window._bankStk) {
+      const total      = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const owner      = encodeURIComponent(window._bankOwner || '');
+      const info       = encodeURIComponent('Thanh toan don hang Yen Sao Cat An');
+      const qrImg      = document.getElementById('bi-qr');
+      const qrNote     = document.getElementById('bi-qr-note');
+      qrImg.src        = `https://img.vietqr.io/image/${window._bankBin}-${window._bankStk}-compact2.png?amount=${total}&addInfo=${info}&accountName=${owner}`;
+      qrImg.style.display  = 'block';
+      qrNote.style.display = 'block';
+    }
+  }
+
   document.getElementById('payment-method').addEventListener('change', function () {
-    document.getElementById('bank-info').style.display =
-      this.value === 'transfer' ? 'block' : 'none';
+    const show = this.value === 'transfer';
+    document.getElementById('bank-info').style.display = show ? 'block' : 'none';
+    if (show) updateQR();
   });
 
   // ==================================================

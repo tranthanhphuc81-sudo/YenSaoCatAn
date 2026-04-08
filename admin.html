@@ -463,8 +463,28 @@
               <input type="text" id="cfg-owner" placeholder="NGUYEN VAN A" />
             </div>
             <div class="form-group">
-              <label for="cfg-qr">URL ảnh VietQR</label>
-              <input type="url" id="cfg-qr" placeholder="https://..." />
+              <label for="cfg-bank-bin">Ngân hàng (dùng tạo QR)</label>
+              <select id="cfg-bank-bin">
+                <option value="">-- Chọn ngân hàng --</option>
+                <option value="970436">Vietcombank (VCB)</option>
+                <option value="970415">VietinBank (CTG)</option>
+                <option value="970418">BIDV</option>
+                <option value="970405">Agribank</option>
+                <option value="970407">Techcombank (TCB)</option>
+                <option value="970422">MB Bank</option>
+                <option value="970416">ACB</option>
+                <option value="970403">Sacombank (STB)</option>
+                <option value="970423">TPBank</option>
+                <option value="970432">VPBank</option>
+                <option value="970441">VIB</option>
+                <option value="970437">HDBank</option>
+                <option value="970426">MSB</option>
+                <option value="970443">SHB</option>
+                <option value="970440">SeABank</option>
+                <option value="970449">LienVietPostBank</option>
+                <option value="970431">Eximbank</option>
+                <option value="970428">NamABank</option>
+              </select>
             </div>
           </div>
           <button type="submit" class="btn-save" id="btn-save-config">💾 Lưu Cấu Hình</button>
@@ -816,7 +836,10 @@
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
       if (cfg.bank_owner)     document.getElementById('cfg-owner').value     = cfg.bank_owner;
-      if (cfg.vietqr_url)     document.getElementById('cfg-qr').value        = cfg.vietqr_url;
+      if (cfg.bank_bin) {
+        const sel = document.getElementById('cfg-bank-bin');
+        if (sel) sel.value = cfg.bank_bin;
+      }
     } catch (err) {
       console.error('Lỗi tải cấu hình:', err);
     }
@@ -832,20 +855,19 @@
     const bankName  = document.getElementById('cfg-bank-name').value.trim();
     const bankStk   = document.getElementById('cfg-stk').value.trim();
     const bankOwner = document.getElementById('cfg-owner').value.trim();
-    const qrUrl     = document.getElementById('cfg-qr').value.trim();
+    const bankBin  = document.getElementById('cfg-bank-bin').value;
 
     const btnSave = document.getElementById('btn-save-config');
     btnSave.disabled    = true;
     btnSave.textContent = 'Đang lưu...';
 
     try {
-      // setDoc với merge:true để không xoá các field khác nếu có
       await setDoc(doc(db, 'config', 'settings'), {
         background_url: bgUrl,
         bank_name:      bankName,
         bank_stk:       bankStk,
         bank_owner:     bankOwner,
-        vietqr_url:     qrUrl
+        bank_bin:       bankBin
       }, { merge: true });
 
       showToast('✅ Lưu cấu hình thành công!');
