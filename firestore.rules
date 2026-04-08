@@ -135,5 +135,18 @@ service cloud.firestore {
       allow delete:     if isAdmin();
     }
 
+    // ─── chats/{sessionId} ───────────────────────────────────
+    // Khách truy cập tạo session và gửi tin nhắn (bằng sessionId lưu localStorage)
+    // Admin đọc/trả lời tất cả các cuộc trò chuyện
+    match /chats/{sessionId} {
+      allow read, create, update: if true;
+      allow delete:               if isAdmin();
+
+      match /messages/{msgId} {
+        allow read, create: if true;
+        allow delete:       if isAdmin();
+      }
+    }
+
   }
 }

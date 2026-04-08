@@ -401,6 +401,141 @@
     }
     .btn-upload:disabled { opacity: .55; cursor: not-allowed; }
     #upload-bg-status { font-size: .85rem; color: var(--gray); }
+
+    /* ===== ADMIN CHAT ===== */
+    .chat-admin-wrap {
+      display: flex;
+      gap: 0;
+      height: calc(100vh - 180px);
+      min-height: 400px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .chat-session-list {
+      width: 260px;
+      min-width: 220px;
+      border-right: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .chat-session-header {
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: .95rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    #chat-sessions { flex: 1; overflow-y: auto; }
+    .chat-session-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background .15s;
+    }
+    .chat-session-item:hover, .chat-session-item.active { background: #fff4ee; }
+    .chat-session-item .cs-name {
+      font-weight: 600;
+      font-size: .875rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-session-item .cs-preview {
+      font-size: .8rem;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .cs-unread-dot {
+      width: 9px; height: 9px;
+      background: #e74c3c;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .chat-thread-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .chat-thread-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      font-size: 1rem;
+    }
+    .chat-thread {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .chat-thread-header {
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: .9rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .chat-thread-msgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-thread-input {
+      padding: 10px 12px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+    }
+    .chat-thread-input input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .875rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .chat-thread-input input:focus { border-color: #e85d04; }
+    .chat-thread-input button {
+      background: #e85d04;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: .875rem;
+      font-weight: 700;
+      font-family: inherit;
+    }
+    .adm-msg {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: .875rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .adm-msg.guest { background: #ffe8d6; align-self: flex-end; border-radius: 12px 12px 4px 12px; }
+    .adm-msg.bot   { background: #f4f4f4; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
+    .adm-msg.admin { background: #e8f5e9; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
+    .adm-msg .msg-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+    @media (max-width: 600px) {
+      .chat-admin-wrap { flex-direction: column; height: auto; }
+      .chat-session-list { width: 100%; border-right: none; border-bottom: 1px solid #e5e7eb; max-height: 200px; }
+    }
   </style>
 </head>
 <body>
@@ -450,6 +585,7 @@
     <button class="active" data-tab="config">⚙️ Cấu hình</button>
     <button data-tab="products">📦 Sản phẩm</button>
     <button data-tab="posts">📰 Tin tức</button>
+    <button data-tab="chat" id="tab-btn-chat">💬 Trò chuyện <span id="chat-unread-badge" style="display:none;background:#e74c3c;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;"></span></button>
     <button data-tab="orders">📋 Đơn hàng</button>
   </div>
 
@@ -669,6 +805,33 @@
       </div>
     </div>
 
+    <!-- =========== TAB: TRÒ CHUYỆN =========== -->
+    <div class="tab-panel" id="tab-chat">
+      <div class="chat-admin-wrap">
+        <!-- Danh sách session -->
+        <div class="chat-session-list" id="chat-session-list">
+          <div class="chat-session-header">💬 Cuộc trò chuyện</div>
+          <div id="chat-sessions">
+            <p style="color:#aaa;font-size:.875rem;padding:12px;">Đang tải...</p>
+          </div>
+        </div>
+        <!-- Khung tin nhắn -->
+        <div class="chat-thread-wrap" id="chat-thread-wrap">
+          <div class="chat-thread-placeholder" id="chat-thread-placeholder">
+            <p>← Chọn cuộc trò chuyện để xem</p>
+          </div>
+          <div class="chat-thread" id="chat-thread" style="display:none;">
+            <div class="chat-thread-header" id="chat-thread-header">Tin nhắn</div>
+            <div class="chat-thread-msgs" id="chat-thread-msgs"></div>
+            <div class="chat-thread-input">
+              <input id="admin-chat-input" type="text" placeholder="Trả lời khách..." maxlength="500" autocomplete="off" />
+              <button id="admin-chat-send">Gửi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- =========== TAB: ĐƠN HÀNG =========== -->
     <div class="tab-panel" id="tab-orders">
       <div class="card">
@@ -710,7 +873,7 @@
     getFirestore,
     doc, getDoc, setDoc,
     collection, getDocs, addDoc, deleteDoc,
-    query, orderBy, serverTimestamp
+    query, orderBy, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 
@@ -902,6 +1065,7 @@
       loadProducts();
       loadPosts();
       loadOrders();
+      listenChatSessions();
     } else {
       // Chưa đăng nhập → hiện login, ẩn dashboard
       document.getElementById('login-page').style.display  = 'flex';
@@ -1353,6 +1517,102 @@
         '<tr><td colspan="6" class="empty-state">Không thể tải đơn hàng.</td></tr>';
     }
   }
+
+  // ==================================================
+  // CHAT: Lắng nghe danh sách session
+  // ==================================================
+  let activeChatSid     = null;
+  let chatThreadUnsub   = null;
+  let chatSessionsUnsub = null;
+
+  function listenChatSessions() {
+    if (chatSessionsUnsub) chatSessionsUnsub();
+    const q = query(collection(db, 'chats'), orderBy('lastTime', 'desc'));
+    chatSessionsUnsub = onSnapshot(q, snap => {
+      const listEl = document.getElementById('chat-sessions');
+      const unreadCount = snap.docs.filter(d => d.data().unreadByAdmin).length;
+      const badge = document.getElementById('chat-unread-badge');
+      if (unreadCount > 0) {
+        badge.style.display = 'inline';
+        badge.textContent   = unreadCount;
+      } else {
+        badge.style.display = 'none';
+      }
+
+      if (snap.empty) {
+        listEl.innerHTML = '<p style="color:#aaa;font-size:.875rem;padding:12px;">Chưa có tin nhắn nào.</p>';
+        return;
+      }
+
+      listEl.innerHTML = snap.docs.map(d => {
+        const s    = d.data();
+        const time = s.lastTime ? (s.lastTime.toDate ? s.lastTime.toDate() : new Date(s.lastTime)) : new Date();
+        const timeStr = time.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' '
+                      + time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        const isActive  = d.id === activeChatSid ? ' active' : '';
+        const unreadDot = s.unreadByAdmin ? '<span class="cs-unread-dot"></span>' : '';
+        const preview   = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
+        const shortId   = d.id.slice(0, 12) + '…';
+        return `<div class="chat-session-item${isActive}" data-sid="${d.id}" onclick="openChatSession('${d.id}')">
+          <div class="cs-name"><span>#${shortId}</span>${unreadDot}</div>
+          <div class="cs-preview">${preview}</div>
+          <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  async function openChatSession(sid) {
+    activeChatSid = sid;
+    // Đánh dấu đã đọc
+    await setDoc(doc(db, 'chats', sid), { unreadByAdmin: false }, { merge: true });
+
+    // Hiện thread
+    document.getElementById('chat-thread-placeholder').style.display = 'none';
+    const threadEl = document.getElementById('chat-thread');
+    threadEl.style.display = 'flex';
+    document.getElementById('chat-thread-header').textContent = '💬 Session: #' + sid.slice(0, 12) + '…';
+
+    // Ngừng listener cũ
+    if (chatThreadUnsub) chatThreadUnsub();
+
+    const msgsEl = document.getElementById('chat-thread-msgs');
+    const q = query(collection(db, 'chats', sid, 'messages'), orderBy('timestamp', 'asc'));
+    chatThreadUnsub = onSnapshot(q, snap => {
+      msgsEl.innerHTML = '';
+      snap.docs.forEach(d => {
+        const m    = d.data();
+        const el   = document.createElement('div');
+        el.className = 'adm-msg ' + m.sender;
+        const label   = m.sender === 'guest' ? '👤 Khách' : m.sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
+        const ts      = m.timestamp ? (m.timestamp.toDate ? m.timestamp.toDate() : new Date(m.timestamp)) : new Date();
+        const timeStr = ts.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        el.innerHTML  = `<div>${m.text}</div><div class="msg-meta">${label} · ${timeStr}</div>`;
+        msgsEl.appendChild(el);
+      });
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    });
+
+    // Highlight active session
+    document.querySelectorAll('.chat-session-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll(`.chat-session-item[data-sid="${sid}"]`).forEach(el => el.classList.add('active'));
+  }
+
+  async function adminSendChat() {
+    const input = document.getElementById('admin-chat-input');
+    const text  = input.value.trim();
+    if (!text || !activeChatSid) return;
+    input.value = '';
+    const msgCol = collection(db, 'chats', activeChatSid, 'messages');
+    const sesRef = doc(db, 'chats', activeChatSid);
+    await addDoc(msgCol, { text, sender: 'admin', timestamp: serverTimestamp() });
+    await setDoc(sesRef, { lastMessage: text, lastTime: serverTimestamp(), unreadByAdmin: false }, { merge: true });
+  }
+
+  document.getElementById('admin-chat-send').addEventListener('click', adminSendChat);
+  document.getElementById('admin-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); adminSendChat(); }
+  });
 </script>
 </body>
 </html>

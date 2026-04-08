@@ -695,7 +695,135 @@
       }
     }
 
-    /* ===== MODAL CHI TIẾT SẢN PHẨM ===== */
+    /* ===== CHAT WIDGET ===== */
+    #chat-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #e85d04;
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(232,93,4,.45);
+      z-index: 900;
+      transition: transform .2s, box-shadow .2s;
+      user-select: none;
+    }
+    #chat-fab:hover { transform: scale(1.1); box-shadow: 0 6px 24px rgba(232,93,4,.55); }
+
+    .chat-window {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 340px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: chatSlideUp .22s ease;
+    }
+    @keyframes chatSlideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 400px) {
+      .chat-window { width: calc(100vw - 28px); right: 14px; bottom: 80px; }
+    }
+    .chat-header {
+      background: #e85d04;
+      color: #fff;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-header-title { font-weight: 700; font-size: .95rem; }
+    .chat-header-sub   { font-size: .75rem; opacity: .85; }
+    .chat-header button {
+      background: none; border: none; color: #fff;
+      font-size: 18px; cursor: pointer; padding: 0; line-height: 1;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 200px;
+      max-height: 340px;
+    }
+    .chat-msg {
+      max-width: 82%;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: .875rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .chat-msg.guest {
+      background: #ffe8d6;
+      align-self: flex-end;
+      border-radius: 14px 14px 4px 14px;
+    }
+    .chat-msg.bot {
+      background: #f4f4f4;
+      align-self: flex-start;
+      border-radius: 14px 14px 14px 4px;
+    }
+    .chat-msg.admin {
+      background: #e8f5e9;
+      align-self: flex-start;
+      border-radius: 14px 14px 14px 4px;
+    }
+    .chat-msg .msg-meta {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 3px;
+    }
+    .chat-input-row {
+      padding: 10px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-row input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .875rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-input-row input:focus { border-color: #e85d04; }
+    .chat-input-row button {
+      background: #e85d04;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: .875rem;
+      font-weight: 700;
+      font-family: inherit;
+    }
+    .chat-input-row button:disabled { opacity: .5; cursor: default; }
+    .chat-typing {
+      font-size: .8rem;
+      color: #aaa;
+      padding: 0 4px;
+      align-self: flex-start;
+    }
     #product-modal {
       display: none;
       position: fixed; inset: 0;
@@ -1201,8 +1329,8 @@
   // ==================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, collection, getDocs,
-    addDoc, serverTimestamp, query, orderBy
+    getFirestore, doc, getDoc, setDoc, collection, getDocs,
+    addDoc, serverTimestamp, query, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = { 
@@ -1661,6 +1789,136 @@
   (async () => {
     await Promise.all([loadConfig(), loadProducts()]);
   })();
+
+  // ==================================================
+  // CHAT WIDGET
+  // ==================================================
+  const CHAT_KEY = 'yensaocatan_chat_sid';
+
+  function getChatSid() {
+    let id = localStorage.getItem(CHAT_KEY);
+    if (!id) {
+      id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      localStorage.setItem(CHAT_KEY, id);
+    }
+    return id;
+  }
+
+  const chatFab    = document.getElementById('chat-fab');
+  const chatWin    = document.getElementById('chat-window');
+  const chatClose  = document.getElementById('chat-close');
+  const chatInput  = document.getElementById('chat-input');
+  const chatSendBtn= document.getElementById('chat-send');
+  const chatMsgsEl = document.getElementById('chat-messages');
+  let chatSid      = getChatSid();
+  let chatUnsub    = null;
+  let chatReady    = false;
+
+  const FAQ_LIST = [
+    { kw: ['giá','bao nhiêu','tiền','price','đắt','rẻ'], reply: 'Giá mỗi sản phẩm bạn xem trong mục 🛒 Mua sắm nhé! Bạn cũng có thể nhắn để được báo giá cụ thể.' },
+    { kw: ['ship','giao hàng','vận chuyển','delivery','giao'], reply: 'Chúng tôi giao hàng toàn quốc. Phí ship tính theo địa chỉ. Nhắn địa chỉ để mình báo cụ thể nha!' },
+    { kw: ['còn hàng','có sẵn','hết hàng','còn không','tồn kho'], reply: 'Hiện sản phẩm đang có sẵn! Bạn đặt ngay trong 🛒 Mua sắm hoặc nhắn để mình kiểm tra số lượng.' },
+    { kw: ['mua','đặt hàng','order','đặt','mua hàng'], reply: 'Bạn vào tab 🛒 Mua sắm → chọn sản phẩm → Thêm vào giỏ → Thanh toán là xong! Cần hỗ trợ gì thêm không?' },
+    { kw: ['địa chỉ','ở đâu','chỗ nào','địa chi','cơ sở'], reply: 'Địa chỉ chi tiết bạn xem trong tab 📞 Liên hệ nhé!' },
+    { kw: ['zalo','facebook','fb','liên hệ','contact','số điện thoại','điện thoại'], reply: 'Thông tin liên hệ đầy đủ có trong tab 📞 Liên hệ. Bạn cũng có thể nhắn trực tiếp tại đây!' },
+    { kw: ['giờ','mấy giờ','làm việc','hoạt động','mở cửa'], reply: 'Giờ làm việc có trong tab 📞 Liên hệ. Admin phản hồi sớm trong giờ này!' },
+    { kw: ['yến','sào','tổ yến','yến sào'], reply: 'Sản phẩm yến sào cao cấp của chúng tôi có trong tab 🛒 Mua sắm. Bạn muốn biết thêm về sản phẩm nào?' },
+    { kw: ['xin chào','chào','hello','hi','alo'], reply: 'Xin chào! 👋 Mình là trợ lý Yến Sào Cát An. Mình có thể giúp gì cho bạn?' },
+  ];
+
+  function getBotReply(text) {
+    const lc = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    for (const item of FAQ_LIST) {
+      const normalizedKw = item.kw.map(k => k.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+      if (normalizedKw.some(k => lc.includes(k))) return item.reply;
+    }
+    return null;
+  }
+
+  function renderMsg(text, sender, ts) {
+    const el = document.createElement('div');
+    el.className = 'chat-msg ' + sender;
+    const label = sender === 'guest' ? 'Bạn' : sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
+    const t = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : new Date();
+    const timeStr = t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    el.innerHTML = `<div>${text}</div><div class="msg-meta">${label} · ${timeStr}</div>`;
+    chatMsgsEl.appendChild(el);
+    chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  }
+
+  async function initChat() {
+    if (chatReady) return;
+    chatReady = true;
+    const sesRef = doc(db, 'chats', chatSid);
+    const sesSnap = await getDoc(sesRef);
+    if (!sesSnap.exists()) {
+      await setDoc(sesRef, { lastMessage: '', lastTime: serverTimestamp(), unreadByAdmin: false });
+      const msgCol = collection(db, 'chats', chatSid, 'messages');
+      await addDoc(msgCol, {
+        text: 'Xin chào bạn! 👋 Mình là trợ lý Yến Sào Cát An. Bạn cần hỏi về giá, sản phẩm, giao hàng hay bất cứ điều gì — cứ nhắn nhé!',
+        sender: 'bot',
+        timestamp: serverTimestamp(),
+      });
+    }
+    const q = query(collection(db, 'chats', chatSid, 'messages'), orderBy('timestamp', 'asc'));
+    chatUnsub = onSnapshot(q, snap => {
+      chatMsgsEl.innerHTML = '';
+      snap.docs.forEach(d => { const m = d.data(); renderMsg(m.text, m.sender, m.timestamp); });
+    });
+  }
+
+  async function sendChat() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    chatSendBtn.disabled = true;
+    const msgCol  = collection(db, 'chats', chatSid, 'messages');
+    const sesRef  = doc(db, 'chats', chatSid);
+    await addDoc(msgCol, { text, sender: 'guest', timestamp: serverTimestamp() });
+    await setDoc(sesRef, { lastMessage: text, lastTime: serverTimestamp(), unreadByAdmin: true }, { merge: true });
+    chatSendBtn.disabled = false;
+    // Auto bot reply
+    const botReply = getBotReply(text);
+    const typing = document.createElement('div');
+    typing.className = 'chat-typing';
+    typing.textContent = '🤖 Đang nhập...';
+    chatMsgsEl.appendChild(typing);
+    chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+    setTimeout(async () => {
+      typing.remove();
+      const reply = botReply || 'Cảm ơn bạn đã nhắn tin! 😊 Admin sẽ phản hồi sớm nhất có thể trong giờ làm việc.';
+      await addDoc(msgCol, { text: reply, sender: 'bot', timestamp: serverTimestamp() });
+    }, 900);
+  }
+
+  chatFab.addEventListener('click', async () => {
+    const isHidden = chatWin.hidden;
+    chatWin.hidden = !isHidden;
+    if (isHidden) {
+      await initChat();
+      chatInput.focus();
+    }
+  });
+  chatClose.addEventListener('click', () => { chatWin.hidden = true; });
+  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+  chatSendBtn.addEventListener('click', sendChat);
 </script>
+
+<!-- ===== CHAT WIDGET ===== -->
+<div id="chat-fab" title="Trò chuyện với chúng tôi">💬</div>
+<div id="chat-window" class="chat-window" hidden>
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <span class="chat-header-title">💬 Hỗ trợ khách hàng</span>
+      <span class="chat-header-sub">Trả lời trong vòng vài phút</span>
+    </div>
+    <button id="chat-close" aria-label="Đóng chat">✕</button>
+  </div>
+  <div id="chat-messages" class="chat-messages"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
+    <button id="chat-send">Gửi</button>
+  </div>
+</div>
 </body>
 </html>
