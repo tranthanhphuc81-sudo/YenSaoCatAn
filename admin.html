@@ -475,8 +475,13 @@
               <input type="number" id="prod-price" placeholder="500000" min="0" required />
             </div>
             <div class="form-group span-2">
-              <label for="prod-image">Link ảnh sản phẩm *</label>
-              <input type="url" id="prod-image" placeholder="https://..." required />
+              <label for="prod-image">Ảnh sản phẩm *</label>
+              <div class="upload-row">
+                <input type="file" id="prod-image-file" accept="image/*" />
+                <button type="button" class="btn-upload" id="btn-upload-prod">⬆️ Tải ảnh lên</button>
+                <span id="upload-prod-status"></span>
+              </div>
+              <input type="url" id="prod-image" placeholder="Hoặc dán URL ảnh sản phẩm vào đây..." style="margin-top:8px" required />
             </div>
             <div class="form-group">
               <label for="prod-category">Phân loại *</label>
@@ -604,11 +609,11 @@
     });
   }
 
-  async function uploadToCloudinary(blob) {
+  async function uploadToCloudinary(blob, folder = 'yensaocatan/backgrounds', filename = 'image.webp') {
     const formData = new FormData();
-    formData.append('file', blob, 'background.webp');
+    formData.append('file', blob, filename);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', 'yensaocatan/backgrounds');
+    formData.append('folder', folder);
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
@@ -640,12 +645,43 @@
       const sizeKB     = (compressed.size / 1024).toFixed(0);
       statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
 
-      const downloadURL    = await uploadToCloudinary(compressed);
+      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/backgrounds', 'bg.webp');
       urlInput.value       = downloadURL;
       statusEl.textContent = `✅ Upload xong (${sizeKB} KB) – nhấn Lưu Cấu Hình để áp dụng`;
       fileInput.value      = '';
     } catch (err) {
       console.error('Lỗi upload ảnh nền:', err);
+      statusEl.textContent = '❌ Upload thất bại: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Upload ảnh sản phẩm → Cloudinary
+  document.getElementById('btn-upload-prod').addEventListener('click', async () => {
+    const fileInput = document.getElementById('prod-image-file');
+    const statusEl  = document.getElementById('upload-prod-status');
+    const btn       = document.getElementById('btn-upload-prod');
+    const urlInput  = document.getElementById('prod-image');
+
+    const file = fileInput.files[0];
+    if (!file) { statusEl.textContent = '⚠️ Chưa chọn file'; return; }
+    if (!file.type.startsWith('image/')) { statusEl.textContent = '⚠️ Chỉ hỗ trợ file ảnh'; return; }
+
+    btn.disabled         = true;
+    statusEl.textContent = '⏳ Đang nén ảnh...';
+
+    try {
+      const compressed = await compressImage(file, 1200, 0.82);
+      const sizeKB     = (compressed.size / 1024).toFixed(0);
+      statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
+
+      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/products', `prod_${Date.now()}.webp`);
+      urlInput.value       = downloadURL;
+      statusEl.textContent = `✅ Upload xong (${sizeKB} KB)`;
+      fileInput.value      = '';
+    } catch (err) {
+      console.error('Lỗi upload ảnh sản phẩm:', err);
       statusEl.textContent = '❌ Upload thất bại: ' + err.message;
     } finally {
       btn.disabled = false;
