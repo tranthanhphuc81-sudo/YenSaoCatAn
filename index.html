@@ -1824,23 +1824,60 @@
   let chatUnsub    = null;
   let chatReady    = false;
 
+  // FAQ theo thứ tự ưu tiên — pattern trước sẽ được khớp trước
   const FAQ_LIST = [
-    { kw: ['giá','bao nhiêu','tiền','price','đắt','rẻ'], reply: 'Giá mỗi sản phẩm bạn xem trong mục 🛒 Mua sắm nhé! Bạn cũng có thể nhắn để được báo giá cụ thể.' },
-    { kw: ['ship','giao hàng','vận chuyển','delivery','giao'], reply: 'Chúng tôi giao hàng toàn quốc. Phí ship tính theo địa chỉ. Nhắn địa chỉ để mình báo cụ thể nha!' },
-    { kw: ['còn hàng','có sẵn','hết hàng','còn không','tồn kho'], reply: 'Hiện sản phẩm đang có sẵn! Bạn đặt ngay trong 🛒 Mua sắm hoặc nhắn để mình kiểm tra số lượng.' },
-    { kw: ['mua','đặt hàng','order','đặt','mua hàng'], reply: 'Bạn vào tab 🛒 Mua sắm → chọn sản phẩm → Thêm vào giỏ → Thanh toán là xong! Cần hỗ trợ gì thêm không?' },
-    { kw: ['địa chỉ','ở đâu','chỗ nào','địa chi','cơ sở'], reply: 'Địa chỉ chi tiết bạn xem trong tab 📞 Liên hệ nhé!' },
-    { kw: ['zalo','facebook','fb','liên hệ','contact','số điện thoại','điện thoại'], reply: 'Thông tin liên hệ đầy đủ có trong tab 📞 Liên hệ. Bạn cũng có thể nhắn trực tiếp tại đây!' },
-    { kw: ['giờ','mấy giờ','làm việc','hoạt động','mở cửa'], reply: 'Giờ làm việc có trong tab 📞 Liên hệ. Admin phản hồi sớm trong giờ này!' },
-    { kw: ['yến','sào','tổ yến','yến sào'], reply: 'Sản phẩm yến sào cao cấp của chúng tôi có trong tab 🛒 Mua sắm. Bạn muốn biết thêm về sản phẩm nào?' },
-    { kw: ['xin chào','chào','hello','hi','alo'], reply: 'Xin chào! 👋 Mình là trợ lý Yến Sào Cát An. Mình có thể giúp gì cho bạn?' },
+    // Chào hỏi
+    { kw: ['xin chao','chao ban','hello','hi ban','alo','hey','chào'], reply: 'Xin chào bạn! 👋 Mình là trợ lý của Yến Sào Cát An. Bạn muốn hỏi về sản phẩm, giá cả, giao hàng hay bất cứ điều gì — cứ nhắn mình nhé!' },
+
+    // Cảm ơn / tạm biệt
+    { kw: ['cam on','thanks','thank you','cảm ơn','cam on ban'], reply: 'Không có gì bạn ơi! 😊 Nếu cần hỗ trợ thêm, mình luôn ở đây nhé!' },
+    { kw: ['tam biet','bye','goodbye','hen gap lai'], reply: 'Tạm biệt bạn! Chúc bạn một ngày tốt lành 🌟 Hẹn gặp lại!' },
+
+    // Giá cả
+    { kw: ['gia bao nhieu','gia ca','bao nhieu tien','bao nhieu','gia san pham','gia yen','gia sam','dat khong','re khong','gia nhu the nao'], reply: 'Giá sản phẩm đa dạng tuỳ loại ạ. Bạn vào tab 🛒 **Mua sắm** để xem giá từng sản phẩm, hoặc nhắn tên sản phẩm muốn hỏi để mình báo giá chi tiết hơn nha!' },
+
+    // Đặt hàng / mua
+    { kw: ['dat hang','mua hang','order','mua o dau','mua nhu the nao','cach mua','lam sao mua','muon mua'], reply: 'Đặt hàng rất đơn giản bạn ơi! 🛒\n1. Vào tab **Mua sắm**\n2. Chọn sản phẩm → "Thêm vào giỏ"\n3. Điền thông tin → Đặt hàng\nAdmin sẽ liên hệ xác nhận và sắp xếp giao hàng cho bạn!' },
+
+    // Giao hàng / ship
+    { kw: ['giao hang','ship hang','van chuyen','phi ship','phi giao','thanh pho nao','tinh nao','giao den','giao o dau','giao nhanh khong','bao lau'], reply: 'Yến Sào Cát An giao hàng **toàn quốc** 🚚 Phí ship tính theo khu vực và được báo khi xác nhận đơn. Thường 2–5 ngày tuỳ tỉnh thành. Bạn ở đâu để mình báo cụ thể nha?' },
+
+    // Thanh toán
+    { kw: ['thanh toan','tra tien','chuyen khoan','tien mat','atm','momo','bank','ngan hang','the nao de tra'], reply: 'Hiện có 2 hình thức thanh toán:\n💵 **Tiền mặt** — trả khi nhận hàng (COD)\n🏦 **Chuyển khoản** — thông tin ngân hàng có trong mục Đặt hàng\nBạn chọn hình thức nào phù hợp nhất nhé!' },
+
+    // Còn hàng / hết hàng
+    { kw: ['con hang khong','het hang chua','co san khong','con khong','ton kho'], reply: 'Sản phẩm hiện đang **có sẵn** ạ! Bạn đặt ngay trong tab 🛒 Mua sắm, hoặc nhắn tên sản phẩm cụ thể để mình kiểm tra số lượng nha.' },
+
+    // Chất lượng / xuất xứ / thật giả
+    { kw: ['chat luong','xuat xu','nguon goc','that hay gia','gia mao','kiem tra that gia','co dam bao','uy tin','chinh hang'], reply: 'Yến Sào Cát An cam kết **100% hàng thật**, có nguồn gốc rõ ràng từ tổ yến thiên nhiên. Bạn xem tab 🌿 **Kiến thức** để biết cách nhận biết yến thật/giả nhé!' },
+
+    // Bảo quản / sử dụng
+    { kw: ['bao quan','de duoc bao lau','han su dung','su dung nhu the nao','cach dung','an nhu the nao','nau nhu the nao','chung nhu the nao'], reply: 'Bạn xem tab 🍜 **Hướng dẫn chưng yến** để biết cách sơ chế và chế biến chuẩn nhất nhé! Còn bảo quản thì để nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp.' },
+
+    // Công dụng / lợi ích
+    { kw: ['cong dung','loi ich','tot cho suc khoe','bo duong','vitamin','dinh duong','an co tot khong','tre em an duoc khong','ba bau an duoc khong','nguoi gia','tang suc de khang'], reply: 'Yến sào rất tốt cho sức khoẻ bạn ơi! ✨ Các lợi ích nổi bật:\n• Bồi bổ sức khoẻ, tăng đề kháng\n• Tốt cho da, chống lão hoá\n• Phù hợp trẻ em, người già, bà bầu\nBạn xem thêm ở tab 🌿 **Kiến thức** nhé!' },
+
+    // Khuyến mãi / giảm giá
+    { kw: ['khuyen mai','giam gia','sale','uu dai','coupon','voucher','ma giam','co deal khong'], reply: 'Chương trình khuyến mãi được cập nhật trong tab 📰 **Tin tức** bạn nhé! Hoặc nhắn số điện thoại để admin tư vấn ưu đãi hiện có nha 😊' },
+
+    // Liên hệ / địa chỉ / giờ làm việc
+    { kw: ['dia chi','o dau','cho nao','co so','cua hang','van phong'], reply: 'Địa chỉ cửa hàng có đầy đủ trong tab 📞 **Liên hệ** bạn ơi! Bạn cũng có thể gọi điện hoặc nhắn Zalo để được hỗ trợ trực tiếp.' },
+    { kw: ['gio lam viec','may gio','mo cua','dong cua','gio hoat dong','gio lam'], reply: 'Giờ làm việc có trong tab 📞 **Liên hệ** nhé. Admin thường phản hồi rất nhanh trong giờ này bạn ơi!' },
+    { kw: ['so dien thoai','dien thoai','goi dien','hotline','lien he','zalo','facebook','fanpage'], reply: 'Thông tin liên hệ đầy đủ (SĐT, Zalo, Facebook) có trong tab 📞 **Liên hệ** bạn nhé. Nhắn Zalo thường được phản hồi nhanh nhất!' },
+
+    // Sản phẩm yến / sâm / Mỹ Nhật
+    { kw: ['yen sao','to yen','yen thien nhien','yen trang','yen huyet'], reply: 'Yến sào của chúng tôi là yến thiên nhiên chất lượng cao 🥣 Bạn xem các sản phẩm yến trong tab 🛒 Mua sắm, hoặc nhắn để mình tư vấn loại phù hợp với nhu cầu nhé!' },
+    { kw: ['sam','hong sam','nhân sâm','sâm hàn quốc'], reply: 'Chúng tôi cũng có sản phẩm sâm chất lượng cao 🌿 Bạn xem trong tab 🛒 Mua sắm hoặc nhắn để được tư vấn cụ thể nhé!' },
   ];
 
+  function n(str) {
+    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+  }
+
   function getBotReply(text) {
-    const lc = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const lc = n(text);
     for (const item of FAQ_LIST) {
-      const normalizedKw = item.kw.map(k => k.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
-      if (normalizedKw.some(k => lc.includes(k))) return item.reply;
+      if (item.kw.some(k => lc.includes(n(k)))) return item.reply;
     }
     return null;
   }
