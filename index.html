@@ -379,6 +379,469 @@
 
     #toast.success { background: #2e7d32; }
     #toast.error   { background: #0d3578; }
+
+    /* ===== THANH ĐIỀU HƯỚNG TAB ===== */
+    .main-nav {
+      display: flex;
+      gap: 0;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-bottom: 32px;
+      background: rgba(255,255,255,.08);
+      border-radius: 50px;
+      padding: 5px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-nav::-webkit-scrollbar { display: none; }
+
+    .main-nav button {
+      flex-shrink: 0;
+      padding: 9px 18px;
+      border: none;
+      border-radius: 50px;
+      background: transparent;
+      color: rgba(255,255,255,.75);
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      white-space: nowrap;
+    }
+
+    .main-nav button.active {
+      background: var(--gold);
+      color: var(--red-dk);
+    }
+
+    .main-nav button:not(.active):hover {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+    }
+
+    /* ===== TAB PANELS ===== */
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+
+    /* ===== NỘI DUNG CÁC TAB TĨNH ===== */
+    .info-card {
+      background: rgba(255,255,255,.95);
+      border-radius: var(--radius);
+      padding: 28px 28px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .info-card h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Các bước hướng dẫn */
+    .steps { list-style: none; counter-reset: step; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: .95rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .steps li .step-txt strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    .steps li .step-txt span {
+      font-size: .9rem;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    /* Tip box */
+    .tip-box {
+      background: #fff8e1;
+      border-left: 4px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin-top: 8px;
+      font-size: .9rem;
+      color: #7a5700;
+      line-height: 1.6;
+    }
+
+    /* Kiến thức: grid lợi ích */
+    .benefit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 4px;
+    }
+
+    .benefit-item {
+      background: linear-gradient(135deg, #e8f0fe, #f3f8ff);
+      border-radius: 10px;
+      padding: 18px 16px;
+      text-align: center;
+    }
+
+    .benefit-item .icon { font-size: 2rem; margin-bottom: 8px; }
+    .benefit-item strong { display: block; font-size: .95rem; color: var(--red-dk); margin-bottom: 4px; }
+    .benefit-item span { font-size: .83rem; color: #555; line-height: 1.5; }
+
+    /* Lịch sử: timeline */
+    .timeline { list-style: none; position: relative; padding-left: 24px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px; top: 6px; bottom: 6px;
+      width: 2px;
+      background: var(--gold);
+    }
+
+    .timeline li {
+      position: relative;
+      margin-bottom: 22px;
+    }
+
+    .timeline li::before {
+      content: '';
+      position: absolute;
+      left: -20px; top: 5px;
+      width: 12px; height: 12px;
+      background: var(--gold);
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+
+    .timeline li .year {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+
+    .timeline li p {
+      font-size: .93rem;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Liên hệ */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .contact-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .contact-item .c-icon {
+      width: 42px; height: 42px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .contact-item .c-txt strong {
+      display: block;
+      font-size: .85rem;
+      color: #888;
+      margin-bottom: 2px;
+    }
+
+    .contact-item .c-txt span {
+      font-size: .97rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .social-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      transition: opacity .2s;
+    }
+
+    .social-btn:hover { opacity: .85; }
+    .social-btn.fb  { background: #1877f2; }
+    .social-btn.zalo { background: #0068ff; }
+    .social-btn.phone { background: #2e7d32; }
+
+    /* ===== TIN TỨC ===== */
+    .news-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .news-card {
+      background: rgba(255,255,255,.96);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      gap: 0;
+      flex-direction: column;
+      transition: transform .2s;
+    }
+
+    .news-card:hover { transform: translateY(-3px); }
+
+    .news-card .news-img {
+      width: 100%; height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .news-card .news-body {
+      padding: 16px 18px 20px;
+    }
+
+    .news-tag {
+      font-size: .73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--white);
+      background: var(--gold);
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      color: var(--red-dk);
+    }
+
+    .news-date {
+      font-size: .8rem;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    .news-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .news-card p {
+      font-size: .9rem;
+      color: #555;
+      line-height: 1.65;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .news-empty {
+      color: rgba(255,255,255,.7);
+      text-align: center;
+      padding: 40px 0;
+      font-size: 1rem;
+    }
+
+    @media (min-width: 600px) {
+      .news-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+    }
+
+    /* ===== MODAL CHI TIẾT SẢN PHẨM ===== */
+    #product-modal {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 10000;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    @media (min-width: 520px) {
+      #product-modal {
+        align-items: center;
+        padding: 16px;
+      }
+    }
+
+    #product-modal.open { display: flex; }
+
+    .modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+      position: relative;
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 40px rgba(0,0,0,.3);
+      max-width: 480px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      animation: modalUp .25s ease;
+    }
+
+    @media (min-width: 520px) {
+      .modal-box {
+        border-radius: 16px;
+        animation: modalIn .22s ease;
+      }
+    }
+
+    @keyframes modalUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(.93); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* Thanh kéo trên cùng (mobile) */
+    .modal-drag-bar {
+      width: 40px; height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 10px auto 0;
+    }
+
+    @media (min-width: 520px) {
+      .modal-drag-bar { display: none; }
+    }
+
+    .modal-img-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .modal-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .modal-body {
+      padding: 18px 20px 28px;
+    }
+
+    .modal-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .modal-close {
+      flex-shrink: 0;
+      background: #f0f0f0;
+      color: #555;
+      border: none;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: .9rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+      margin-top: 2px;
+    }
+
+    .modal-close:hover { background: #e0e0e0; color: #111; }
+
+    .modal-body .category-badge { margin-bottom: 8px; display: inline-block; }
+
+    .modal-body h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .modal-body .modal-price {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--red);
+      margin: 10px 0 14px;
+    }
+
+    .modal-divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 0 0 14px;
+    }
+
+    .modal-description {
+      font-size: .93rem;
+      color: #555;
+      line-height: 1.7;
+      margin-bottom: 20px;
+      white-space: pre-line;
+    }
+
+    .modal-body .btn-add {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      border-radius: 12px;
+    }
+
+    .product-card { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -386,12 +849,54 @@
 <!-- Vùng thông báo toast -->
 <div id="toast"></div>
 
+<!-- ===== MODAL CHI TIẾT SẢN PHẨM ===== -->
+<div id="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <div class="modal-drag-bar"></div>
+    <div class="modal-img-wrap">
+      <img id="modal-img" class="modal-img" src="" alt="" />
+    </div>
+    <div class="modal-body">
+      <span id="modal-badge" class="category-badge"></span>
+      <div class="modal-header-row">
+        <h2 id="modal-title"></h2>
+        <button class="modal-close" id="modal-close-btn" aria-label="Đóng">✕</button>
+      </div>
+      <div id="modal-price" class="modal-price"></div>
+      <hr class="modal-divider" />
+      <p id="modal-description" class="modal-description"></p>
+      <button class="btn-add" id="modal-add-btn">+ Thêm vào giỏ</button>
+    </div>
+  </div>
+</div>
+
 <div class="wrapper">
 
   <!-- ===== HEADER ===== -->
   <header>    <img id="site-logo" src="" alt="Logo Yến Sào Cát An" style="display:none;max-height:90px;margin-bottom:12px;border-radius:10px" />    <h1>🪺 Yến Sào Cát An</h1>
     <p>Tinh hoa thiên nhiên – Dưỡng chất vàng cho sức khỏe</p>
   </header>
+
+  <!-- ===== THANH ĐIỀU HƯỚNG TAB ===== -->
+  <nav class="main-nav" role="tablist">
+    <button class="active" data-tab="shop"      role="tab">🛒 Mua sắm</button>
+    <button              data-tab="news"      role="tab">📰 Tin tức</button>
+    <button              data-tab="guide"     role="tab">🍜 Hướng dẫn chưng yến</button>
+    <button              data-tab="knowledge" role="tab">🌿 Kiến thức yến sào</button>
+    <button              data-tab="history"   role="tab">📜 Lịch sử thương hiệu</button>
+    <button              data-tab="contact"   role="tab">📞 Liên hệ</button>
+  </nav>
+
+  <!-- ===== TAB: TIN TỨC ===== -->
+  <div class="tab-page" id="page-news">
+    <div id="news-grid" class="news-grid">
+      <p class="news-empty">Đang tải...</p>
+    </div>
+  </div><!-- /tab-page news -->
+
+  <!-- ===== TAB: MUA SẮM ===== -->
+  <div class="tab-page active" id="page-shop">
 
   <!-- ===== THANH LỌC PHÂN LOẠI ===== -->
   <div class="filter-bar">
@@ -458,6 +963,234 @@
       <button type="submit" class="btn-submit" id="btn-order">Đặt hàng ngay</button>
     </form>
   </section>
+
+  </div><!-- /tab-page shop -->
+
+  <!-- ===== TAB: HƯỚNG DẪN CHƯNG YẾN ===== -->
+  <div class="tab-page" id="page-guide">
+    <div class="info-card">
+      <h2>🍜 Cách chưng yến sào đúng cách</h2>
+      <ol class="steps">
+        <li>
+          <div class="step-txt">
+            <strong>Ngâm yến sào</strong>
+            <span>Ngâm yến vào bát nước sạch (nước lọc hoặc nước mưa) khoảng <b>45–60 phút</b> cho yến nở đều. Không ngâm quá lâu, yến sẽ bị nhão.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-txt">
+            <strong>Nhặt lông và tạp chất</strong>
+            <span>Dùng nhíp nhỏ nhặt sạch lông tơ còn sót. Rửa lại nhẹ nhàng dưới vòi nước lạnh, sau đó để ráo.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-txt">
+            <strong>Chuẩn bị nước chưng</strong>
+            <span>Cho yến vào bát sứ, thêm nước lọc đủ ngập yến (khoảng 150–200ml/tổ). Có thể thêm táo đỏ, kỷ tử, hạt sen, gừng tươi tùy khẩu vị.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-txt">
+            <strong>Chưng cách thủy</strong>
+            <span>Đặt bát vào nồi hấp hoặc xửng, chưng cách thủy <b>30–45 phút</b> ở lửa nhỏ-vừa. Không nên chưng quá lâu hay nhiệt độ quá cao.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-txt">
+            <strong>Thêm đường phèn &amp; thưởng thức</strong>
+            <span>Cho đường phèn vào sau khi chưng xong (5 phút cuối hoặc sau khi nhấc ra), tránh làm đường bị caramel hóa. Dùng nóng hoặc để nguội tùy thích.</span>
+          </div>
+        </li>
+      </ol>
+      <div class="tip-box">
+        💡 <b>Mẹo hay:</b> Yến sào ngon nhất khi dùng vào buổi sáng sớm lúc đói bụng hoặc trước khi ngủ để cơ thể hấp thụ tốt nhất.
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h2>⚖️ Liều lượng khuyến nghị</h2>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+        <li style="display:flex;gap:12px;align-items:center"><span style="font-size:1.5rem">👶</span><span><b>Trẻ em (3–12 tuổi):</b> 3–5g yến khô/lần, 2–3 lần/tuần</span></li>
+        <li style="display:flex;gap:12px;align-items:center"><span style="font-size:1.5rem">🧑</span><span><b>Người lớn:</b> 5–10g yến khô/lần, 3–4 lần/tuần</span></li>
+        <li style="display:flex;gap:12px;align-items:center"><span style="font-size:1.5rem">🤰</span><span><b>Phụ nữ mang thai / sau sinh:</b> 5–8g/lần, 4–5 lần/tuần</span></li>
+        <li style="display:flex;gap:12px;align-items:center"><span style="font-size:1.5rem">👴</span><span><b>Người cao tuổi:</b> 5–8g/lần, hàng ngày hoặc cách ngày</span></li>
+      </ul>
+    </div>
+  </div><!-- /tab-page guide -->
+
+  <!-- ===== TAB: KIẾN THỨC YẾN SÀO ===== -->
+  <div class="tab-page" id="page-knowledge">
+    <div class="info-card">
+      <h2>🌿 Lợi ích của yến sào</h2>
+      <div class="benefit-grid">
+        <div class="benefit-item">
+          <div class="icon">🧠</div>
+          <strong>Tăng trí nhớ</strong>
+          <span>Giàu glycoprotein giúp phát triển tế bào thần kinh, tăng cường trí nhớ và tập trung.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">🛡️</div>
+          <strong>Tăng miễn dịch</strong>
+          <span>Kích thích sản xuất tế bào miễn dịch, giúp cơ thể chống lại bệnh tật hiệu quả.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">✨</div>
+          <strong>Làm đẹp da</strong>
+          <span>Collagen tự nhiên giúp da căng mịn, chống lão hóa, mờ thâm nám.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">💪</div>
+          <strong>Phục hồi sức khỏe</strong>
+          <span>Bổ sung đạm sinh học, phục hồi nhanh sau ốm, phẫu thuật hoặc làm việc căng thẳng.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">🫁</div>
+          <strong>Tốt cho hô hấp</strong>
+          <span>Y học cổ truyền dùng yến để bổ phổi, giảm ho khan, tiêu đờm.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">🌙</div>
+          <strong>Ngủ ngon hơn</strong>
+          <span>Giảm căng thẳng, điều hòa hệ thần kinh, cải thiện chất lượng giấc ngủ.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h2>🔍 Phân biệt yến sào thật – giả</h2>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:14px">
+        <li><b>✅ Yến thật:</b> Sợi yến rõ nét, dai, không mùi hoặc mùi tự nhiên nhẹ, khi ngâm nước nở đều, màu trắng ngà hoặc vàng nhạt tự nhiên.</li>
+        <li><b>❌ Yến giả/kém chất lượng:</b> Màu trắng bất thường (tẩy trắng hóa chất), mùi tẩy, sợi yến giòn dễ vỡ, khi ngâm không nở hoặc ra màu lạ.</li>
+        <li><b>💡 Lưu ý:</b> Nên mua yến từ các cơ sở uy tín, có chứng nhận rõ nguồn gốc xuất xứ và được kiểm định chất lượng.</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h2>📦 Cách bảo quản yến sào</h2>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;font-size:.95rem;color:#333;line-height:1.7">
+        <li>🫙 Đựng yến trong hộp thủy tinh kín, tránh ẩm ướt.</li>
+        <li>🌡️ Bảo quản nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp.</li>
+        <li>❄️ Yến đã chưng bảo quản ngăn mát tủ lạnh, dùng trong 2–3 ngày.</li>
+        <li>⏳ Yến khô bảo quản đúng cách có thể dùng đến 2 năm.</li>
+      </ul>
+    </div>
+  </div><!-- /tab-page knowledge -->
+
+  <!-- ===== TAB: LỊCH SỬ THƯƠNG HIỆU ===== -->
+  <div class="tab-page" id="page-history">
+    <div class="info-card">
+      <h2>📜 Câu chuyện Yến Sào Cát An</h2>
+      <p style="font-size:.97rem;color:#444;line-height:1.8;margin-bottom:20px">
+        Yến Sào Cát An được thành lập với tâm nguyện mang đến những sản phẩm yến sào thuần khiết, chất lượng cao từ tự nhiên đến tay người tiêu dùng Việt Nam. Chúng tôi tin rằng sức khỏe là tài sản quý giá nhất – và yến sào là món quà thiên nhiên ban tặng cho cuộc sống.
+      </p>
+      <ul class="timeline">
+        <li>
+          <div class="year">Khởi đầu</div>
+          <p>Sáng lập bởi gia đình với nhiều năm kinh nghiệm trong ngành yến sào. Bắt đầu từ nguồn yến tự nhiên tại các tỉnh duyên hải miền Trung và miền Nam Việt Nam.</p>
+        </li>
+        <li>
+          <div class="year">Phát triển</div>
+          <p>Mở rộng danh mục sản phẩm bao gồm yến tinh chế, yến hũ chưng sẵn, và các sản phẩm sức khỏe cao cấp nhập khẩu từ Mỹ và Nhật Bản.</p>
+        </li>
+        <li>
+          <div class="year">Cam kết chất lượng</div>
+          <p>Áp dụng quy trình kiểm định nghiêm ngặt: không tẩy trắng, không phụ gia hóa học, 100% yến thiên nhiên. Mỗi sản phẩm đều có rõ nguồn gốc xuất xứ.</p>
+        </li>
+        <li>
+          <div class="year">Hôm nay</div>
+          <p>Phục vụ hàng nghìn khách hàng tin tưởng trên toàn quốc. Tiếp tục sứ mệnh mang sức khỏe và chất lượng cuộc sống tốt hơn cho mọi gia đình Việt.</p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h2>🏆 Cam kết của chúng tôi</h2>
+      <div class="benefit-grid">
+        <div class="benefit-item">
+          <div class="icon">🔬</div>
+          <strong>100% tự nhiên</strong>
+          <span>Không tẩy trắng, không phụ gia, không chất bảo quản hóa học.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">🚚</div>
+          <strong>Giao hàng toàn quốc</strong>
+          <span>Đóng gói cẩn thận, giao hàng nhanh chóng đến tận tay khách.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">💬</div>
+          <strong>Hỗ trợ tận tâm</strong>
+          <span>Tư vấn miễn phí về cách dùng, bảo quản và lựa chọn sản phẩm phù hợp.</span>
+        </div>
+        <div class="benefit-item">
+          <div class="icon">🔄</div>
+          <strong>Đổi trả dễ dàng</strong>
+          <span>Hoàn tiền hoặc đổi hàng nếu sản phẩm không đúng mô tả.</span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-page history -->
+
+  <!-- ===== TAB: LIÊN HỆ ===== -->
+  <div class="tab-page" id="page-contact">
+    <div class="info-card">
+      <h2>📞 Thông tin liên hệ</h2>
+      <div class="contact-grid">
+        <div class="contact-item">
+          <div class="c-icon">📱</div>
+          <div class="c-txt">
+            <strong>Điện thoại / Zalo</strong>
+            <span id="ct-phone">—</span>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="c-icon">📧</div>
+          <div class="c-txt">
+            <strong>Email</strong>
+            <span id="ct-email">—</span>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="c-icon">📍</div>
+          <div class="c-txt">
+            <strong>Địa chỉ</strong>
+            <span id="ct-address">—</span>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="c-icon">🕐</div>
+          <div class="c-txt">
+            <strong>Giờ làm việc</strong>
+            <span id="ct-hours">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="social-row">
+        <a id="ct-fb-btn"   href="#" class="social-btn fb"    style="display:none">📘 Facebook</a>
+        <a id="ct-zalo-btn" href="#" class="social-btn zalo"  style="display:none">💬 Zalo</a>
+        <a id="ct-call-btn" href="#" class="social-btn phone" style="display:none">📞 Gọi ngay</a>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h2>💌 Gửi câu hỏi cho chúng tôi</h2>
+      <form id="contact-form" novalidate style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group" style="margin:0">
+          <label for="contact-name">Họ tên *</label>
+          <input type="text" id="contact-name" placeholder="Nguyễn Văn A" required />
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="contact-phone">Số điện thoại *</label>
+          <input type="tel" id="contact-phone" placeholder="0901 234 567" required />
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="contact-msg">Nội dung *</label>
+          <textarea id="contact-msg" rows="4" placeholder="Bạn cần tư vấn về sản phẩm nào?..." required style="resize:vertical"></textarea>
+        </div>
+        <button type="submit" class="btn-submit" style="margin:0">Gửi tin nhắn</button>
+      </form>
+    </div>
+  </div><!-- /tab-page contact -->
 
 </div><!-- /wrapper -->
 
@@ -538,6 +1271,28 @@
       if (cfg.bank_bin)  window._bankBin    = cfg.bank_bin;
       if (cfg.bank_stk)  window._bankStk    = cfg.bank_stk;
       if (cfg.bank_owner) window._bankOwner = cfg.bank_owner;
+
+      // Điền thông tin liên hệ vào tab Liên hệ
+      if (cfg.contact_phone) {
+        document.getElementById('ct-phone').textContent = cfg.contact_phone;
+        const callBtn = document.getElementById('ct-call-btn');
+        callBtn.href = `tel:${cfg.contact_phone.replace(/\s/g, '')}`;
+        callBtn.style.display = 'inline-flex';
+      }
+      if (cfg.contact_email)   document.getElementById('ct-email').textContent   = cfg.contact_email;
+      if (cfg.contact_address) document.getElementById('ct-address').textContent = cfg.contact_address;
+      if (cfg.contact_hours)   document.getElementById('ct-hours').textContent   = cfg.contact_hours;
+      if (cfg.contact_fb) {
+        const fbBtn = document.getElementById('ct-fb-btn');
+        fbBtn.href = cfg.contact_fb;
+        fbBtn.style.display = 'inline-flex';
+      }
+      if (cfg.contact_zalo) {
+        const zaloBtn = document.getElementById('ct-zalo-btn');
+        const zaloVal = cfg.contact_zalo;
+        zaloBtn.href = zaloVal.startsWith('http') ? zaloVal : `https://zalo.me/${zaloVal.replace(/\s/g,'')}`;
+        zaloBtn.style.display = 'inline-flex';
+      }
     } catch (err) {
       console.error('Lỗi tải cấu hình:', err);
     }
@@ -575,7 +1330,7 @@
     }
 
     grid.innerHTML = list.map(p => `
-      <div class="product-card">
+      <div class="product-card" data-id="${p.id}">
         <img src="${p.image || 'https://placehold.co/400x300?text=No+Image'}"
              alt="${p.name}"
              onerror="this.src='https://placehold.co/400x300?text=No+Image'" />
@@ -590,12 +1345,58 @@
 
     // Gắn sự kiện cho nút "Thêm vào giỏ"
     grid.querySelectorAll('.btn-add').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const product = allProducts.find(p => p.id === btn.dataset.id);
         if (product) addToCart(product);
       });
     });
+
+    // Gắn sự kiện click thẻ → mở modal chi tiết
+    grid.querySelectorAll('.product-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const product = allProducts.find(p => p.id === card.dataset.id);
+        if (product) openProductModal(product);
+      });
+    });
   }
+
+  // ==================================================
+  // MODAL CHI TIẾT SẢN PHẨM
+  // ==================================================
+  function openProductModal(product) {
+    const imgEl   = document.getElementById('modal-img');
+    imgEl.src     = product.image || 'https://placehold.co/480x320?text=No+Image';
+    imgEl.alt     = product.name;
+    imgEl.onerror = () => { imgEl.src = 'https://placehold.co/480x320?text=No+Image'; };
+    document.getElementById('modal-badge').textContent       = CAT_LABEL[product.category] || product.category;
+    document.getElementById('modal-title').textContent       = product.name;
+    document.getElementById('modal-price').textContent       = formatVND(product.price);
+    const descEl = document.getElementById('modal-description');
+    if (product.description) {
+      descEl.textContent   = product.description;
+      descEl.style.display = 'block';
+    } else {
+      descEl.style.display = 'none';
+    }
+    document.getElementById('modal-add-btn').dataset.id     = product.id;
+    document.getElementById('product-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProductModal() {
+    document.getElementById('product-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('modal-close-btn').addEventListener('click', closeProductModal);
+  document.querySelector('.modal-backdrop').addEventListener('click', closeProductModal);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
+  document.getElementById('modal-add-btn').addEventListener('click', () => {
+    const id = document.getElementById('modal-add-btn').dataset.id;
+    const product = allProducts.find(p => p.id === id);
+    if (product) { addToCart(product); closeProductModal(); }
+  });
 
   // ==================================================
   // GIỎ HÀNG: Thêm sản phẩm
@@ -759,6 +1560,99 @@
       currentFilter = this.dataset.cat;
       renderProducts(currentFilter);
     });
+  });
+
+  // ==================================================
+  // ĐIỀU HƯỚNG TAB CHÍNH
+  // ==================================================
+  const tabPages = {
+    shop:      document.getElementById('page-shop'),
+    news:      document.getElementById('page-news'),
+    guide:     document.getElementById('page-guide'),
+    knowledge: document.getElementById('page-knowledge'),
+    history:   document.getElementById('page-history'),
+    contact:   document.getElementById('page-contact'),
+  };
+
+  let newsLoaded = false;
+
+  document.querySelectorAll('.main-nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(tabPages).forEach(p => p.classList.remove('active'));
+      tabPages[btn.dataset.tab].classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (btn.dataset.tab === 'news' && !newsLoaded) {
+        loadNews();
+        newsLoaded = true;
+      }
+    });
+  });
+
+  // ==================================================
+  // TIN TỨC: Tải từ Firestore
+  // ==================================================
+  const TAG_LABEL_NEWS = {
+    'tin-tuc': 'Tin tức', 'khuyen-mai': 'Khuyến mãi',
+    'meo-hay': 'Mẹo hay', 'su-kien': 'Sự kiện'
+  };
+
+  const formatNewsDate = (ts) => {
+    if (!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  async function loadNews() {
+    const grid = document.getElementById('news-grid');
+    try {
+      const q    = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        grid.innerHTML = '<p class="news-empty">Chưa có bài đăng nào.</p>';
+        return;
+      }
+
+      grid.innerHTML = snap.docs.map(d => {
+        const p = d.data();
+        return `
+          <div class="news-card">
+            ${p.image ? `<img class="news-img" src="${p.image}" alt="${p.title}" onerror="this.style.display='none'" />` : ''}
+            <div class="news-body">
+              <span class="news-tag">${TAG_LABEL_NEWS[p.tag] || p.tag || 'Tin tức'}</span>
+              <div class="news-date">${formatNewsDate(p.timestamp)}</div>
+              <h3>${p.title}</h3>
+              <p>${p.content}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Lỗi tải tin tức:', err);
+      grid.innerHTML = '<p class="news-empty">Không thể tải tin tức.</p>';
+    }
+  }
+
+  // ==================================================
+  // FORM LIÊN HỆ (gửi đơn giản qua toast)
+  // ==================================================
+  document.getElementById('contact-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name  = document.getElementById('contact-name').value.trim();
+    const phone = document.getElementById('contact-phone').value.trim();
+    const msg   = document.getElementById('contact-msg').value.trim();
+    if (!name || !phone || !msg) {
+      showToast('Vui lòng điền đầy đủ thông tin!', 'error');
+      return;
+    }
+    if (!/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g, ''))) {
+      showToast('Số điện thoại không hợp lệ!', 'error');
+      return;
+    }
+    showToast('✅ Đã nhận tin nhắn! Chúng tôi sẽ liên hệ sớm.', 'success');
+    this.reset();
   });
 
   // ==================================================

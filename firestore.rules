@@ -15,13 +15,18 @@ service cloud.firestore {
     // Chỉ cho phép đúng các field đang dùng, tất cả phải là string
     function validateConfig() {
       let d = request.resource.data;
-      // Kiểm tra type từng field (không dùng hasOnly vì merge có thể giữ field cũ)
       return (!('logo_url'       in d) || d.logo_url       is string)
           && (!('background_url' in d) || d.background_url is string)
           && (!('bank_name'       in d) || d.bank_name      is string)
           && (!('bank_stk'        in d) || d.bank_stk       is string)
           && (!('bank_owner'      in d) || d.bank_owner     is string)
-          && (!('bank_bin'        in d) || d.bank_bin       is string);
+          && (!('bank_bin'        in d) || d.bank_bin       is string)
+          && (!('contact_phone'   in d) || d.contact_phone  is string)
+          && (!('contact_email'   in d) || d.contact_email  is string)
+          && (!('contact_address' in d) || d.contact_address is string)
+          && (!('contact_hours'   in d) || d.contact_hours  is string)
+          && (!('contact_fb'      in d) || d.contact_fb     is string)
+          && (!('contact_zalo'    in d) || d.contact_zalo   is string);
     }
 
     // ─── Validate products ───────────────────────────────────
@@ -31,14 +36,15 @@ service cloud.firestore {
     // category: phải thuộc danh sách cho phép
     function validateProduct() {
       let d = request.resource.data;
-      let allowed = ['name', 'price', 'image', 'category'];
+      let allowed = ['name', 'price', 'image', 'category', 'description'];
       return d.keys().hasOnly(allowed)
-          && d.keys().hasAll(allowed)
+          && d.keys().hasAll(['name', 'price', 'image', 'category'])
           && d.name     is string && d.name.size()     > 0 && d.name.size()  <= 200
           && d.price    is number && d.price            >= 0
           && d.image    is string && d.image.size()    > 0
           && d.category is string
-          && d.category in ['yen', 'sam', 'us-japan'];
+          && d.category in ['yen', 'sam', 'us-japan']
+          && (!('description' in d) || (d.description is string && d.description.size() <= 1000));
     }
 
     // ─── Validate orders ─────────────────────────────────────
@@ -106,6 +112,27 @@ service cloud.firestore {
       allow create:        if validateOrder();
       allow get, list,
             delete:        if isAdmin();
+    }
+
+    // ─── posts/{postId} ──────────────────────────────────────
+    // GET / LIST → mọi người đọc được (hiển thị trên index.html)
+    // CREATE / UPDATE / DELETE → chỉ admin
+    function validatePost() {
+      let d = request.resource.data;
+      let allowed = ['title', 'content', 'image', 'tag', 'timestamp'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(['title', 'content', 'timestamp'])
+          && d.title   is string && d.title.size()   > 0 && d.title.size()   <= 200
+          && d.content is string && d.content.size() > 0 && d.content.size() <= 5000
+          && (!('image' in d) || d.image is string)
+          && (!('tag'   in d) || d.tag   is string);
+    }
+
+    match /posts/{postId} {
+      allow get, list:  if true;
+      allow create:     if isAdmin() && validatePost();
+      allow update:     if isAdmin() && validatePost();
+      allow delete:     if isAdmin();
     }
 
   }
