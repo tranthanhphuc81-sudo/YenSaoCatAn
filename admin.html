@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Yến Sào Cát An</title>
+  <style>
+    /* ===== RESET & BIẾN CSS ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #1a56a0;
+      --red-dk: #0d3578;
+      --gold:   #c9a84c;
+      --white:  #ffffff;
+      --bg:     #f4f4f6;
+      --sidebar:#0d2a5c;
+      --text:   #1a1a1a;
+      --gray:   #6b7280;
+      --radius: 10px;
+      --shadow: 0 2px 14px rgba(0,0,0,.1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===== TRANG ĐĂNG NHẬP ===== */
+    #login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0d2a5c 0%, #1a56a0 100%);
+    }
+
+    .login-box {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.35);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .login-box p {
+      text-align: center;
+      color: var(--gray);
+      font-size: .88rem;
+      margin-bottom: 28px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 7px;
+      font-size: .97rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--red); }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-primary:hover    { background: var(--red-dk); }
+    .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+
+    #login-error {
+      color: var(--red);
+      font-size: .87rem;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    /* ===== DASHBOARD (ẩn mặc định) ===== */
+    #dashboard { display: none; }
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      background: var(--sidebar);
+      color: var(--white);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    }
+
+    .topbar h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    .topbar .admin-info {
+      font-size: .85rem;
+      color: rgba(255,255,255,.7);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-logout {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-logout:hover { background: var(--red-dk); }
+
+    /* ===== TABS ===== */
+    .tab-bar {
+      background: var(--white);
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e5e5e5;
+      padding: 0 28px;
+    }
+
+    .tab-bar button {
+      padding: 14px 22px;
+      background: none;
+      border: none;
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--gray);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color .2s, border-color .2s;
+    }
+
+    .tab-bar button.active {
+      color: var(--red);
+      border-bottom-color: var(--red);
+    }
+
+    .tab-bar button:hover { color: var(--red); }
+
+    /* ===== NỘI DUNG CHÍNH ===== */
+    .main-content {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px 60px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid #f0e0e0;
+    }
+
+    /* ===== FORM LƯỚI 2 CỘT ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 20px;
+    }
+
+    .form-grid .span-2 { grid-column: 1 / -1; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .span-2 { grid-column: 1; }
+    }
+
+    /* ===== NÚT HÀNH ĐỘNG ===== */
+    .btn-save {
+      padding: 10px 28px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      margin-top: 6px;
+    }
+
+    .btn-save:hover    { background: var(--red-dk); }
+    .btn-save:disabled { background: #aaa; cursor: not-allowed; }
+
+    .btn-delete {
+      background: #dce8f8;
+      color: var(--red);
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+
+    .btn-delete:hover { background: #bcd6f0; }
+
+    /* ===== BẢNG DANH SÁCH ===== */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #dce8f8;
+      color: var(--red-dk);
+      font-weight: 700;
+      border-bottom: 2px solid #aac8ee;
+    }
+
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+
+    .data-table tr:hover td { background: #fafafa; }
+
+    .product-thumb {
+      width: 52px; height: 52px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    /* Badge phân loại */
+    .badge {
+      font-size: .75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #dce8f8;
+      color: var(--red-dk);
+    }
+
+    /* Badge hình thức thanh toán */
+    .badge-cash     { background: #d1fae5; color: #065f46; }
+    .badge-transfer { background: #dbeafe; color: #1e40af; }
+
+    /* ===== TRẠNG THÁI RỖNG ===== */
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      font-style: italic;
+      padding: 30px 0;
+    }
+
+    /* ===== TOAST ===== */
+    #toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #222;
+      color: #fff;
+      padding: 12px 26px;
+      border-radius: 30px;
+      font-size: .93rem;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      transition: all .35s ease;
+      white-space: nowrap;
+    }
+
+    #toast.show      { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success   { background: #2e7d32; }
+    #toast.error     { background: #0d3578; }
+
+    /* ===== RESPONSIVE BẢNG ===== */
+    .table-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+<!-- Toast thông báo -->
+<div id="toast"></div>
+
+<!-- ===========================
+     TRANG ĐĂNG NHẬP
+============================ -->
+<div id="login-page">
+  <div class="login-box">
+    <h1>🪺 Yến Sào Cát An</h1>
+    <p>Trang quản trị – Chỉ dành cho Admin</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label for="email">Email đăng nhập</label>
+        <input type="email" id="email" placeholder="admin@example.com" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn-primary" id="btn-login">Đăng nhập</button>
+      <p id="login-error"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===========================
+     DASHBOARD (ẩn khi chưa login)
+============================ -->
+<div id="dashboard">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <h1>🪺 Admin – Yến Sào Cát An</h1>
+    <div class="admin-info">
+      <span id="admin-email"></span>
+      <button class="btn-logout" id="btn-logout">Đăng xuất</button>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="active" data-tab="config">⚙️ Cấu hình</button>
+    <button data-tab="products">📦 Sản phẩm</button>
+    <button data-tab="orders">📋 Đơn hàng</button>
+  </div>
+
+  <!-- Nội dung chính -->
+  <div class="main-content">
+
+    <!-- =========== TAB: CẤU HÌNH =========== -->
+    <div class="tab-panel active" id="tab-config">
+      <div class="card">
+        <h2>⚙️ Cấu hình Website</h2>
+        <form id="config-form">
+          <div class="form-grid">
+            <div class="form-group span-2">
+              <label for="cfg-bg">URL Ảnh nền trang chủ</label>
+              <input type="url" id="cfg-bg" placeholder="https://..." />
+            </div>
+            <div class="form-group">
+              <label for="cfg-bank-name">Tên ngân hàng</label>
+              <input type="text" id="cfg-bank-name" placeholder="Vietcombank" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-stk">Số tài khoản</label>
+              <input type="text" id="cfg-stk" placeholder="1234567890" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-owner">Tên chủ tài khoản</label>
+              <input type="text" id="cfg-owner" placeholder="NGUYEN VAN A" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-qr">URL ảnh VietQR</label>
+              <input type="url" id="cfg-qr" placeholder="https://..." />
+            </div>
+          </div>
+          <button type="submit" class="btn-save" id="btn-save-config">💾 Lưu Cấu Hình</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========== TAB: SẢN PHẨM =========== -->
+    <div class="tab-panel" id="tab-products">
+
+      <!-- Form thêm sản phẩm -->
+      <div class="card">
+        <h2>➕ Thêm Sản Phẩm Mới</h2>
+        <form id="product-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="prod-name">Tên sản phẩm *</label>
+              <input type="text" id="prod-name" placeholder="Yến sào tinh chế 100g" required />
+            </div>
+            <div class="form-group">
+              <label for="prod-price">Giá (VNĐ) *</label>
+              <input type="number" id="prod-price" placeholder="500000" min="0" required />
+            </div>
+            <div class="form-group span-2">
+              <label for="prod-image">Link ảnh sản phẩm *</label>
+              <input type="url" id="prod-image" placeholder="https://..." required />
+            </div>
+            <div class="form-group">
+              <label for="prod-category">Phân loại *</label>
+              <select id="prod-category" required>
+                <option value="yen">Yến Sào</option>
+                <option value="sam">Sâm</option>
+                <option value="us-japan">Hàng Mỹ / Nhật</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn-save" id="btn-add-product">+ Thêm sản phẩm</button>
+        </form>
+      </div>
+
+      <!-- Danh sách sản phẩm -->
+      <div class="card">
+        <h2>📦 Danh Sách Sản Phẩm</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Hình</th>
+                <th>Tên sản phẩm</th>
+                <th>Giá</th>
+                <th>Phân loại</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="product-list">
+              <tr><td colspan="5" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========== TAB: ĐƠN HÀNG =========== -->
+    <div class="tab-panel" id="tab-orders">
+      <div class="card">
+        <h2>📋 Danh Sách Đơn Hàng</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Khách hàng</th>
+                <th>SĐT</th>
+                <th>Địa chỉ</th>
+                <th>Tổng tiền</th>
+                <th>Thanh toán</th>
+              </tr>
+            </thead>
+            <tbody id="order-list">
+              <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /dashboard -->
+
+<!-- ===== FIREBASE v10 MODULE ===== -->
+<script type="module">
+  // ==================================================
+  // FIREBASE CONFIG – Điền thông tin dự án của bạn
+  // ==================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc, getDoc, setDoc,
+    collection, getDocs, addDoc, deleteDoc,
+    query, orderBy, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = { 
+  apiKey : "AIzaSyA24CUjreKu7He7kB0c9bGGWHGg_6YW7yg" , 
+  authDomain : "yensaocan-e3e75.firebaseapp.com" , 
+  databaseURL : "https://yensaocan-e3e75-default-rtdb.asia-southeast1.firebasedatabase.app" , 
+  projectId : "yensaocan-e3e75" , 
+  storageBucket : "yensaocan-e3e75.firebasestorage.app" , 
+  messagingSenderId : "717544202838" , 
+  appId : "1:717544202838:web:9a88979d3f5084d50f91f7" , 
+  measurementId : "G-9TCZPV2722" 
+};
+
+  // Khởi tạo Firebase
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ==================================================
+  // TIỆN ÍCH
+  // ==================================================
+  const formatVND = (n) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => { t.className = ''; }, 3200);
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    const d = ts.toDate();
+    return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  const CAT_LABEL = { yen: 'Yến Sào', sam: 'Sâm', 'us-japan': 'Mỹ / Nhật' };
+
+  // ==================================================
+  // XÁC THỰC: Theo dõi trạng thái đăng nhập
+  // ==================================================
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // Đã đăng nhập → ẩn login, hiện dashboard
+      document.getElementById('login-page').style.display  = 'none';
+      document.getElementById('dashboard').style.display   = 'block';
+      document.getElementById('admin-email').textContent   = user.email;
+
+      // Tải dữ liệu ban đầu
+      loadConfig();
+      loadProducts();
+      loadOrders();
+    } else {
+      // Chưa đăng nhập → hiện login, ẩn dashboard
+      document.getElementById('login-page').style.display  = 'flex';
+      document.getElementById('dashboard').style.display   = 'none';
+    }
+  });
+
+  // ==================================================
+  // ĐĂNG NHẬP
+  // ==================================================
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl    = document.getElementById('login-error');
+    const btnLogin = document.getElementById('btn-login');
+
+    errEl.textContent = '';
+    btnLogin.disabled = true;
+    btnLogin.textContent = 'Đang đăng nhập...';
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged sẽ xử lý chuyển trang
+    } catch (err) {
+      console.error('Lỗi đăng nhập:', err.code);
+
+      // Chuyển mã lỗi Firebase sang tiếng Việt
+      const errorMap = {
+        'auth/invalid-email':        'Email không hợp lệ.',
+        'auth/user-not-found':       'Tài khoản không tồn tại.',
+        'auth/wrong-password':       'Mật khẩu sai.',
+        'auth/invalid-credential':   'Email hoặc mật khẩu không đúng.',
+        'auth/too-many-requests':    'Quá nhiều lần thất bại. Thử lại sau.',
+      };
+      errEl.textContent = errorMap[err.code] || 'Đăng nhập thất bại. Kiểm tra lại thông tin.';
+    } finally {
+      btnLogin.disabled = false;
+      btnLogin.textContent = 'Đăng nhập';
+    }
+  });
+
+  // ==================================================
+  // ĐĂNG XUẤT
+  // ==================================================
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    if (!confirm('Bạn chắc chắn muốn đăng xuất?')) return;
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Lỗi đăng xuất:', err);
+    }
+  });
+
+  // ==================================================
+  // CHUYỂN TAB
+  // ==================================================
+  document.querySelectorAll('.tab-bar button').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById(`tab-${this.dataset.tab}`).classList.add('active');
+    });
+  });
+
+  // ==================================================
+  // TAB CẤU HÌNH: Tải dữ liệu cũ vào form
+  // ==================================================
+  async function loadConfig() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'settings'));
+      if (!snap.exists()) return;
+
+      const cfg = snap.data();
+      if (cfg.background_url) document.getElementById('cfg-bg').value        = cfg.background_url;
+      if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
+      if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
+      if (cfg.bank_owner)     document.getElementById('cfg-owner').value     = cfg.bank_owner;
+      if (cfg.vietqr_url)     document.getElementById('cfg-qr').value        = cfg.vietqr_url;
+    } catch (err) {
+      console.error('Lỗi tải cấu hình:', err);
+    }
+  }
+
+  // ==================================================
+  // TAB CẤU HÌNH: Lưu cấu hình
+  // ==================================================
+  document.getElementById('config-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const bgUrl     = document.getElementById('cfg-bg').value.trim();
+    const bankName  = document.getElementById('cfg-bank-name').value.trim();
+    const bankStk   = document.getElementById('cfg-stk').value.trim();
+    const bankOwner = document.getElementById('cfg-owner').value.trim();
+    const qrUrl     = document.getElementById('cfg-qr').value.trim();
+
+    const btnSave = document.getElementById('btn-save-config');
+    btnSave.disabled    = true;
+    btnSave.textContent = 'Đang lưu...';
+
+    try {
+      // setDoc với merge:true để không xoá các field khác nếu có
+      await setDoc(doc(db, 'config', 'settings'), {
+        background_url: bgUrl,
+        bank_name:      bankName,
+        bank_stk:       bankStk,
+        bank_owner:     bankOwner,
+        vietqr_url:     qrUrl
+      }, { merge: true });
+
+      showToast('✅ Lưu cấu hình thành công!');
+    } catch (err) {
+      console.error('Lỗi lưu cấu hình:', err);
+      showToast('❌ Lưu cấu hình thất bại!', 'error');
+    } finally {
+      btnSave.disabled    = false;
+      btnSave.textContent = '💾 Lưu Cấu Hình';
+    }
+  });
+
+  // ==================================================
+  // TAB SẢN PHẨM: Tải danh sách
+  // ==================================================
+  async function loadProducts() {
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      renderProductTable(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error('Lỗi tải sản phẩm:', err);
+      document.getElementById('product-list').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Không thể tải sản phẩm.</td></tr>';
+    }
+  }
+
+  // ==================================================
+  // TAB SẢN PHẨM: Render bảng
+  // ==================================================
+  function renderProductTable(products) {
+    const tbody = document.getElementById('product-list');
+
+    if (products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có sản phẩm nào.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = products.map(p => `
+      <tr>
+        <td>
+          <img class="product-thumb"
+               src="${p.image || ''}"
+               alt="${p.name}"
+               onerror="this.src='https://placehold.co/52x52?text=?'" />
+        </td>
+        <td>${p.name}</td>
+        <td style="white-space:nowrap">${formatVND(p.price)}</td>
+        <td><span class="badge">${CAT_LABEL[p.category] || p.category}</span></td>
+        <td>
+          <button class="btn-delete" data-id="${p.id}">🗑 Xoá</button>
+        </td>
+      </tr>
+    `).join('');
+
+    // Gắn sự kiện xoá
+    tbody.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
+    });
+  }
+
+  // ==================================================
+  // TAB SẢN PHẨM: Thêm mới
+  // ==================================================
+  document.getElementById('product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name     = document.getElementById('prod-name').value.trim();
+    const price    = parseFloat(document.getElementById('prod-price').value);
+    const image    = document.getElementById('prod-image').value.trim();
+    const category = document.getElementById('prod-category').value;
+
+    if (!name || isNaN(price) || price < 0 || !image) {
+      showToast('Vui lòng điền đầy đủ thông tin sản phẩm!', 'error');
+      return;
+    }
+
+    const btnAdd = document.getElementById('btn-add-product');
+    btnAdd.disabled    = true;
+    btnAdd.textContent = 'Đang thêm...';
+
+    try {
+      await addDoc(collection(db, 'products'), { name, price, image, category });
+      showToast('✅ Thêm sản phẩm thành công!');
+      document.getElementById('product-form').reset();
+      await loadProducts(); // Làm mới bảng danh sách
+    } catch (err) {
+      console.error('Lỗi thêm sản phẩm:', err);
+      showToast('❌ Thêm sản phẩm thất bại!', 'error');
+    } finally {
+      btnAdd.disabled    = false;
+      btnAdd.textContent = '+ Thêm sản phẩm';
+    }
+  });
+
+  // ==================================================
+  // TAB SẢN PHẨM: Xoá sản phẩm
+  // ==================================================
+  async function deleteProduct(id) {
+    if (!confirm('Bạn chắc chắn muốn xoá sản phẩm này?')) return;
+    try {
+      await deleteDoc(doc(db, 'products', id));
+      showToast('🗑 Đã xoá sản phẩm!');
+      await loadProducts();
+    } catch (err) {
+      console.error('Lỗi xoá sản phẩm:', err);
+      showToast('❌ Xoá sản phẩm thất bại!', 'error');
+    }
+  }
+
+  // ==================================================
+  // TAB ĐƠN HÀNG: Tải danh sách (mới nhất trước)
+  // ==================================================
+  async function loadOrders() {
+    try {
+      const q    = query(collection(db, 'orders'), orderBy('timestamp', 'desc'));
+      const snap = await getDocs(q);
+
+      const tbody = document.getElementById('order-list');
+
+      if (snap.empty) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Chưa có đơn hàng nào.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = snap.docs.map(d => {
+        const o = d.data();
+        const methodBadge = o.paymentMethod === 'transfer'
+          ? '<span class="badge badge-transfer">Chuyển khoản</span>'
+          : '<span class="badge badge-cash">Tiền mặt</span>';
+
+        // Tóm tắt danh sách sản phẩm trong đơn
+        const itemSummary = Array.isArray(o.items)
+          ? o.items.map(i => `${i.name} x${i.qty}`).join(', ')
+          : '—';
+
+        return `
+          <tr>
+            <td style="white-space:nowrap">${formatDate(o.timestamp)}</td>
+            <td>
+              <strong>${o.customerName || '—'}</strong>
+              <br/><small style="color:#888">${itemSummary}</small>
+            </td>
+            <td style="white-space:nowrap">${o.customerPhone || '—'}</td>
+            <td>${o.customerAddress || '—'}</td>
+            <td style="white-space:nowrap;font-weight:700;color:#1a56a0">
+              ${formatVND(o.total || 0)}
+            </td>
+            <td>${methodBadge}</td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error('Lỗi tải đơn hàng:', err);
+      document.getElementById('order-list').innerHTML =
+        '<tr><td colspan="6" class="empty-state">Không thể tải đơn hàng.</td></tr>';
+    }
+  }
+</script>
+</body>
+</html>

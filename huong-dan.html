@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hướng Dẫn Sử Dụng – Yến Sào Cát An</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #1a56a0;
+      --red-dk: #0d3578;
+      --gold:   #c9a84c;
+      --white:  #ffffff;
+      --bg:     #f7f3ee;
+      --text:   #1a1a1a;
+      --muted:  #6b7280;
+      --border: #e5e7eb;
+      --radius: 10px;
+      --shadow: 0 2px 14px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      background: var(--red-dk);
+      color: var(--white);
+      text-align: center;
+      padding: 20px 16px;
+    }
+
+    .topbar h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 800;
+      color: #f0d080;
+      letter-spacing: 1px;
+    }
+
+    .topbar p {
+      margin-top: 4px;
+      font-size: .93rem;
+      color: rgba(255,255,255,.75);
+    }
+
+    /* ===== BỐ CỤC ===== */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ===== MỤC LỤC ===== */
+    .toc {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 28px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .toc ol {
+      padding-left: 20px;
+    }
+
+    .toc li {
+      margin-bottom: 6px;
+    }
+
+    .toc a {
+      color: var(--red-dk);
+      text-decoration: none;
+      font-size: .95rem;
+      font-weight: 500;
+    }
+
+    .toc a:hover { text-decoration: underline; }
+
+    /* ===== SECTION ===== */
+    .section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 30px 32px;
+      margin-bottom: 28px;
+      scroll-margin-top: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #dce8f8;
+    }
+
+    .section-icon {
+      width: 42px; height: 42px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--red-dk);
+    }
+
+    .section-header .badge-step {
+      margin-left: auto;
+      background: #dce8f8;
+      color: var(--red);
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    /* ===== NỘI DUNG ===== */
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--red-dk);
+      margin: 18px 0 8px;
+    }
+
+    p { margin-bottom: 10px; font-size: .95rem; }
+
+    /* Danh sách bước */
+    .steps {
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      font-size: .95rem;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--red);
+      color: #fff;
+      font-weight: 800;
+      font-size: .85rem;
+      min-width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Danh sách đơn giản */
+    ul.plain {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul.plain li {
+      padding: 6px 0 6px 22px;
+      position: relative;
+      font-size: .95rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    ul.plain li:last-child { border-bottom: none; }
+
+    ul.plain li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 1rem;
+    }
+
+    /* ===== CODE BOX ===== */
+    .code-box {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: .88rem;
+      overflow-x: auto;
+      margin: 14px 0;
+      line-height: 1.6;
+    }
+
+    .code-box .key   { color: #f38ba8; }
+    .code-box .val   { color: #a6e3a1; }
+    .code-box .cmt   { color: #6c7086; font-style: italic; }
+
+    /* ===== CALLOUT ===== */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: .93rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+
+    .callout.info    { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .callout.danger  { background: #fef2f2; border-left: 4px solid #ef4444; }
+
+    .callout.info    .callout-icon { color: #3b82f6; }
+    .callout.warning .callout-icon { color: #f59e0b; }
+    .callout.success .callout-icon { color: #22c55e; }
+    .callout.danger  .callout-icon { color: #ef4444; }
+
+    /* ===== BẢNG ===== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+      margin: 14px 0;
+    }
+
+    th {
+      background: #dce8f8;
+      color: var(--red-dk);
+      font-weight: 700;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 2px solid #aac8ee;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+    }
+
+    tr:hover td { background: #fafafa; }
+
+    /* ===== FILE BADGE ===== */
+    .file-badge {
+      display: inline-block;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: monospace;
+      font-size: .85rem;
+      padding: 2px 10px;
+      border-radius: 5px;
+    }
+
+    /* ===== ĐIỀU HƯỚNG CUỐI TRANG ===== */
+    .nav-bottom {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 40px;
+    }
+
+    .nav-bottom a {
+      display: inline-block;
+      padding: 11px 28px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: .95rem;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+
+    .nav-bottom a:hover { opacity: .85; }
+    .btn-index { background: var(--red);    color: #fff; }
+    .btn-admin { background: var(--red-dk); color: #fff; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      .section { padding: 20px 16px; }
+      .toc      { padding: 16px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <h1>📖 Hướng Dẫn Sử Dụng</h1>
+  <p>Dự án Website Bán Hàng – Yến Sào Cát An</p>
+</div>
+
+<div class="container">
+
+  <!-- MỤC LỤC -->
+  <div class="toc">
+    <h2>📑 Mục Lục</h2>
+    <ol>
+      <li><a href="#s1">Cấu trúc dự án</a></li>
+      <li><a href="#s2">Thiết lập Firebase</a></li>
+      <li><a href="#s3">Điền Firebase Config vào code</a></li>
+      <li><a href="#s4">Tạo tài khoản Admin</a></li>
+      <li><a href="#s5">Security Rules Firestore</a></li>
+      <li><a href="#s6">Hướng dẫn dùng trang Khách Hàng (<code>index.html</code>)</a></li>
+      <li><a href="#s7">Hướng dẫn dùng trang Quản Trị (<code>admin.html</code>)</a></li>
+      <li><a href="#s8">Triển khai lên GitHub Pages</a></li>
+      <li><a href="#s9">Cấu trúc dữ liệu Firestore</a></li>
+      <li><a href="#s10">Xử lý sự cố thường gặp</a></li>
+    </ol>
+  </div>
+
+  <!-- ===== SECTION 1 ===== -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <div class="section-icon">📁</div>
+      <h2>1. Cấu Trúc Dự Án</h2>
+      <span class="badge-step">Tổng quan</span>
+    </div>
+
+    <p>Dự án gồm 3 file HTML độc lập, không cần backend hay build tool:</p>
+
+    <table>
+      <thead>
+        <tr><th>File</th><th>Vai trò</th><th>Ai dùng</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="file-badge">index.html</span></td>
+          <td>Trang mua hàng – hiển thị sản phẩm, giỏ hàng, đặt hàng</td>
+          <td>Khách hàng</td>
+        </tr>
+        <tr>
+          <td><span class="file-badge">admin.html</span></td>
+          <td>Trang quản trị – quản lý sản phẩm, cấu hình, xem đơn hàng</td>
+          <td>Admin (cần đăng nhập)</td>
+        </tr>
+        <tr>
+          <td><span class="file-badge">huong-dan.html</span></td>
+          <td>Tài liệu hướng dẫn này</td>
+          <td>Lập trình viên / Admin</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span>
+      <span>Cả 2 file chính đều dùng <strong>Firebase v10 Modular SDK</strong> nạp trực tiếp qua CDN – không cần <code>npm install</code>.</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2 ===== -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <div class="section-icon">🔥</div>
+      <h2>2. Thiết Lập Firebase</h2>
+      <span class="badge-step">Bước đầu tiên</span>
+    </div>
+
+    <ol class="steps">
+      <li>Truy cập <strong>console.firebase.google.com</strong> và đăng nhập bằng tài khoản Google.</li>
+      <li>Nhấn <strong>"Add project"</strong> → Đặt tên dự án (VD: <em>yen-sao-cat-an</em>) → Tạo dự án.</li>
+      <li>Trong trang dự án, nhấn biểu tượng <strong>&lt;/&gt; (Web)</strong> để thêm ứng dụng Web.</li>
+      <li>Đặt tên app, <strong>không</strong> cần bật Firebase Hosting. Nhấn <strong>"Register app"</strong>.</li>
+      <li>Sao chép toàn bộ đoạn <code>firebaseConfig</code> (bước tiếp theo hướng dẫn cách dùng).</li>
+      <li>Vào <strong>Build → Firestore Database</strong> → Nhấn <strong>"Create database"</strong> → Chọn <strong>Production mode</strong> → Chọn vùng gần nhất (VD: <em>asia-southeast1</em>).</li>
+      <li>Vào <strong>Build → Authentication</strong> → Tab <strong>"Sign-in method"</strong> → Bật <strong>Email/Password</strong>.</li>
+    </ol>
+  </div>
+
+  <!-- ===== SECTION 3 ===== -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <div class="section-icon">⚙️</div>
+      <h2>3. Điền Firebase Config Vào Code</h2>
+      <span class="badge-step">Bắt buộc</span>
+    </div>
+
+    <p>Mở cả <span class="file-badge">index.html</span> và <span class="file-badge">admin.html</span>, tìm đoạn sau (xuất hiện trong thẻ <code>&lt;script type="module"&gt;</code>) và điền giá trị thực:</p>
+
+    <div class="code-box">
+<span class="cmt">// Sao chép từ Firebase Console → Project Settings → Your apps</span><br/>
+<span class="key">const</span> firebaseConfig = {<br/>
+&nbsp;&nbsp;<span class="key">apiKey</span>:            <span class="val">"AIzaSy..."</span>,<br/>
+&nbsp;&nbsp;<span class="key">authDomain</span>:        <span class="val">"ten-du-an.firebaseapp.com"</span>,<br/>
+&nbsp;&nbsp;<span class="key">projectId</span>:         <span class="val">"ten-du-an"</span>,<br/>
+&nbsp;&nbsp;<span class="key">storageBucket</span>:     <span class="val">"ten-du-an.appspot.com"</span>,<br/>
+&nbsp;&nbsp;<span class="key">messagingSenderId</span>: <span class="val">"123456789"</span>,<br/>
+&nbsp;&nbsp;<span class="key">appId</span>:             <span class="val">"1:123:web:abcdef"</span><br/>
+};
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <span>Cần điền vào <strong>cả 2 file</strong> giống nhau. Nếu chỉ điền 1 file thì file kia sẽ không kết nối được Firebase.</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 4 ===== -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <div class="section-icon">👤</div>
+      <h2>4. Tạo Tài Khoản Admin</h2>
+      <span class="badge-step">Một lần duy nhất</span>
+    </div>
+
+    <ol class="steps">
+      <li>Vào <strong>Firebase Console → Authentication → Users</strong>.</li>
+      <li>Nhấn <strong>"Add user"</strong>.</li>
+      <li>Điền Email và Mật khẩu cho tài khoản admin (VD: <em>admin@yensaocatan.com</em>).</li>
+      <li>Nhấn <strong>"Add user"</strong> để tạo.</li>
+      <li>Dùng email/mật khẩu này để đăng nhập vào <span class="file-badge">admin.html</span>.</li>
+    </ol>
+
+    <div class="callout danger">
+      <span class="callout-icon">🔒</span>
+      <span>Đặt mật khẩu mạnh (tối thiểu 8 ký tự, có chữ hoa + số). Không chia sẻ tài khoản này cho khách hàng.</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 5 ===== -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <div class="section-icon">🛡️</div>
+      <h2>5. Security Rules Firestore</h2>
+      <span class="badge-step">Quan trọng</span>
+    </div>
+
+    <p>Vào <strong>Firestore → Rules</strong>, dán nội dung sau rồi nhấn <strong>"Publish"</strong>:</p>
+
+    <div class="code-box">
+rules_version = <span class="val">'2'</span>;<br/>
+service cloud.firestore {<br/>
+&nbsp;&nbsp;match /databases/{database}/documents {<br/><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// Sản phẩm: ai cũng đọc được, chỉ admin mới sửa/xoá</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match /products/{id} {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: <span class="key">if</span> <span class="val">true</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: <span class="key">if</span> request.auth != <span class="val">null</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// Cấu hình: ai cũng đọc được, chỉ admin mới sửa</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match /config/{id} {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read: <span class="key">if</span> <span class="val">true</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow write: <span class="key">if</span> request.auth != <span class="val">null</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// Đơn hàng: ai cũng tạo được, chỉ admin mới xem/sửa/xoá</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match /orders/{id} {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow create: <span class="key">if</span> <span class="val">true</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, update, delete: <span class="key">if</span> request.auth != <span class="val">null</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;}<br/>
+}
+    </div>
+  </div>
+
+  <!-- ===== SECTION 6 ===== -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <div class="section-icon">🛍️</div>
+      <h2>6. Hướng Dẫn Trang Khách Hàng (<code>index.html</code>)</h2>
+      <span class="badge-step">Dành cho người mua</span>
+    </div>
+
+    <h3>Quy trình mua hàng</h3>
+    <ol class="steps">
+      <li>Trang tự động tải ảnh nền và danh sách sản phẩm từ Firebase.</li>
+      <li>Dùng các nút lọc (<em>Tất cả / Yến Sào / Sâm / Mỹ-Nhật</em>) để tìm sản phẩm.</li>
+      <li>Nhấn <strong>"+ Thêm vào giỏ"</strong> trên thẻ sản phẩm muốn mua.</li>
+      <li>Kiểm tra giỏ hàng ở phần bên dưới – nhấn <strong>✕</strong> để bỏ sản phẩm.</li>
+      <li>Điền họ tên, SĐT, địa chỉ và chọn hình thức thanh toán.</li>
+      <li>Nếu chọn <strong>Chuyển khoản</strong>, thông tin tài khoản ngân hàng sẽ hiện ra.</li>
+      <li>Nhấn <strong>"Đặt hàng ngay"</strong> – đơn hàng được lưu vào Firestore và thông báo thành công.</li>
+    </ol>
+
+    <h3>Lưu ý</h3>
+    <ul class="plain">
+      <li>Số điện thoại phải đúng định dạng Việt Nam (bắt đầu bằng 0 hoặc +84).</li>
+      <li>Giỏ hàng chỉ lưu trong phiên trình duyệt, sẽ mất khi tải lại trang.</li>
+      <li>Có thể thêm cùng một sản phẩm nhiều lần – số lượng sẽ tự cộng dồn.</li>
+    </ul>
+  </div>
+
+  <!-- ===== SECTION 7 ===== -->
+  <div class="section" id="s7">
+    <div class="section-header">
+      <div class="section-icon">🔧</div>
+      <h2>7. Hướng Dẫn Trang Quản Trị (<code>admin.html</code>)</h2>
+      <span class="badge-step">Dành cho admin</span>
+    </div>
+
+    <h3>Đăng nhập</h3>
+    <ol class="steps">
+      <li>Mở <span class="file-badge">admin.html</span> trong trình duyệt.</li>
+      <li>Nhập email và mật khẩu đã tạo ở <a href="#s4">Bước 4</a>.</li>
+      <li>Nhấn <strong>"Đăng nhập"</strong> – Dashboard tự hiển thị.</li>
+    </ol>
+
+    <h3>Tab ⚙️ Cấu Hình</h3>
+    <ul class="plain">
+      <li>Điền URL ảnh để làm nền trang chủ (<em>dùng link ảnh từ Google Drive, Imgur, v.v.</em>).</li>
+      <li>Điền thông tin ngân hàng để hiển thị khi khách chọn chuyển khoản.</li>
+      <li>Điền URL ảnh VietQR để khách quét mã thanh toán.</li>
+      <li>Nhấn <strong>"💾 Lưu Cấu Hình"</strong> – dữ liệu cập nhật ngay lên Firestore.</li>
+    </ul>
+
+    <h3>Tab 📦 Sản Phẩm</h3>
+    <ul class="plain">
+      <li><strong>Thêm sản phẩm:</strong> Điền tên, giá (số nguyên, VNĐ), link ảnh, chọn phân loại rồi nhấn <strong>"+ Thêm sản phẩm"</strong>.</li>
+      <li><strong>Xoá sản phẩm:</strong> Nhấn nút <strong>"🗑 Xoá"</strong> ở hàng tương ứng trong bảng danh sách.</li>
+      <li>Link ảnh nên là URL công khai (không cần đăng nhập để xem).</li>
+    </ul>
+
+    <h3>Tab 📋 Đơn Hàng</h3>
+    <ul class="plain">
+      <li>Hiển thị toàn bộ đơn đã đặt, sắp xếp từ mới nhất đến cũ nhất.</li>
+      <li>Mỗi dòng hiển thị: thời gian, tên khách, SĐT, địa chỉ, tổng tiền, hình thức thanh toán.</li>
+      <li>Tên các sản phẩm trong đơn hiển thị nhỏ bên dưới tên khách.</li>
+    </ul>
+
+    <h3>Đăng xuất</h3>
+    <p>Nhấn nút <strong>"Đăng xuất"</strong> ở góc trên bên phải. Trang sẽ trở về form đăng nhập.</p>
+  </div>
+
+  <!-- ===== SECTION 8 ===== -->
+  <div class="section" id="s8">
+    <div class="section-header">
+      <div class="section-icon">🚀</div>
+      <h2>8. Triển Khai Lên GitHub Pages</h2>
+      <span class="badge-step">Xuất bản</span>
+    </div>
+
+    <ol class="steps">
+      <li>Tạo repository mới trên <strong>github.com</strong> (VD: <em>yen-sao-cat-an</em>).</li>
+      <li>Upload 3 file <span class="file-badge">index.html</span>, <span class="file-badge">admin.html</span>, <span class="file-badge">huong-dan.html</span> lên repo.</li>
+      <li>Vào tab <strong>Settings → Pages</strong> → Source: chọn <strong>Deploy from a branch</strong>, Branch: <strong>main</strong>, thư mục: <strong>/ (root)</strong> → Nhấn <strong>Save</strong>.</li>
+      <li>Sau vài phút, trang sẽ live tại: <code>https://username.github.io/yen-sao-cat-an/</code></li>
+      <li>Vào <strong>Firebase Console → Authentication → Settings → Authorized domains</strong> → Thêm domain GitHub Pages vừa có.</li>
+    </ol>
+
+    <div class="callout success">
+      <span class="callout-icon">✅</span>
+      <span>GitHub Pages hoàn toàn <strong>miễn phí</strong> với repository public. Firebase Spark (free tier) đủ dùng cho quy mô nhỏ.</span>
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <span>Nếu không thêm domain GitHub Pages vào Authorized domains, Firebase Authentication sẽ báo lỗi khi đăng nhập từ URL đó.</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 9 ===== -->
+  <div class="section" id="s9">
+    <div class="section-header">
+      <div class="section-icon">🗄️</div>
+      <h2>9. Cấu Trúc Dữ Liệu Firestore</h2>
+      <span class="badge-step">Tham khảo</span>
+    </div>
+
+    <h3>Collection: <code>config</code> – Document: <code>settings</code></h3>
+    <table>
+      <thead><tr><th>Field</th><th>Kiểu</th><th>Mô tả</th></tr></thead>
+      <tbody>
+        <tr><td>background_url</td><td>string</td><td>URL ảnh nền trang chủ</td></tr>
+        <tr><td>bank_name</td><td>string</td><td>Tên ngân hàng</td></tr>
+        <tr><td>bank_stk</td><td>string</td><td>Số tài khoản</td></tr>
+        <tr><td>bank_owner</td><td>string</td><td>Tên chủ tài khoản</td></tr>
+        <tr><td>vietqr_url</td><td>string</td><td>URL ảnh mã QR thanh toán</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Collection: <code>products</code> (Auto-ID)</h3>
+    <table>
+      <thead><tr><th>Field</th><th>Kiểu</th><th>Mô tả</th></tr></thead>
+      <tbody>
+        <tr><td>name</td><td>string</td><td>Tên sản phẩm</td></tr>
+        <tr><td>price</td><td>number</td><td>Giá (VNĐ, số nguyên)</td></tr>
+        <tr><td>image</td><td>string</td><td>URL ảnh sản phẩm</td></tr>
+        <tr><td>category</td><td>string</td><td><code>yen</code> | <code>sam</code> | <code>us-japan</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Collection: <code>orders</code> (Auto-ID)</h3>
+    <table>
+      <thead><tr><th>Field</th><th>Kiểu</th><th>Mô tả</th></tr></thead>
+      <tbody>
+        <tr><td>customerName</td><td>string</td><td>Họ tên khách hàng</td></tr>
+        <tr><td>customerPhone</td><td>string</td><td>Số điện thoại</td></tr>
+        <tr><td>customerAddress</td><td>string</td><td>Địa chỉ giao hàng</td></tr>
+        <tr><td>paymentMethod</td><td>string</td><td><code>cash</code> | <code>transfer</code></td></tr>
+        <tr><td>items</td><td>array</td><td>Mảng sản phẩm: <code>{productId, name, price, qty}</code></td></tr>
+        <tr><td>total</td><td>number</td><td>Tổng tiền (VNĐ)</td></tr>
+        <tr><td>timestamp</td><td>timestamp</td><td>Thời gian đặt hàng (server time)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== SECTION 10 ===== -->
+  <div class="section" id="s10">
+    <div class="section-header">
+      <div class="section-icon">🔍</div>
+      <h2>10. Xử Lý Sự Cố Thường Gặp</h2>
+      <span class="badge-step">Troubleshooting</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Triệu chứng</th><th>Nguyên nhân</th><th>Cách xử lý</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Trang trắng, console lỗi <em>"Firebase: No Firebase App"</em></td>
+          <td><code>firebaseConfig</code> chưa được điền</td>
+          <td>Điền đầy đủ giá trị <code>firebaseConfig</code> theo <a href="#s3">Bước 3</a></td>
+        </tr>
+        <tr>
+          <td>Không tải được sản phẩm / cấu hình</td>
+          <td>Firestore chưa tạo hoặc Rules từ chối đọc</td>
+          <td>Kiểm tra Firestore đã tạo và rules đã publish theo <a href="#s5">Bước 5</a></td>
+        </tr>
+        <tr>
+          <td>Đăng nhập admin báo lỗi <em>"auth/unauthorized-domain"</em></td>
+          <td>Domain chưa được thêm vào Authorized domains</td>
+          <td>Thêm domain vào Authentication → Settings → Authorized domains</td>
+        </tr>
+        <tr>
+          <td>Đăng nhập sai mật khẩu nhiều lần, bị khoá</td>
+          <td>Firebase tự khóa tạm thời để bảo mật</td>
+          <td>Đợi ~1 giờ hoặc reset mật khẩu trong Firebase Console</td>
+        </tr>
+        <tr>
+          <td>Ảnh sản phẩm hiện hình "No Image"</td>
+          <td>URL ảnh sai hoặc bị chặn CORS</td>
+          <td>Dùng URL ảnh công khai, kiểm tra link mở được trong tab mới</td>
+        </tr>
+        <tr>
+          <td>Đặt hàng thành công nhưng không thấy trong tab Đơn hàng</td>
+          <td>Cần đăng nhập admin để xem; hoặc Rules chưa đúng</td>
+          <td>Đăng nhập admin trước khi xem đơn hàng</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ĐIỀU HƯỚNG -->
+  <div class="nav-bottom">
+    <a href="index.html" class="nav-bottom btn-index">🛍️ Mở Trang Khách Hàng</a>
+    <a href="admin.html" class="nav-bottom btn-admin">🔧 Mở Trang Quản Trị</a>
+  </div>
+
+</div><!-- /container -->
+</body>
+</html>

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yến Sào Cát An</title>
+  <style>
+    /* ===== RESET & BIẾN CSS ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #1a56a0;
+      --red-dk: #0d3578;
+      --gold:   #c9a84c;
+      --gold-lt:#f0d080;
+      --white:  #ffffff;
+      --gray:   #f5f5f5;
+      --text:   #1a1a1a;
+      --radius: 10px;
+      --shadow: 0 4px 18px rgba(0,0,0,.18);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      /* Ảnh nền sẽ được set bằng JS từ Firestore */
+      background: #001a3a center/cover no-repeat fixed;
+    }
+
+    /* Overlay tối trên ảnh nền */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 0;
+    }
+
+    /* ===== BỐ CỤC CHÍNH ===== */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      text-align: center;
+      padding: 40px 0 28px;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--gold-lt);
+      text-shadow: 0 2px 12px rgba(0,60,150,.7);
+    }
+
+    header p {
+      margin-top: 8px;
+      font-size: 1.05rem;
+      color: rgba(255,255,255,.8);
+      letter-spacing: 1px;
+    }
+
+    /* ===== PHÂN LOẠI (FILTER) ===== */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .filter-bar button {
+      padding: 8px 22px;
+      border: 2px solid var(--gold);
+      border-radius: 30px;
+      background: transparent;
+      color: var(--gold-lt);
+      font-size: .92rem;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+
+    .filter-bar button.active,
+    .filter-bar button:hover {
+      background: var(--gold);
+      color: var(--red-dk);
+    }
+
+    /* ===== LƯỚI SẢN PHẨM ===== */
+    #product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 22px;
+      margin-bottom: 50px;
+    }
+
+    .product-card {
+      background: rgba(255,255,255,.96);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .2s;
+    }
+
+    .product-card:hover { transform: translateY(-4px); }
+
+    .product-card img {
+      width: 100%; height: 200px;
+      object-fit: cover;
+    }
+
+    .product-card .card-body {
+      padding: 14px 16px 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card .category-badge {
+      font-size: .74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--white);
+      background: var(--red);
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .product-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      margin-bottom: 6px;
+    }
+
+    .product-card .price {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+
+    .btn-add {
+      padding: 9px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-add:hover { background: var(--red-dk); }
+
+    /* ===== GIỎ HÀNG ===== */
+    #cart-section {
+      background: rgba(255,255,255,.95);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 36px;
+    }
+
+    #cart-section h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #cart-section h2 span {
+      font-size: .85rem;
+      background: var(--red);
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-weight: 700;
+    }
+
+    #cart-list { list-style: none; }
+
+    #cart-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: .93rem;
+    }
+
+    #cart-list li:last-child { border-bottom: none; }
+
+    .cart-item-name { flex: 1; }
+    .cart-item-qty { margin: 0 10px; color: #555; }
+    .cart-item-price { font-weight: 700; color: var(--red); }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 1.1rem;
+      margin-left: 10px;
+      transition: color .2s;
+    }
+
+    .btn-remove:hover { color: var(--red); }
+
+    #cart-total {
+      text-align: right;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 2px solid var(--red);
+    }
+
+    #cart-empty {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 14px 0;
+    }
+
+    /* ===== FORM THANH TOÁN ===== */
+    #checkout-section {
+      background: rgba(255,255,255,.95);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    #checkout-section h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 22px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: .88rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 7px;
+      font-size: .97rem;
+      transition: border-color .2s;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--red);
+    }
+
+    /* Khối thông tin chuyển khoản */
+    #bank-info {
+      display: none;
+      background: #fff8e1;
+      border: 1.5px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+
+    #bank-info h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--red-dk);
+      margin-bottom: 10px;
+    }
+
+    #bank-info p { font-size: .93rem; margin-bottom: 4px; }
+    #bank-info strong { color: var(--red-dk); }
+
+    #bank-info img {
+      display: block;
+      margin: 14px auto 0;
+      max-width: 200px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      cursor: pointer;
+      transition: background .2s;
+      margin-top: 6px;
+    }
+
+    .btn-submit:hover { background: var(--red-dk); }
+    .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ===== SKELETON LOADING ===== */
+    .skeleton {
+      background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: var(--radius);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card { height: 280px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      #product-grid { grid-template-columns: 1fr 1fr; }
+      .product-card img { height: 150px; }
+    }
+
+    @media (max-width: 400px) {
+      #product-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ===== TOAST THÔNG BÁO ===== */
+    #toast {
+      position: fixed;
+      bottom: 26px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #222;
+      color: #fff;
+      padding: 13px 28px;
+      border-radius: 30px;
+      font-size: .95rem;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      transition: all .35s ease;
+      white-space: nowrap;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success { background: #2e7d32; }
+    #toast.error   { background: #0d3578; }
+  </style>
+</head>
+<body>
+
+<!-- Vùng thông báo toast -->
+<div id="toast"></div>
+
+<div class="wrapper">
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <h1>🪺 Yến Sào Cát An</h1>
+    <p>Tinh hoa thiên nhiên – Dưỡng chất vàng cho sức khỏe</p>
+  </header>
+
+  <!-- ===== THANH LỌC PHÂN LOẠI ===== -->
+  <div class="filter-bar">
+    <button class="active" data-cat="all">Tất cả</button>
+    <button data-cat="yen">Yến Sào</button>
+    <button data-cat="sam">Sâm</button>
+    <button data-cat="us-japan">Hàng Mỹ / Nhật</button>
+  </div>
+
+  <!-- ===== LƯỚI SẢN PHẨM ===== -->
+  <div id="product-grid">
+    <!-- Skeleton loading -->
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+  </div>
+
+  <!-- ===== GIỎ HÀNG ===== -->
+  <section id="cart-section">
+    <h2>🛒 Giỏ hàng <span id="cart-count">0</span></h2>
+    <ul id="cart-list">
+      <li id="cart-empty">Chưa có sản phẩm nào.</li>
+    </ul>
+    <div id="cart-total" style="display:none">
+      Tổng cộng: <span id="total-price">0 ₫</span>
+    </div>
+  </section>
+
+  <!-- ===== FORM THANH TOÁN ===== -->
+  <section id="checkout-section">
+    <h2>📋 Đặt hàng</h2>
+    <form id="order-form" novalidate>
+      <div class="form-group">
+        <label for="cus-name">Họ và tên *</label>
+        <input type="text" id="cus-name" placeholder="Nguyễn Văn A" required />
+      </div>
+      <div class="form-group">
+        <label for="cus-phone">Số điện thoại *</label>
+        <input type="tel" id="cus-phone" placeholder="0901 234 567" required />
+      </div>
+      <div class="form-group">
+        <label for="cus-address">Địa chỉ giao hàng *</label>
+        <input type="text" id="cus-address" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP" required />
+      </div>
+      <div class="form-group">
+        <label for="payment-method">Hình thức thanh toán *</label>
+        <select id="payment-method">
+          <option value="cash">💵 Tiền mặt (COD)</option>
+          <option value="transfer">🏦 Chuyển khoản ngân hàng</option>
+        </select>
+      </div>
+
+      <!-- Khối thông tin chuyển khoản (ẩn mặc định) -->
+      <div id="bank-info">
+        <h3>💳 Thông tin chuyển khoản</h3>
+        <p>Ngân hàng: <strong id="bi-bank-name">—</strong></p>
+        <p>Số tài khoản: <strong id="bi-stk">—</strong></p>
+        <p>Chủ tài khoản: <strong id="bi-owner">—</strong></p>
+        <img id="bi-qr" src="" alt="VietQR" style="display:none" />
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-order">Đặt hàng ngay</button>
+    </form>
+  </section>
+
+</div><!-- /wrapper -->
+
+<!-- ===== FIREBASE v10 MODULE ===== -->
+<script type="module">
+  // ==================================================
+  // FIREBASE CONFIG – Điền thông tin dự án của bạn
+  // ==================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, collection, getDocs,
+    addDoc, serverTimestamp, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = { 
+  apiKey : "AIzaSyA24CUjreKu7He7kB0c9bGGWHGg_6YW7yg" , 
+  authDomain : "yensaocan-e3e75.firebaseapp.com" , 
+  databaseURL : "https://yensaocan-e3e75-default-rtdb.asia-southeast1.firebasedatabase.app" , 
+  projectId : "yensaocan-e3e75" , 
+  storageBucket : "yensaocan-e3e75.firebasestorage.app" , 
+  messagingSenderId : "717544202838" , 
+  appId : "1:717544202838:web:9a88979d3f5084d50f91f7" , 
+  measurementId : "G-9TCZPV2722" 
+};
+
+  // Khởi tạo Firebase
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ==================================================
+  // BIẾN TRẠNG THÁI
+  // ==================================================
+  let allProducts = [];   // Toàn bộ sản phẩm từ Firestore
+  let cart = [];          // Giỏ hàng: [{ id, name, price, qty }]
+  let currentFilter = 'all'; // Bộ lọc đang chọn
+
+  // ==================================================
+  // TIỆN ÍCH: Định dạng tiền VNĐ
+  // ==================================================
+  const formatVND = (n) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  // ==================================================
+  // TIỆN ÍCH: Hiện toast thông báo
+  // ==================================================
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => { t.className = ''; }, 3000);
+  }
+
+  // ==================================================
+  // BƯỚC 1: Tải cấu hình (ảnh nền + thông tin ngân hàng)
+  // ==================================================
+  async function loadConfig() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'settings'));
+      if (!snap.exists()) return;
+
+      const cfg = snap.data();
+
+      // Đặt ảnh nền toàn trang
+      if (cfg.background_url) {
+        document.body.style.backgroundImage = `url('${cfg.background_url}')`;
+      }
+
+      // Điền thông tin ngân hàng (ẩn sẵn, hiện khi chọn "chuyển khoản")
+      if (cfg.bank_name)   document.getElementById('bi-bank-name').textContent = cfg.bank_name;
+      if (cfg.bank_stk)    document.getElementById('bi-stk').textContent       = cfg.bank_stk;
+      if (cfg.bank_owner)  document.getElementById('bi-owner').textContent     = cfg.bank_owner;
+      if (cfg.vietqr_url) {
+        const qrImg = document.getElementById('bi-qr');
+        qrImg.src   = cfg.vietqr_url;
+        qrImg.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Lỗi tải cấu hình:', err);
+    }
+  }
+
+  // ==================================================
+  // BƯỚC 2: Tải danh sách sản phẩm từ Firestore
+  // ==================================================
+  async function loadProducts() {
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderProducts(currentFilter);
+    } catch (err) {
+      console.error('Lỗi tải sản phẩm:', err);
+      document.getElementById('product-grid').innerHTML =
+        '<p style="color:#fff;text-align:center;grid-column:1/-1">Không thể tải sản phẩm. Vui lòng thử lại.</p>';
+    }
+  }
+
+  // ==================================================
+  // RENDER: Hiển thị sản phẩm theo bộ lọc
+  // ==================================================
+  const CAT_LABEL = { yen: 'Yến Sào', sam: 'Sâm', 'us-japan': 'Mỹ / Nhật' };
+
+  function renderProducts(filter) {
+    const grid = document.getElementById('product-grid');
+    const list = filter === 'all'
+      ? allProducts
+      : allProducts.filter(p => p.category === filter);
+
+    if (list.length === 0) {
+      grid.innerHTML = '<p style="color:#fff;text-align:center;grid-column:1/-1">Không có sản phẩm nào.</p>';
+      return;
+    }
+
+    grid.innerHTML = list.map(p => `
+      <div class="product-card">
+        <img src="${p.image || 'https://placehold.co/400x300?text=No+Image'}"
+             alt="${p.name}"
+             onerror="this.src='https://placehold.co/400x300?text=No+Image'" />
+        <div class="card-body">
+          <span class="category-badge">${CAT_LABEL[p.category] || p.category}</span>
+          <h3>${p.name}</h3>
+          <div class="price">${formatVND(p.price)}</div>
+          <button class="btn-add" data-id="${p.id}">+ Thêm vào giỏ</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Gắn sự kiện cho nút "Thêm vào giỏ"
+    grid.querySelectorAll('.btn-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const product = allProducts.find(p => p.id === btn.dataset.id);
+        if (product) addToCart(product);
+      });
+    });
+  }
+
+  // ==================================================
+  // GIỎ HÀNG: Thêm sản phẩm
+  // ==================================================
+  function addToCart(product) {
+    const existing = cart.find(i => i.id === product.id);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
+    }
+    renderCart();
+    showToast(`Đã thêm: ${product.name}`);
+  }
+
+  // ==================================================
+  // GIỎ HÀNG: Xoá sản phẩm
+  // ==================================================
+  function removeFromCart(id) {
+    cart = cart.filter(i => i.id !== id);
+    renderCart();
+  }
+
+  // ==================================================
+  // GIỎ HÀNG: Render danh sách + tổng tiền
+  // ==================================================
+  function renderCart() {
+    const listEl   = document.getElementById('cart-list');
+    const countEl  = document.getElementById('cart-count');
+    const totalEl  = document.getElementById('cart-total');
+    const totalPriceEl = document.getElementById('total-price');
+
+    countEl.textContent = cart.reduce((s, i) => s + i.qty, 0);
+
+    if (cart.length === 0) {
+      listEl.innerHTML = '<li id="cart-empty">Chưa có sản phẩm nào.</li>';
+      totalEl.style.display = 'none';
+      return;
+    }
+
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    listEl.innerHTML = cart.map(i => `
+      <li>
+        <span class="cart-item-name">${i.name}</span>
+        <span class="cart-item-qty">x${i.qty}</span>
+        <span class="cart-item-price">${formatVND(i.price * i.qty)}</span>
+        <button class="btn-remove" data-id="${i.id}" title="Xoá">✕</button>
+      </li>
+    `).join('');
+
+    totalEl.style.display = 'block';
+    totalPriceEl.textContent = formatVND(total);
+
+    // Gắn sự kiện xoá
+    listEl.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
+    });
+  }
+
+  // ==================================================
+  // THANH TOÁN: Toggle hiển thị thông tin ngân hàng
+  // ==================================================
+  document.getElementById('payment-method').addEventListener('change', function () {
+    document.getElementById('bank-info').style.display =
+      this.value === 'transfer' ? 'block' : 'none';
+  });
+
+  // ==================================================
+  // THANH TOÁN: Submit đơn hàng lên Firestore
+  // ==================================================
+  document.getElementById('order-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    // Kiểm tra giỏ hàng không rỗng
+    if (cart.length === 0) {
+      showToast('Giỏ hàng đang trống!', 'error');
+      return;
+    }
+
+    const name    = document.getElementById('cus-name').value.trim();
+    const phone   = document.getElementById('cus-phone').value.trim();
+    const address = document.getElementById('cus-address').value.trim();
+    const method  = document.getElementById('payment-method').value;
+
+    // Kiểm tra dữ liệu bắt buộc
+    if (!name || !phone || !address) {
+      showToast('Vui lòng điền đầy đủ thông tin!', 'error');
+      return;
+    }
+
+    // Kiểm tra sơ bộ định dạng SĐT Việt Nam
+    if (!/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g, ''))) {
+      showToast('Số điện thoại không hợp lệ!', 'error');
+      return;
+    }
+
+    const btnSubmit = document.getElementById('btn-order');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Đang xử lý...';
+
+    try {
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+      // Lưu đơn hàng vào Firestore
+      await addDoc(collection(db, 'orders'), {
+        customerName:    name,
+        customerPhone:   phone,
+        customerAddress: address,
+        paymentMethod:   method,
+        items: cart.map(i => ({
+          productId: i.id,
+          name:  i.name,
+          price: i.price,
+          qty:   i.qty
+        })),
+        total:    total,
+        timestamp: serverTimestamp()
+      });
+
+      showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
+
+      // Reset form & giỏ hàng
+      this.reset();
+      document.getElementById('bank-info').style.display = 'none';
+      cart = [];
+      renderCart();
+
+    } catch (err) {
+      console.error('Lỗi đặt hàng:', err);
+      showToast('Đặt hàng thất bại. Vui lòng thử lại!', 'error');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Đặt hàng ngay';
+    }
+  });
+
+  // ==================================================
+  // SỰ KIỆN: Bộ lọc phân loại
+  // ==================================================
+  document.querySelectorAll('.filter-bar button').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.cat;
+      renderProducts(currentFilter);
+    });
+  });
+
+  // ==================================================
+  // KHỞI ĐỘNG ỨNG DỤNG
+  // ==================================================
+  (async () => {
+    await Promise.all([loadConfig(), loadProducts()]);
+  })();
+</script>
+</body>
+</html>
