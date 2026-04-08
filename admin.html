@@ -1553,12 +1553,17 @@
         const unreadDot = s.unreadByAdmin ? '<span class="cs-unread-dot"></span>' : '';
         const preview   = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
         const shortId   = d.id.slice(0, 12) + '…';
-        return `<div class="chat-session-item${isActive}" data-sid="${d.id}" onclick="openChatSession('${d.id}')">
+        return `<div class="chat-session-item${isActive}" data-sid="${d.id}">
           <div class="cs-name"><span>#${shortId}</span>${unreadDot}</div>
           <div class="cs-preview">${preview}</div>
           <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
         </div>`;
       }).join('');
+
+      // Gắn event sau khi render xong
+      listEl.querySelectorAll('.chat-session-item').forEach(el => {
+        el.addEventListener('click', () => openChatSession(el.dataset.sid));
+      });
     });
   }
 
@@ -1600,13 +1605,24 @@
 
   async function adminSendChat() {
     const input = document.getElementById('admin-chat-input');
+    const btn   = document.getElementById('admin-chat-send');
     const text  = input.value.trim();
     if (!text || !activeChatSid) return;
-    input.value = '';
-    const msgCol = collection(db, 'chats', activeChatSid, 'messages');
-    const sesRef = doc(db, 'chats', activeChatSid);
-    await addDoc(msgCol, { text, sender: 'admin', timestamp: serverTimestamp() });
-    await setDoc(sesRef, { lastMessage: text, lastTime: serverTimestamp(), unreadByAdmin: false }, { merge: true });
+    input.value  = '';
+    btn.disabled = true;
+    try {
+      const msgCol = collection(db, 'chats', activeChatSid, 'messages');
+      const sesRef = doc(db, 'chats', activeChatSid);
+      await addDoc(msgCol, { text, sender: 'admin', timestamp: serverTimestamp() });
+      await setDoc(sesRef, { lastMessage: text, lastTime: serverTimestamp(), unreadByAdmin: false }, { merge: true });
+    } catch (err) {
+      console.error('Lỗi gửi tin:', err);
+      showToast('❌ Không gửi được tin nhắn: ' + err.message, 'error');
+      input.value = text;
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
   }
 
   document.getElementById('admin-chat-send').addEventListener('click', adminSendChat);
