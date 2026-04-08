@@ -1552,9 +1552,10 @@
         const isActive  = d.id === activeChatSid ? ' active' : '';
         const unreadDot = s.unreadByAdmin ? '<span class="cs-unread-dot"></span>' : '';
         const preview   = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
-        const shortId   = d.id.slice(0, 12) + '…';
+        const displayName = s.guestName ? s.guestName : d.id.slice(0, 12) + '…';
+        const phone     = s.guestPhone ? ` · ${s.guestPhone}` : '';
         return `<div class="chat-session-item${isActive}" data-sid="${d.id}">
-          <div class="cs-name"><span>#${shortId}</span>${unreadDot}</div>
+          <div class="cs-name"><span>${displayName}${phone}</span>${unreadDot}</div>
           <div class="cs-preview">${preview}</div>
           <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
         </div>`;
@@ -1572,11 +1573,15 @@
     // Đánh dấu đã đọc
     await setDoc(doc(db, 'chats', sid), { unreadByAdmin: false }, { merge: true });
 
-    // Hiện thread
+    // Lấy tên/SĐT khách
+    const sesSnap = await getDoc(doc(db, 'chats', sid));
+    const sesData = sesSnap.exists() ? sesSnap.data() : null;
     document.getElementById('chat-thread-placeholder').style.display = 'none';
     const threadEl = document.getElementById('chat-thread');
     threadEl.style.display = 'flex';
-    document.getElementById('chat-thread-header').textContent = '💬 Session: #' + sid.slice(0, 12) + '…';
+    document.getElementById('chat-thread-header').textContent = '💬 '
+      + (sesData && sesData.guestName ? sesData.guestName : sid.slice(0, 12) + '…')
+      + (sesData && sesData.guestPhone ? ' · ' + sesData.guestPhone : '');
 
     // Ngừng listener cũ
     if (chatThreadUnsub) chatThreadUnsub();

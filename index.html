@@ -834,6 +834,59 @@
       padding: 0 4px;
       align-self: flex-start;
     }
+    /* Pre-chat form */
+    #chat-prechat {
+      padding: 18px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .prechat-intro {
+      font-size: .875rem;
+      color: #555;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .prechat-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .prechat-field label {
+      font-size: .8rem;
+      font-weight: 600;
+      color: #444;
+    }
+    .prechat-field label span { color: #e85d04; }
+    .prechat-field input {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: .875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .prechat-field input:focus { border-color: #e85d04; }
+    .prechat-error {
+      font-size: .8rem;
+      color: #e74c3c;
+      margin: 0;
+      min-height: 1em;
+    }
+    #prechat-start {
+      background: #e85d04;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: .9rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    #prechat-start:hover { background: #c94e00; }
     #product-modal {
       display: none;
       position: fixed; inset: 0;
@@ -1803,7 +1856,9 @@
   // ==================================================
   // CHAT WIDGET
   // ==================================================
-  const CHAT_KEY = 'yensaocatan_chat_sid';
+  const CHAT_KEY      = 'yensaocatan_chat_sid';
+  const CHAT_NAME_KEY  = 'yensaocatan_chat_name';
+  const CHAT_PHONE_KEY = 'yensaocatan_chat_phone';
 
   function getChatSid() {
     let id = localStorage.getItem(CHAT_KEY);
@@ -1814,15 +1869,17 @@
     return id;
   }
 
-  const chatFab    = document.getElementById('chat-fab');
-  const chatWin    = document.getElementById('chat-window');
-  const chatClose  = document.getElementById('chat-close');
-  const chatInput  = document.getElementById('chat-input');
-  const chatSendBtn= document.getElementById('chat-send');
-  const chatMsgsEl = document.getElementById('chat-messages');
-  let chatSid      = getChatSid();
-  let chatUnsub    = null;
-  let chatReady    = false;
+  const chatFab      = document.getElementById('chat-fab');
+  const chatWin      = document.getElementById('chat-window');
+  const chatClose    = document.getElementById('chat-close');
+  const chatInput    = document.getElementById('chat-input');
+  const chatSendBtn  = document.getElementById('chat-send');
+  const chatMsgsEl   = document.getElementById('chat-messages');
+  const chatPrechat  = document.getElementById('chat-prechat');
+  const chatBody     = document.getElementById('chat-body');
+  let chatSid        = getChatSid();
+  let chatUnsub      = null;
+  let chatReady      = false;
 
   // FAQ theo thứ tự ưu tiên — pattern trước sẽ được khớp trước
   const FAQ_LIST = [
@@ -1893,16 +1950,25 @@
     chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
   }
 
-  async function initChat() {
-    if (chatReady) return;
+  function showChatBody() {
+    chatPrechat.style.display = 'none';
+    chatBody.style.display    = 'flex';
+    chatInput.focus();
+  }
+
+  async function initChat(guestName, guestPhone) {
+    if (chatReady) { showChatBody(); return; }
     chatReady = true;
-    const sesRef = doc(db, 'chats', chatSid);
+    const sesRef  = doc(db, 'chats', chatSid);
     const sesSnap = await getDoc(sesRef);
     if (!sesSnap.exists()) {
-      await setDoc(sesRef, { lastMessage: '', lastTime: serverTimestamp(), unreadByAdmin: false });
+      await setDoc(sesRef, {
+        lastMessage: '', lastTime: serverTimestamp(), unreadByAdmin: false,
+        guestName, guestPhone,
+      });
       const msgCol = collection(db, 'chats', chatSid, 'messages');
       await addDoc(msgCol, {
-        text: 'Xin chào bạn! 👋 Mình là trợ lý Yến Sào Cát An. Bạn cần hỏi về giá, sản phẩm, giao hàng hay bất cứ điều gì — cứ nhắn nhé!',
+        text: `Xin chào ${guestName}! 👋 Mình là trợ lý Yến Sào Cát An. Bạn cần hỏi về giá, sản phẩm, giao hàng hay bất cứ điều gì — cứ nhắn nhé!`,
         sender: 'bot',
         timestamp: serverTimestamp(),
       });
@@ -1912,6 +1978,7 @@
       chatMsgsEl.innerHTML = '';
       snap.docs.forEach(d => { const m = d.data(); renderMsg(m.text, m.sender, m.timestamp); });
     });
+    showChatBody();
   }
 
   async function sendChat() {
@@ -1941,16 +2008,48 @@
   function openChat()  { chatWin.classList.add('open'); }
   function closeChat() { chatWin.classList.remove('open'); }
 
+  // Kiểm tra localStorage: nếu đã điền trước thì bỏ qua form
+  function hasChatInfo() {
+    return !!localStorage.getItem(CHAT_NAME_KEY);
+  }
+
   chatFab.addEventListener('click', async () => {
     const isOpen = chatWin.classList.contains('open');
-    if (isOpen) {
-      closeChat();
+    if (isOpen) { closeChat(); return; }
+    openChat();
+    if (hasChatInfo()) {
+      // Đã có thông tin → vào chat thẳng
+      const name  = localStorage.getItem(CHAT_NAME_KEY);
+      const phone = localStorage.getItem(CHAT_PHONE_KEY);
+      await initChat(name, phone);
     } else {
-      openChat();
-      await initChat();
-      chatInput.focus();
+      // Chưa có → hiện pre-chat form
+      chatPrechat.style.display = 'flex';
+      chatBody.style.display    = 'none';
+      document.getElementById('prechat-name').focus();
     }
   });
+
+  document.getElementById('prechat-start').addEventListener('click', async () => {
+    const nameEl  = document.getElementById('prechat-name');
+    const phoneEl = document.getElementById('prechat-phone');
+    const errEl   = document.getElementById('prechat-error');
+    const name    = nameEl.value.trim();
+    const phone   = phoneEl.value.trim();
+    errEl.textContent = '';
+    if (!name)  { errEl.textContent = 'Vui lòng nhập họ tên.'; nameEl.focus(); return; }
+    if (!phone || !/^[0-9+\s\-]{7,15}$/.test(phone)) {
+      errEl.textContent = 'Số điện thoại không hợp lệ.'; phoneEl.focus(); return;
+    }
+    localStorage.setItem(CHAT_NAME_KEY,  name);
+    localStorage.setItem(CHAT_PHONE_KEY, phone);
+    document.getElementById('prechat-start').disabled = true;
+    await initChat(name, phone);
+  });
+
+  document.getElementById('prechat-name').addEventListener('keydown',  e => { if (e.key === 'Enter') document.getElementById('prechat-phone').focus(); });
+  document.getElementById('prechat-phone').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('prechat-start').click(); });
+
   chatClose.addEventListener('click', closeChat);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
   chatSendBtn.addEventListener('click', sendChat);
@@ -1966,10 +2065,29 @@
     </div>
     <button id="chat-close" aria-label="Đóng chat">✕</button>
   </div>
-  <div id="chat-messages" class="chat-messages"></div>
-  <div class="chat-input-row">
-    <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
-    <button id="chat-send">Gửi</button>
+
+  <!-- Form nhập thông tin trước khi chat -->
+  <div id="chat-prechat">
+    <p class="prechat-intro">Để hỗ trợ tốt hơn, vui lòng cho mình biết thông tin của bạn nhé! 😊</p>
+    <div class="prechat-field">
+      <label for="prechat-name">Họ tên <span>*</span></label>
+      <input id="prechat-name" type="text" placeholder="Nguyễn Văn A" maxlength="80" autocomplete="name" />
+    </div>
+    <div class="prechat-field">
+      <label for="prechat-phone">Số điện thoại <span>*</span></label>
+      <input id="prechat-phone" type="tel" placeholder="0912 345 678" maxlength="15" autocomplete="tel" />
+    </div>
+    <p id="prechat-error" class="prechat-error"></p>
+    <button id="prechat-start">Bắt đầu trò chuyện →</button>
+  </div>
+
+  <!-- Khung chat (ẩn cho đến khi điền form) -->
+  <div id="chat-body" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
+      <button id="chat-send">Gửi</button>
+    </div>
   </div>
 </div>
 </body>
