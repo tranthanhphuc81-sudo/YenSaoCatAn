@@ -1579,9 +1579,9 @@
     document.getElementById('chat-thread-placeholder').style.display = 'none';
     const threadEl = document.getElementById('chat-thread');
     threadEl.style.display = 'flex';
-    document.getElementById('chat-thread-header').textContent = '💬 '
-      + (sesData && sesData.guestName ? sesData.guestName : sid.slice(0, 12) + '…')
-      + (sesData && sesData.guestPhone ? ' · ' + sesData.guestPhone : '');
+    document.getElementById('chat-thread-header').innerHTML = '💬 '
+      + (sesData && sesData.guestName  ? `<strong>${sesData.guestName}</strong>` : '<em>Khách ẩn danh</em>')
+      + (sesData && sesData.guestPhone ? ` &nbsp;📞 <a href="tel:${sesData.guestPhone}" style="color:#e85d04;text-decoration:none;">${sesData.guestPhone}</a>` : '');
 
     // Ngừng listener cũ
     if (chatThreadUnsub) chatThreadUnsub();

@@ -1961,9 +1961,14 @@
     chatReady = true;
     const sesRef  = doc(db, 'chats', chatSid);
     const sesSnap = await getDoc(sesRef);
+
+    // Luôn lưu/cập nhật tên & SĐT vào Firestore (merge để không xoá dữ liệu cũ)
+    await setDoc(sesRef, { guestName, guestPhone }, { merge: true });
+
     if (!sesSnap.exists()) {
+      // Session mới: tạo lần đầu và gửi lời chào
       await setDoc(sesRef, {
-        lastMessage: '', lastTime: serverTimestamp(), unreadByAdmin: false,
+        lastMessage: '', lastTime: serverTimestamp(), unreadByAdmin: true,
         guestName, guestPhone,
       });
       const msgCol = collection(db, 'chats', chatSid, 'messages');
