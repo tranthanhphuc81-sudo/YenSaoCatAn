@@ -422,20 +422,53 @@
       overflow: hidden;
     }
     .chat-session-header {
-      padding: 14px 16px;
+      padding: 10px 14px;
       font-weight: 700;
-      font-size: .95rem;
+      font-size: .9rem;
       background: #f8f9fa;
       border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
     }
+    .chat-session-header .btn-cleanup {
+      font-size: .75rem;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      border-radius: 6px;
+      padding: 3px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .chat-session-header .btn-cleanup:hover { background: #ffc107; color: #000; }
     #chat-sessions { flex: 1; overflow-y: auto; }
     .chat-session-item {
-      padding: 12px 16px;
+      padding: 10px 14px;
       cursor: pointer;
       border-bottom: 1px solid #f0f0f0;
       transition: background .15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 6px;
     }
     .chat-session-item:hover, .chat-session-item.active { background: #fff4ee; }
+    .chat-session-item-info { flex: 1; min-width: 0; }
+    .btn-delete-session {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    .btn-delete-session:hover { color: #e74c3c; }
     .chat-session-item .cs-name {
       font-weight: 600;
       font-size: .875rem;
@@ -810,7 +843,10 @@
       <div class="chat-admin-wrap">
         <!-- Danh sách session -->
         <div class="chat-session-list" id="chat-session-list">
-          <div class="chat-session-header">💬 Cuộc trò chuyện</div>
+          <div class="chat-session-header">
+            <span>💬 Cuộc trò chuyện</span>
+            <button class="btn-cleanup" id="btn-cleanup-chats" title="Xoá chat cũ hơn 30 ngày">🗑️ Dọn cũ</button>
+          </div>
           <div id="chat-sessions">
             <p style="color:#aaa;font-size:.875rem;padding:12px;">Đang tải...</p>
           </div>
@@ -1555,15 +1591,21 @@
         const displayName = s.guestName ? s.guestName : d.id.slice(0, 12) + '…';
         const phone     = s.guestPhone ? ` · ${s.guestPhone}` : '';
         return `<div class="chat-session-item${isActive}" data-sid="${d.id}">
-          <div class="cs-name"><span>${displayName}${phone}</span>${unreadDot}</div>
-          <div class="cs-preview">${preview}</div>
-          <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
+          <div class="chat-session-item-info">
+            <div class="cs-name"><span>${displayName}${phone}</span>${unreadDot}</div>
+            <div class="cs-preview">${preview}</div>
+            <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
+          </div>
+          <button class="btn-delete-session" data-delsid="${d.id}" title="Xoá cuộc trò chuyện này">&times;</button>
         </div>`;
       }).join('');
 
       // Gắn event sau khi render xong
-      listEl.querySelectorAll('.chat-session-item').forEach(el => {
-        el.addEventListener('click', () => openChatSession(el.dataset.sid));
+      listEl.querySelectorAll('.chat-session-item-info').forEach(el => {
+        el.addEventListener('click', () => openChatSession(el.closest('[data-sid]').dataset.sid));
+      });
+      listEl.querySelectorAll('.btn-delete-session').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); deleteChatSession(btn.dataset.delsid); });
       });
     });
   }
@@ -1634,6 +1676,57 @@
   document.getElementById('admin-chat-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); adminSendChat(); }
   });
+
+  // ==================================================
+  // CHAT: Xoá session (kèm tất cả messages trong subcollection)
+  // ==================================================
+  async function deleteChatSession(sid) {
+    if (!confirm('Xoá cuộc trò chuyện này? Không thể hoàn tác.')) return;
+    try {
+      // Xoá từng message trong subcollection trước
+      const msgsSnap = await getDocs(collection(db, 'chats', sid, 'messages'));
+      const delMsgs  = msgsSnap.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(delMsgs);
+      // Xoá session doc
+      await deleteDoc(doc(db, 'chats', sid));
+      // Nếu đang xem session này thì reset UI
+      if (activeChatSid === sid) {
+        activeChatSid = null;
+        if (chatThreadUnsub) { chatThreadUnsub(); chatThreadUnsub = null; }
+        document.getElementById('chat-thread').style.display = 'none';
+        document.getElementById('chat-thread-placeholder').style.display = 'flex';
+      }
+      showToast('Đã xoá cuộc trò chuyện.', 'success');
+    } catch (err) {
+      console.error('Lỗi xoá session:', err);
+      showToast('❌ Không xoá được: ' + err.message, 'error');
+    }
+  }
+
+  // Xoá hàng loạt: tất cả session cũ hơn 30 ngày
+  async function cleanupOldChats() {
+    const cutoff   = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const allSnap  = await getDocs(collection(db, 'chats'));
+    const old      = allSnap.docs.filter(d => {
+      const t = d.data().lastTime;
+      if (!t) return true;
+      const date = t.toDate ? t.toDate() : new Date(t);
+      return date < cutoff;
+    });
+    if (old.length === 0) { showToast('Không có chat cũ nào để xoá.', 'success'); return; }
+    if (!confirm(`Xoá ${old.length} cuộc trò chuyện cũ hơn 30 ngày? Không thể hoàn tác.`)) return;
+
+    let count = 0;
+    for (const sesDoc of old) {
+      const msgsSnap = await getDocs(collection(db, 'chats', sesDoc.id, 'messages'));
+      await Promise.all(msgsSnap.docs.map(d => deleteDoc(d.ref)));
+      await deleteDoc(sesDoc.ref);
+      count++;
+    }
+    showToast(`✅ Đã dọn ${count} cuộc trò chuyện cũ.`, 'success');
+  }
+
+  document.getElementById('btn-cleanup-chats').addEventListener('click', cleanupOldChats);
 </script>
 </body>
 </html>
