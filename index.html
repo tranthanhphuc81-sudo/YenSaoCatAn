@@ -681,6 +681,20 @@
       overflow: hidden;
     }
 
+    .news-body-html {
+      font-size: .9rem;
+      color: #555;
+      line-height: 1.65;
+      max-height: 90px;
+      overflow: hidden;
+    }
+    .news-body-html p { margin-bottom:4px; }
+    .news-body-html h1,.news-body-html h2,.news-body-html h3 { font-weight:700; margin-bottom:4px; }
+    .news-body-html strong { font-weight:700; }
+    .news-body-html em { font-style:italic; }
+    .news-body-html ul,.news-body-html ol { padding-left:18px; margin-bottom:4px; }
+    .news-body-html a { color:inherit; }
+
     .news-empty {
       color: rgba(255,255,255,.7);
       text-align: center;
@@ -1810,6 +1824,10 @@
 
       grid.innerHTML = snap.docs.map(d => {
         const p = d.data();
+        const rawContent = p.content || '';
+        const bodyHtml = rawContent.trimStart().startsWith('<')
+          ? rawContent
+          : rawContent.replace(/\n/g, '<br>');
         return `
           <div class="news-card">
             ${p.image ? `<img class="news-img" src="${p.image}" alt="${p.title}" onerror="this.style.display='none'" />` : ''}
@@ -1817,7 +1835,7 @@
               <span class="news-tag">${TAG_LABEL_NEWS[p.tag] || p.tag || 'Tin tức'}</span>
               <div class="news-date">${formatNewsDate(p.timestamp)}</div>
               <h3>${p.title}</h3>
-              <p>${p.content}</p>
+              <div class="news-body-html">${bodyHtml}</div>
             </div>
           </div>
         `;
