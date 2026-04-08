@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ════════════════════════════════════════════════════════
+    // HELPER FUNCTIONS
+    // ════════════════════════════════════════════════════════
+
+    // Admin = tài khoản Firebase Auth đã đăng nhập (chỉ bạn có tài khoản)
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // ─── Validate config/settings ───────────────────────────
+    // Chỉ cho phép đúng các field đang dùng, tất cả phải là string
+    function validateConfig() {
+      let d = request.resource.data;
+      let allowed = ['background_url', 'bank_name', 'bank_stk', 'bank_owner', 'vietqr_url'];
+      return d.keys().hasOnly(allowed)
+          && (!('background_url' in d) || d.background_url is string)
+          && (!('bank_name'       in d) || d.bank_name      is string)
+          && (!('bank_stk'        in d) || d.bank_stk       is string)
+          && (!('bank_owner'      in d) || d.bank_owner     is string)
+          && (!('vietqr_url'      in d) || d.vietqr_url     is string);
+    }
+
+    // ─── Validate products ───────────────────────────────────
+    // name: string không rỗng, tối đa 200 ký tự
+    // price: số không âm
+    // image: string không rỗng
+    // category: phải thuộc danh sách cho phép
+    function validateProduct() {
+      let d = request.resource.data;
+      let allowed = ['name', 'price', 'image', 'category'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(allowed)
+          && d.name     is string && d.name.size()     > 0 && d.name.size()  <= 200
+          && d.price    is number && d.price            >= 0
+          && d.image    is string && d.image.size()    > 0
+          && d.category is string
+          && d.category in ['yen', 'sam', 'us-japan'];
+    }
+
+    // ─── Validate orders ─────────────────────────────────────
+    // Đảm bảo client không thể gửi dữ liệu rác / field lạ lên Firestore
+    function validateOrder() {
+      let d = request.resource.data;
+      let requiredKeys = [
+        'customerName', 'customerPhone', 'customerAddress',
+        'paymentMethod', 'items', 'total', 'timestamp'
+      ];
+      return d.keys().hasOnly(requiredKeys)
+          && d.keys().hasAll(requiredKeys)
+          // Thông tin khách hàng
+          && d.customerName    is string && d.customerName.size()    > 0 && d.customerName.size()    <= 100
+          && d.customerPhone   is string && d.customerPhone.size()   > 0 && d.customerPhone.size()   <= 20
+          && d.customerAddress is string && d.customerAddress.size() > 0 && d.customerAddress.size() <= 300
+          // Phương thức thanh toán chỉ nhận 2 giá trị hợp lệ
+          && d.paymentMethod in ['cash', 'transfer']
+          // Giỏ hàng phải có ít nhất 1 sản phẩm, tối đa 50 dòng
+          && d.items is list && d.items.size() > 0 && d.items.size() <= 50
+          // Tổng tiền phải dương
+          && d.total is number && d.total > 0
+          // timestamp phải là kiểu timestamp (do serverTimestamp() tạo)
+          && d.timestamp is timestamp;
+    }
+
+    // ════════════════════════════════════════════════════════
+    // RULES
+    // ════════════════════════════════════════════════════════
+
+    // Từ chối tất cả các path không được khai báo dưới đây
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ─── config/{docId} ──────────────────────────────────────
+    // GET  /config/settings → index.html đọc ảnh nền + thông tin ngân hàng
+    // SET  /config/settings → admin.html lưu cấu hình site
+    match /config/{docId} {
+      allow get:   if true;
+      allow list:  if isAdmin();
+      allow create: if isAdmin() && validateConfig();
+      allow update: if isAdmin() && validateConfig();
+      allow delete: if isAdmin();
+    }
+
+    // ─── products/{productId} ────────────────────────────────
+    // GET / LIST → index.html & admin.html đọc danh sách sản phẩm
+    // CREATE     → admin.html thêm sản phẩm mới
+    // DELETE     → admin.html xoá sản phẩm
+    // (Không có update từ admin.html nên không mở update cho client)
+    match /products/{productId} {
+      allow get, list:  if true;
+      allow create:     if isAdmin() && validateProduct();
+      allow update:     if isAdmin() && validateProduct();
+      allow delete:     if isAdmin();
+    }
+
+    // ─── orders/{orderId} ────────────────────────────────────
+    // CREATE → index.html: bất kỳ khách nào cũng đặt được, phải qua validation
+    // READ   → chỉ admin mới xem được đơn hàng (bảo vệ thông tin khách hàng)
+    // DELETE → chỉ admin
+    // (Không mở update: trạng thái đơn chưa có trong code hiện tại)
+    match /orders/{orderId} {
+      allow create:        if validateOrder();
+      allow get, list,
+            delete:        if isAdmin();
+    }
+
+  }
+}
