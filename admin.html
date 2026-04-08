@@ -1089,12 +1089,24 @@
   // ==================================================
   // XÁC THỰC: Theo dõi trạng thái đăng nhập
   // ==================================================
+  let _presenceInterval = null;
+  const adminOnlineRef = doc(db, 'config', 'adminOnline');
+
+  function setAdminOnline(online) {
+    setDoc(adminOnlineRef, { online, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+  }
+
   onAuthStateChanged(auth, (user) => {
     if (user) {
       // Đã đăng nhập → ẩn login, hiện dashboard
       document.getElementById('login-page').style.display  = 'none';
       document.getElementById('dashboard').style.display   = 'block';
       document.getElementById('admin-email').textContent   = user.email;
+
+      // Đánh dấu admin đang online + heartbeat mỗi 60 giây
+      setAdminOnline(true);
+      if (_presenceInterval) clearInterval(_presenceInterval);
+      _presenceInterval = setInterval(() => setAdminOnline(true), 60000);
 
       // Tải dữ liệu ban đầu
       loadConfig();
@@ -1106,6 +1118,10 @@
       // Chưa đăng nhập → hiện login, ẩn dashboard
       document.getElementById('login-page').style.display  = 'flex';
       document.getElementById('dashboard').style.display   = 'none';
+      // Xoá trạng thái online khi bị đăng xuất tự động
+      clearInterval(_presenceInterval);
+      _presenceInterval = null;
+      setAdminOnline(false);
     }
   });
 
@@ -1151,6 +1167,9 @@
   document.getElementById('btn-logout').addEventListener('click', async () => {
     if (!confirm('Bạn chắc chắn muốn đăng xuất?')) return;
     try {
+      clearInterval(_presenceInterval);
+      _presenceInterval = null;
+      await setAdminOnline(false);
       await signOut(auth);
     } catch (err) {
       console.error('Lỗi đăng xuất:', err);

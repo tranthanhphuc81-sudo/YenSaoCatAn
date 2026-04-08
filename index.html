@@ -1880,6 +1880,17 @@
   let chatSid        = getChatSid();
   let chatUnsub      = null;
   let chatReady      = false;
+  let adminIsOnline  = false;
+
+  // Lắng nghe trạng thái admin online từ Firestore (realtime)
+  onSnapshot(doc(db, 'config', 'adminOnline'), snap => {
+    if (!snap.exists()) { adminIsOnline = false; return; }
+    const d = snap.data();
+    if (!d.online) { adminIsOnline = false; return; }
+    // Coi là online nếu lastSeen trong vòng 5 phút
+    const lastSeen = d.lastSeen?.toDate?.();
+    adminIsOnline = !!lastSeen && (Date.now() - lastSeen.getTime() < 5 * 60 * 1000);
+  });
 
   // FAQ theo thứ tự ưu tiên — pattern trước sẽ được khớp trước
   const FAQ_LIST = [
@@ -1996,18 +2007,20 @@
     await addDoc(msgCol, { text, sender: 'guest', timestamp: serverTimestamp() });
     await setDoc(sesRef, { lastMessage: text, lastTime: serverTimestamp(), unreadByAdmin: true }, { merge: true });
     chatSendBtn.disabled = false;
-    // Auto bot reply
-    const botReply = getBotReply(text);
-    const typing = document.createElement('div');
-    typing.className = 'chat-typing';
-    typing.textContent = '🤖 Đang nhập...';
-    chatMsgsEl.appendChild(typing);
-    chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
-    setTimeout(async () => {
-      typing.remove();
-      const reply = botReply || 'Cảm ơn bạn đã nhắn tin! 😊 Admin sẽ phản hồi sớm nhất có thể trong giờ làm việc.';
-      await addDoc(msgCol, { text: reply, sender: 'bot', timestamp: serverTimestamp() });
-    }, 900);
+    // Auto bot reply — chỉ khi admin không đang online
+    if (!adminIsOnline) {
+      const botReply = getBotReply(text);
+      const typing = document.createElement('div');
+      typing.className = 'chat-typing';
+      typing.textContent = '🤖 Đang nhập...';
+      chatMsgsEl.appendChild(typing);
+      chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+      setTimeout(async () => {
+        typing.remove();
+        const reply = botReply || 'Cảm ơn bạn đã nhắn tin! 😊 Admin sẽ phản hồi sớm nhất có thể trong giờ làm việc.';
+        await addDoc(msgCol, { text: reply, sender: 'bot', timestamp: serverTimestamp() });
+      }, 900);
+    }
   }
 
   function openChat()  { chatWin.classList.add('open'); }
