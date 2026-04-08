@@ -336,6 +336,36 @@
 
     /* ===== RESPONSIVE BẢNG ===== */
     .table-wrap { overflow-x: auto; }
+
+    /* ===== UPLOAD ẢNH NỀN ===== */
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .upload-row input[type="file"] {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: var(--radius);
+      font-size: .9rem;
+      background: #fff;
+    }
+    .btn-upload {
+      white-space: nowrap;
+      padding: 9px 16px;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+    .btn-upload:disabled { opacity: .55; cursor: not-allowed; }
+    #upload-bg-status { font-size: .85rem; color: var(--gray); }
   </style>
 </head>
 <body>
@@ -398,7 +428,13 @@
           <div class="form-grid">
             <div class="form-group span-2">
               <label for="cfg-bg">URL Ảnh nền trang chủ</label>
-              <input type="url" id="cfg-bg" placeholder="https://..." />
+              <!-- Upload file (nén tự động trước khi lưu) -->
+              <div class="upload-row">
+                <input type="file" id="cfg-bg-file" accept="image/*" />
+                <button type="button" class="btn-upload" id="btn-upload-bg">⬆️ Tải ảnh lên</button>
+                <span id="upload-bg-status"></span>
+              </div>
+              <input type="url" id="cfg-bg" placeholder="Hoặc dán URL ảnh nền vào đây..." style="margin-top:8px" />
             </div>
             <div class="form-group">
               <label for="cfg-bank-name">Tên ngân hàng</label>
@@ -521,6 +557,7 @@
     query, orderBy, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+
   const firebaseConfig = { 
   apiKey : "AIzaSyA24CUjreKu7He7kB0c9bGGWHGg_6YW7yg" , 
   authDomain : "yensaocatan-e3e75.firebaseapp.com" , 
@@ -538,8 +575,82 @@
   const db   = getFirestore(app);
 
   // ==================================================
-  // TIỆN ÍCH
+  // CLOUDINARY CONFIG – Điền thông tin tài khoản Cloudinary
   // ==================================================
+  const CLOUDINARY_CLOUD_NAME    = 'dqnzndovz';
+  const CLOUDINARY_UPLOAD_PRESET = 'backgrounds_unsigned';
+
+  // ==================================================
+  // UPLOAD ẢNH NỀN → Cloudinary (có nén trước)
+  // ==================================================
+
+  // Nén ảnh bằng Canvas trước khi upload
+  function compressImage(file, maxWidth = 1920, quality = 0.80) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale  = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Nén ảnh thất bại')),
+          'image/webp', quality);
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function uploadToCloudinary(blob) {
+    const formData = new FormData();
+    formData.append('file', blob, 'background.webp');
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', 'yensaocatan/backgrounds');
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || 'Lỗi HTTP ' + res.status);
+    }
+    const data = await res.json();
+    return data.secure_url;
+  }
+
+  document.getElementById('btn-upload-bg').addEventListener('click', async () => {
+    const fileInput = document.getElementById('cfg-bg-file');
+    const statusEl  = document.getElementById('upload-bg-status');
+    const btn       = document.getElementById('btn-upload-bg');
+    const urlInput  = document.getElementById('cfg-bg');
+
+    const file = fileInput.files[0];
+    if (!file) { statusEl.textContent = '⚠️ Chưa chọn file'; return; }
+    if (!file.type.startsWith('image/')) { statusEl.textContent = '⚠️ Chỉ hỗ trợ file ảnh'; return; }
+
+    btn.disabled         = true;
+    statusEl.textContent = '⏳ Đang nén ảnh...';
+
+    try {
+      const compressed = await compressImage(file);
+      const sizeKB     = (compressed.size / 1024).toFixed(0);
+      statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
+
+      const downloadURL    = await uploadToCloudinary(compressed);
+      urlInput.value       = downloadURL;
+      statusEl.textContent = `✅ Upload xong (${sizeKB} KB) – nhấn Lưu Cấu Hình để áp dụng`;
+      fileInput.value      = '';
+    } catch (err) {
+      console.error('Lỗi upload ảnh nền:', err);
+      statusEl.textContent = '❌ Upload thất bại: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
   const formatVND = (n) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
