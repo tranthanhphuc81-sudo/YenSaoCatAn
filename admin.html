@@ -700,6 +700,37 @@
     }
   });
 
+  // Upload logo công ty → Cloudinary
+  document.getElementById('btn-upload-logo').addEventListener('click', async () => {
+    const fileInput = document.getElementById('cfg-logo-file');
+    const statusEl  = document.getElementById('upload-logo-status');
+    const btn       = document.getElementById('btn-upload-logo');
+    const urlInput  = document.getElementById('cfg-logo');
+
+    const file = fileInput.files[0];
+    if (!file) { statusEl.textContent = '⚠️ Chưa chọn file'; return; }
+    if (!file.type.startsWith('image/')) { statusEl.textContent = '⚠️ Chỉ hỗ trợ file ảnh'; return; }
+
+    btn.disabled         = true;
+    statusEl.textContent = '⏳ Đang nén...';
+
+    try {
+      const compressed = await compressImage(file, 400, 0.90);
+      const sizeKB     = (compressed.size / 1024).toFixed(0);
+      statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
+
+      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/logo', 'logo.webp');
+      urlInput.value       = downloadURL;
+      statusEl.textContent = `✅ Upload xong – nhấn Lưu Cấu Hình để áp dụng`;
+      fileInput.value      = '';
+    } catch (err) {
+      console.error('Lỗi upload logo:', err);
+      statusEl.textContent = '❌ Upload thất bại: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Upload ảnh sản phẩm → Cloudinary
   document.getElementById('btn-upload-prod').addEventListener('click', async () => {
     const fileInput = document.getElementById('prod-image-file');
@@ -877,14 +908,16 @@
     btnSave.textContent = 'Đang lưu...';
 
     try {
-      await setDoc(doc(db, 'config', 'settings'), {
-        logo_url:       logoUrl,
-        background_url: bgUrl,
-        bank_name:      bankName,
-        bank_stk:       bankStk,
-        bank_owner:     bankOwner,
-        bank_bin:       bankBin
-      }, { merge: true });
+      // Chỉ lưu các field có giá trị (tránh ghi đè field cũ bằng chuỗi rỗng)
+      const configData = {};
+      if (logoUrl)   configData.logo_url       = logoUrl;
+      if (bgUrl)     configData.background_url = bgUrl;
+      if (bankName)  configData.bank_name      = bankName;
+      if (bankStk)   configData.bank_stk       = bankStk;
+      if (bankOwner) configData.bank_owner     = bankOwner;
+      if (bankBin)   configData.bank_bin       = bankBin;
+
+      await setDoc(doc(db, 'config', 'settings'), configData, { merge: true });
 
       showToast('✅ Lưu cấu hình thành công!');
     } catch (err) {

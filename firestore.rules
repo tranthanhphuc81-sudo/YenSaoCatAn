@@ -15,9 +15,8 @@ service cloud.firestore {
     // Chỉ cho phép đúng các field đang dùng, tất cả phải là string
     function validateConfig() {
       let d = request.resource.data;
-      let allowed = ['logo_url', 'background_url', 'bank_name', 'bank_stk', 'bank_owner', 'bank_bin'];
-      return d.keys().hasOnly(allowed)
-          && (!('logo_url'       in d) || d.logo_url       is string)
+      // Kiểm tra type từng field (không dùng hasOnly vì merge có thể giữ field cũ)
+      return (!('logo_url'       in d) || d.logo_url       is string)
           && (!('background_url' in d) || d.background_url is string)
           && (!('bank_name'       in d) || d.bank_name      is string)
           && (!('bank_stk'        in d) || d.bank_stk       is string)
