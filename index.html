@@ -387,8 +387,7 @@
 <div class="wrapper">
 
   <!-- ===== HEADER ===== -->
-  <header>
-    <h1>🪺 Yến Sào Cát An</h1>
+  <header>    <img id="site-logo" src="" alt="Logo Yến Sào Cát An" style="display:none;max-height:90px;margin-bottom:12px;border-radius:10px" />    <h1>🪺 Yến Sào Cát An</h1>
     <p>Tinh hoa thiên nhiên – Dưỡng chất vàng cho sức khỏe</p>
   </header>
 
@@ -520,6 +519,11 @@
       const cfg = snap.data();
 
       // Đặt ảnh nền toàn trang
+      if (cfg.logo_url) {
+        const logo = document.getElementById('site-logo');
+        logo.src             = cfg.logo_url;
+        logo.style.display   = 'block';
+      }
       if (cfg.background_url) {
         document.body.style.backgroundImage = `url('${cfg.background_url}')`;
       }

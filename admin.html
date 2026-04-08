@@ -441,6 +441,15 @@
         <form id="config-form">
           <div class="form-grid">
             <div class="form-group span-2">
+              <label>Logo công ty</label>
+              <div class="upload-row">
+                <input type="file" id="cfg-logo-file" accept="image/*" />
+                <button type="button" class="btn-upload" id="btn-upload-logo">⬆️ Tải logo lên</button>
+                <span id="upload-logo-status"></span>
+              </div>
+              <input type="url" id="cfg-logo" placeholder="Hoặc dán URL logo vào đây..." style="margin-top:8px" />
+            </div>
+            <div class="form-group span-2">
               <label for="cfg-bg">URL Ảnh nền trang chủ</label>
               <!-- Upload file (nén tự động trước khi lưu) -->
               <div class="upload-row">
@@ -829,6 +838,11 @@
       if (!snap.exists()) return;
 
       const cfg = snap.data();
+      if (cfg.logo_url) {
+        document.getElementById('cfg-logo').value = cfg.logo_url;
+        const topLogo = document.getElementById('topbar-logo');
+        if (topLogo) { topLogo.src = cfg.logo_url; topLogo.style.display = 'inline-block'; }
+      }
       if (cfg.background_url) {
         document.getElementById('cfg-bg').value  = cfg.background_url;
         document.body.style.backgroundImage      = `url('${cfg.background_url}')`;
@@ -851,6 +865,7 @@
   document.getElementById('config-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const logoUrl  = document.getElementById('cfg-logo').value.trim();
     const bgUrl     = document.getElementById('cfg-bg').value.trim();
     const bankName  = document.getElementById('cfg-bank-name').value.trim();
     const bankStk   = document.getElementById('cfg-stk').value.trim();
@@ -863,6 +878,7 @@
 
     try {
       await setDoc(doc(db, 'config', 'settings'), {
+        logo_url:       logoUrl,
         background_url: bgUrl,
         bank_name:      bankName,
         bank_stk:       bankStk,
