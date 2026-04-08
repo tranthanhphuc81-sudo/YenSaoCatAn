@@ -1465,9 +1465,11 @@
 
       // Điền thông tin liên hệ vào tab Liên hệ
       if (cfg.contact_phone) {
-        document.getElementById('ct-phone').textContent = cfg.contact_phone;
+        const cleanPhone = cfg.contact_phone.replace(/\s/g, '');
+        document.getElementById('ct-phone').innerHTML =
+          `<a href="tel:${cleanPhone}" style="color:inherit;text-decoration:underline;">${cfg.contact_phone}</a>`;
         const callBtn = document.getElementById('ct-call-btn');
-        callBtn.href = `tel:${cfg.contact_phone.replace(/\s/g, '')}`;
+        callBtn.href = `tel:${cleanPhone}`;
         callBtn.style.display = 'inline-flex';
       }
       if (cfg.contact_email)   document.getElementById('ct-email').textContent   = cfg.contact_email;

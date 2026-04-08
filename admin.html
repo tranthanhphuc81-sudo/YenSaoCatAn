@@ -1608,7 +1608,8 @@
         const unreadDot = s.unreadByAdmin ? '<span class="cs-unread-dot"></span>' : '';
         const preview   = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
         const displayName = s.guestName ? s.guestName : d.id.slice(0, 12) + '…';
-        const phone     = s.guestPhone ? ` · ${s.guestPhone}` : '';
+        const phoneRaw  = s.guestPhone || '';
+        const phone     = phoneRaw ? ` · <a href="tel:${phoneRaw.replace(/\s/g,'')}" onclick="event.stopPropagation()" style="color:#e85d04;text-decoration:none;">${phoneRaw}</a>` : '';
         return `<div class="chat-session-item${isActive}" data-sid="${d.id}">
           <div class="chat-session-item-info">
             <div class="cs-name"><span>${displayName}${phone}</span>${unreadDot}</div>
