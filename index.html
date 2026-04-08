@@ -722,6 +722,7 @@
       bottom: 90px;
       right: 20px;
       width: 340px;
+      max-height: 460px;
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 8px 40px rgba(0,0,0,.18);
@@ -729,14 +730,24 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      animation: chatSlideUp .22s ease;
+      /* Ẩn mặc định */
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(16px) scale(.97);
+      transition: opacity .2s ease, transform .2s ease;
     }
-    @keyframes chatSlideUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .chat-window.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
     }
-    @media (max-width: 400px) {
-      .chat-window { width: calc(100vw - 28px); right: 14px; bottom: 80px; }
+    @media (max-width: 480px) {
+      .chat-window {
+        width: calc(100vw - 24px);
+        right: 12px;
+        bottom: 80px;
+        max-height: 70vh;
+      }
     }
     .chat-header {
       background: #e85d04;
@@ -759,8 +770,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-height: 200px;
-      max-height: 340px;
+      min-height: 160px;
     }
     .chat-msg {
       max-width: 82%;
@@ -1891,22 +1901,27 @@
     }, 900);
   }
 
+  function openChat()  { chatWin.classList.add('open'); }
+  function closeChat() { chatWin.classList.remove('open'); }
+
   chatFab.addEventListener('click', async () => {
-    const isHidden = chatWin.hidden;
-    chatWin.hidden = !isHidden;
-    if (isHidden) {
+    const isOpen = chatWin.classList.contains('open');
+    if (isOpen) {
+      closeChat();
+    } else {
+      openChat();
       await initChat();
       chatInput.focus();
     }
   });
-  chatClose.addEventListener('click', () => { chatWin.hidden = true; });
+  chatClose.addEventListener('click', closeChat);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
   chatSendBtn.addEventListener('click', sendChat);
 </script>
 
 <!-- ===== CHAT WIDGET ===== -->
 <div id="chat-fab" title="Trò chuyện với chúng tôi">💬</div>
-<div id="chat-window" class="chat-window" hidden>
+<div id="chat-window" class="chat-window">
   <div class="chat-header">
     <div class="chat-header-info">
       <span class="chat-header-title">💬 Hỗ trợ khách hàng</span>
