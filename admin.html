@@ -23,9 +23,23 @@
 
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: var(--bg);
+      background: #001a3a center/cover no-repeat fixed;
       color: var(--text);
       min-height: 100vh;
+    }
+
+    /* Overlay tối trên ảnh nền */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 0;
+    }
+
+    /* Đảm bảo mọi thứ nằm trên overlay */
+    #login-page, .topbar, .tab-bar, .main-content, #toast {
+      position: relative;
+      z-index: 1;
     }
 
     /* ===== TRANG ĐĂNG NHẬP ===== */
@@ -795,7 +809,10 @@
       if (!snap.exists()) return;
 
       const cfg = snap.data();
-      if (cfg.background_url) document.getElementById('cfg-bg').value        = cfg.background_url;
+      if (cfg.background_url) {
+        document.getElementById('cfg-bg').value  = cfg.background_url;
+        document.body.style.backgroundImage      = `url('${cfg.background_url}')`;
+      }
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
       if (cfg.bank_owner)     document.getElementById('cfg-owner').value     = cfg.bank_owner;
