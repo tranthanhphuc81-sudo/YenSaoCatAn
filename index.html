@@ -860,7 +860,41 @@
       font-weight: 700;
       font-family: inherit;
     }
+    .chat-input-row .attach-btn {
+      padding: 0 12px;
+      min-width: 42px;
+      background: #fff;
+      color: #e85d04;
+      border: 1px solid #e85d04;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
     .chat-input-row button:disabled { opacity: .5; cursor: default; }
+    .chat-media {
+      margin-bottom: 8px;
+    }
+    .chat-media img,
+    .chat-media video {
+      width: 100%;
+      border-radius: 14px;
+      max-height: 280px;
+      object-fit: contain;
+      display: block;
+    }
+    .chat-msg .retract-btn {
+      margin-top: 8px;
+      background: transparent;
+      border: 1px solid rgba(0,0,0,.15);
+      color: #444;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: .78rem;
+      cursor: pointer;
+    }
+    .chat-msg.retracted {
+      opacity: .8;
+      font-style: italic;
+    }
     .chat-typing {
       font-size: .8rem;
       color: #aaa;
@@ -1451,7 +1485,7 @@
   // ==================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, collection, getDocs,
+    getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs,
     addDoc, serverTimestamp, query, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -1469,6 +1503,11 @@
   // Khởi tạo Firebase
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
+
+  // Cloudinary configuration
+  // Thay giá trị này bằng thông tin từ tài khoản Cloudinary của bạn
+  const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUDINARY_CLOUD_NAME';
+  const CLOUDINARY_UPLOAD_PRESET = 'YOUR_CLOUDINARY_UPLOAD_PRESET';
 
   // ==================================================
   // BIẾN TRẠNG THÁI
@@ -2066,13 +2105,69 @@
     return null;
   }
 
-  function renderMsg(text, sender, ts) {
+  function escapeHtml(value) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatChatTime(ts) {
+    const d = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : new Date();
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderMsg(msg) {
     const el = document.createElement('div');
-    el.className = 'chat-msg ' + sender;
-    const label = sender === 'guest' ? 'Bạn' : sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
-    const t = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : new Date();
-    const timeStr = t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    el.innerHTML = `<div>${text}</div><div class="msg-meta">${label} · ${timeStr}</div>`;
+    el.className = 'chat-msg ' + msg.sender + (msg.retracted ? ' retracted' : '');
+    const label = msg.sender === 'guest' ? 'Bạn' : msg.sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
+
+    if (msg.retracted) {
+      const note = document.createElement('div');
+      note.textContent = 'Tin nhắn đã bị thu hồi.';
+      el.appendChild(note);
+    } else {
+      if (msg.type === 'image' && msg.url) {
+        const media = document.createElement('div');
+        media.className = 'chat-media';
+        const img = document.createElement('img');
+        img.src = msg.url;
+        img.alt = msg.text || 'Ảnh tin nhắn';
+        media.appendChild(img);
+        el.appendChild(media);
+      }
+      if (msg.type === 'video' && msg.url) {
+        const media = document.createElement('div');
+        media.className = 'chat-media';
+        const video = document.createElement('video');
+        video.controls = true;
+        video.src = msg.url;
+        media.appendChild(video);
+        el.appendChild(media);
+      }
+      if (msg.text) {
+        const text = document.createElement('div');
+        text.textContent = msg.text;
+        el.appendChild(text);
+      }
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.textContent = `${label} · ${formatChatTime(msg.timestamp)}`;
+    el.appendChild(meta);
+
+    if (msg.sender === 'guest' && !msg.retracted && msg.id) {
+      const retract = document.createElement('button');
+      retract.type = 'button';
+      retract.className = 'retract-btn';
+      retract.textContent = 'Thu hồi';
+      retract.addEventListener('click', () => retractMessage(msg.id));
+      el.appendChild(retract);
+    }
+
     chatMsgsEl.appendChild(el);
     chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
   }
@@ -2108,9 +2203,108 @@
     const q = query(collection(db, 'chats', chatSid, 'messages'), orderBy('timestamp', 'asc'));
     chatUnsub = onSnapshot(q, snap => {
       chatMsgsEl.innerHTML = '';
-      snap.docs.forEach(d => { const m = d.data(); renderMsg(m.text, m.sender, m.timestamp); });
+      snap.docs.forEach(d => { const m = { id: d.id, ...d.data() }; renderMsg(m); });
     });
     showChatBody();
+  }
+
+  async function uploadToCloudinary(file, resourceType = 'image') {
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      throw new Error('Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET trong mã.');
+    }
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    form.append('quality', 'auto');
+    form.append('fetch_format', 'auto');
+    if (resourceType === 'video') {
+      form.append('resource_type', 'video');
+      form.append('eager', 'quality:auto,fetch_format:auto');
+    }
+    const res = await fetch(url, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok || !data.secure_url) {
+      throw new Error(data.error?.message || 'Cloudinary upload failed');
+    }
+    return data.secure_url;
+  }
+
+  function compressImageFile(file) {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) return resolve(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxWidth = 1280;
+          const scale = Math.min(1, maxWidth / img.width);
+          const width = Math.round(img.width * scale);
+          const height = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            resolve(blob || file);
+          }, 'image/jpeg', 0.78);
+        };
+        img.onerror = () => resolve(file);
+        img.src = reader.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function sendMedia(file) {
+    if (!file) return;
+    const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
+    if (!type) {
+      showToast('Chỉ hỗ trợ ảnh và video.', 'error');
+      return;
+    }
+
+    chatSendBtn.disabled = true;
+    chatAttachBtn.disabled = true;
+    const msgCol = collection(db, 'chats', chatSid, 'messages');
+    const sesRef = doc(db, 'chats', chatSid);
+    try {
+      const uploadFile = type === 'image' ? await compressImageFile(file) : file;
+      const url = await uploadToCloudinary(uploadFile, type);
+      const text = chatInput.value.trim();
+      chatInput.value = '';
+      await addDoc(msgCol, {
+        sender: 'guest',
+        type,
+        url,
+        text: text || (type === 'image' ? 'Ảnh' : 'Video'),
+        timestamp: serverTimestamp(),
+      });
+      await setDoc(sesRef, {
+        lastMessage: text || (type === 'image' ? 'Đã gửi ảnh' : 'Đã gửi video'),
+        lastTime: serverTimestamp(),
+        unreadByAdmin: true,
+      }, { merge: true });
+    } catch (err) {
+      console.error('Lỗi gửi media:', err);
+      showToast('Không gửi được ảnh/video. Vui lòng thử lại.', 'error');
+    } finally {
+      chatSendBtn.disabled = false;
+      chatAttachBtn.disabled = false;
+    }
+  }
+
+  async function retractMessage(id) {
+    if (!id) return;
+    const msgRef = doc(db, 'chats', chatSid, 'messages', id);
+    try {
+      await updateDoc(msgRef, { retracted: true, retractedAt: serverTimestamp() });
+    } catch (err) {
+      console.error('Lỗi thu hồi tin nhắn:', err);
+      showToast('Không thể thu hồi tin nhắn.', 'error');
+    }
   }
 
   async function sendChat() {
@@ -2184,9 +2378,18 @@
   document.getElementById('prechat-name').addEventListener('keydown',  e => { if (e.key === 'Enter') document.getElementById('prechat-phone').focus(); });
   document.getElementById('prechat-phone').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('prechat-start').click(); });
 
+  const chatAttachBtn = document.getElementById('chat-attach-btn');
+  const chatFileInput = document.getElementById('chat-file-input');
+
   chatClose.addEventListener('click', closeChat);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
   chatSendBtn.addEventListener('click', sendChat);
+  chatAttachBtn.addEventListener('click', () => chatFileInput.click());
+  chatFileInput.addEventListener('change', async () => {
+    const file = chatFileInput.files?.[0];
+    if (file) await sendMedia(file);
+    chatFileInput.value = '';
+  });
 </script>
 
 <!-- ===== CHAT WIDGET ===== -->
@@ -2219,8 +2422,10 @@
   <div id="chat-body" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
     <div id="chat-messages" class="chat-messages"></div>
     <div class="chat-input-row">
+      <button id="chat-attach-btn" type="button" class="attach-btn" title="Gửi ảnh / video">📎</button>
       <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
       <button id="chat-send">Gửi</button>
+      <input id="chat-file-input" type="file" accept="image/*,video/*" style="display:none" />
     </div>
   </div>
 </div>

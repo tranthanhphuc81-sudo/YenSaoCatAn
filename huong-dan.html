@@ -483,16 +483,39 @@ service cloud.firestore {<br/>
       <span class="badge-step">Dành cho người mua</span>
     </div>
 
+    <h3>Giao diện mới của trang khách</h3>
+    <ul class="plain">
+      <li>Thanh điều hướng tab nằm ở trên cùng và luôn dính khi cuộn trang.</li>
+      <li>Mỗi tab có <strong>icon + nhãn</strong>, gồm: <strong>Mua sắm</strong>, <strong>Tin tức</strong>, <strong>Hướng dẫn</strong>, <strong>Kiến thức</strong>, <strong>Lịch sử</strong>, <strong>Liên hệ</strong>.</li>
+      <li>Tab <strong>Tin tức</strong> chỉ tải dữ liệu khi bạn mở lần đầu, giúp trang tải nhanh hơn.</li>
+    </ul>
+
     <h3>Quy trình mua hàng</h3>
     <ol class="steps">
       <li>Trang tự động tải ảnh nền và danh sách sản phẩm từ Firebase.</li>
       <li>Dùng các nút lọc (<em>Tất cả / Yến Sào / Sâm / Mỹ-Nhật</em>) để tìm sản phẩm.</li>
-      <li>Nhấn <strong>"+ Thêm vào giỏ"</strong> trên thẻ sản phẩm muốn mua.</li>
+      <li>Click vào thẻ sản phẩm để xem chi tiết trong modal, hoặc nhấn <strong>"+ Thêm vào giỏ"</strong> trực tiếp.</li>
       <li>Kiểm tra giỏ hàng ở phần bên dưới – nhấn <strong>✕</strong> để bỏ sản phẩm.</li>
       <li>Điền họ tên, SĐT, địa chỉ và chọn hình thức thanh toán.</li>
       <li>Nếu chọn <strong>Chuyển khoản</strong>, thông tin tài khoản ngân hàng sẽ hiện ra.</li>
       <li>Nhấn <strong>"Đặt hàng ngay"</strong> – đơn hàng được lưu vào Firestore và thông báo thành công.</li>
     </ol>
+
+    <h3>Tab Tin tức</h3>
+    <ul class="plain">
+      <li>Tab <strong>Tin tức</strong> hiển thị các bài đăng từ Firestore.</li>
+      <li>Click vào mỗi bài để mở modal đọc chi tiết nội dung, xem ảnh, thẻ tag, ngày đăng và nội dung đầy đủ.</li>
+    </ul>
+
+    <h3>Chat hỗ trợ</h3>
+    <ul class="plain">
+      <li>Ở góc dưới bên phải có nút chat <strong>💬</strong> để mở hộp thoại hỗ trợ.</li>
+      <li>Khi mở lần đầu, bạn cần nhập họ tên và số điện thoại để bắt đầu.</li>
+      <li>Chat cho phép gửi ảnh/video để gửi hình ảnh sản phẩm hoặc yêu cầu cụ thể hơn.</li>
+      <li>Người dùng có thể thu hồi tin nhắn của chính mình bằng nút <strong>Thu hồi</strong> phía dưới mỗi tin nhắn.</li>
+      <li>Ảnh/video sẽ được upload qua Cloudinary và nén lại trước khi lưu vào cơ sở dữ liệu.</li>
+      <li>Để chạy tính năng media, bạn cần điền giá trị <strong>CLOUDINARY_CLOUD_NAME</strong> và <strong>CLOUDINARY_UPLOAD_PRESET</strong> trong <code>index.html</code>.</li>
+    </ul>
 
     <h3>Lưu ý</h3>
     <ul class="plain">
