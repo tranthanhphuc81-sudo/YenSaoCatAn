@@ -566,6 +566,15 @@
     .adm-msg.bot   { background: #f4f4f4; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg.admin { background: #e8f5e9; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg .msg-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+    .adm-msg .adm-media { margin-bottom: 8px; }
+    .adm-msg .adm-media img,
+    .adm-msg .adm-media video {
+      width: 100%;
+      max-height: 300px;
+      border-radius: 12px;
+      object-fit: contain;
+      display: block;
+    }
     @media (max-width: 600px) {
       .chat-admin-wrap { flex-direction: column; height: auto; }
       .chat-session-list { width: 100%; border-right: none; border-bottom: 1px solid #e5e7eb; max-height: 200px; }
@@ -1725,7 +1734,22 @@
         const label   = m.sender === 'guest' ? '👤 Khách' : m.sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
         const ts      = m.timestamp ? (m.timestamp.toDate ? m.timestamp.toDate() : new Date(m.timestamp)) : new Date();
         const timeStr = ts.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-        el.innerHTML  = `<div>${m.text}</div><div class="msg-meta">${label} · ${timeStr}</div>`;
+
+        let html = '';
+        if (m.type === 'image' && m.url) {
+          html += `<div class="adm-media"><img src="${m.url}" alt="Ảnh chat" onerror="this.style.display='none'" /></div>`;
+        }
+        if (m.type === 'video' && m.url) {
+          html += `<div class="adm-media"><video controls src="${m.url}"></video></div>`;
+        }
+        if (m.text) {
+          html += `<div>${m.text}</div>`;
+        }
+        if (!html) {
+          html = `<div><em>Nội dung tin nhắn trống.</em></div>`;
+        }
+
+        el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
         msgsEl.appendChild(el);
       });
       msgsEl.scrollTop = msgsEl.scrollHeight;

@@ -1506,8 +1506,9 @@
 
   // Cloudinary configuration
   // Thay giá trị này bằng thông tin từ tài khoản Cloudinary của bạn
-  const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUDINARY_CLOUD_NAME';
-  const CLOUDINARY_UPLOAD_PRESET = 'YOUR_CLOUDINARY_UPLOAD_PRESET';
+  const CLOUDINARY_CLOUD_NAME = 'dqnzndovz';
+  const CLOUDINARY_IMAGE_UPLOAD_PRESET = 'backgrounds_unsigned';
+  const CLOUDINARY_VIDEO_UPLOAD_PRESET = 'videos_unsigned';
 
   // ==================================================
   // BIẾN TRẠNG THÁI
@@ -2209,24 +2210,34 @@
   }
 
   async function uploadToCloudinary(file, resourceType = 'image') {
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-      throw new Error('Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và CLOUDINARY_UPLOAD_PRESET trong mã.');
+    const preset = resourceType === 'video'
+      ? CLOUDINARY_VIDEO_UPLOAD_PRESET
+      : CLOUDINARY_IMAGE_UPLOAD_PRESET;
+
+    if (!CLOUDINARY_CLOUD_NAME || !preset) {
+      throw new Error('Vui lòng cấu hình CLOUDINARY_CLOUD_NAME và preset Cloudinary phù hợp trong mã.');
     }
+
     const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
     const form = new FormData();
     form.append('file', file);
-    form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    form.append('upload_preset', preset);
     form.append('quality', 'auto');
     form.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       form.append('resource_type', 'video');
       form.append('eager', 'quality:auto,fetch_format:auto');
     }
+
     const res = await fetch(url, { method: 'POST', body: form });
     const data = await res.json();
     if (!res.ok || !data.secure_url) {
-      throw new Error(data.error?.message || 'Cloudinary upload failed');
+      const errorMessage = data.error?.message || `${res.status} ${res.statusText}`;
+      console.error('Cloudinary upload failed', { resourceType, preset, status: res.status, statusText: res.statusText, response: data });
+      throw new Error(`Cloudinary upload failed: ${errorMessage}`);
     }
+
+    console.info('Cloudinary upload success', { resourceType, preset, url: data.secure_url });
     return data.secure_url;
   }
 
