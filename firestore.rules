@@ -149,7 +149,6 @@ service cloud.firestore {
           && resource.data.retracted != true
           && request.resource.data.retractedAt is timestamp
           && request.resource.data.keys().hasOnly(resource.data.keys().union(['retracted', 'retractedAt']))
-          && request.resource.data.sender == resource.data.sender
         );
         allow delete:       if isAdmin();
       }
