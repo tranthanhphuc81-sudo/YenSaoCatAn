@@ -2312,10 +2312,11 @@
     if (!id) return;
     const msgRef = doc(db, 'chats', chatSid, 'messages', id);
     try {
-      await updateDoc(msgRef, { retracted: true, retractedAt: serverTimestamp() });
+      await setDoc(msgRef, { retracted: true, retractedAt: serverTimestamp() }, { merge: true });
+      showToast('Tin nhắn đã được thu hồi.', 'success');
     } catch (err) {
-      console.error('Lỗi thu hồi tin nhắn:', err);
-      showToast('Không thể thu hồi tin nhắn.', 'error');
+      console.error('Lỗi thu hồi tin nhắn:', err.code || '', err.message || err);
+      showToast('Không thể thu hồi tin nhắn. ' + (err.message || ''), 'error');
     }
   }
 
