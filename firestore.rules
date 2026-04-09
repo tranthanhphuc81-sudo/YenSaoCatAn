@@ -147,12 +147,9 @@ service cloud.firestore {
         allow update: if isAdmin() || (
           request.resource.data.retracted == true
           && resource.data.retracted != true
+          && request.resource.data.retractedAt is timestamp
           && request.resource.data.keys().hasOnly(resource.data.keys().union(['retracted', 'retractedAt']))
           && request.resource.data.sender == resource.data.sender
-          && request.resource.data.text == resource.data.text
-          && request.resource.data.type == resource.data.type
-          && request.resource.data.url == resource.data.url
-          && request.resource.data.timestamp == resource.data.timestamp
         );
         allow delete:       if isAdmin();
       }

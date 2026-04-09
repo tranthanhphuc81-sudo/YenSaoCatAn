@@ -566,6 +566,7 @@
     .adm-msg.bot   { background: #f4f4f4; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg.admin { background: #e8f5e9; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg .msg-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+    .adm-msg.retracted { opacity: 0.76; font-style: italic; background: #f0f0f0; color: #555; }
     .adm-msg .adm-media { margin-bottom: 8px; }
     .adm-msg .adm-media img,
     .adm-msg .adm-media video {
@@ -1737,17 +1738,22 @@
         const timeStr = ts.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
         let html = '';
-        if (m.type === 'image' && m.url) {
-          html += `<div class="adm-media"><img src="${m.url}" alt="Ảnh chat" onerror="this.style.display='none'" /></div>`;
-        }
-        if (m.type === 'video' && m.url) {
-          html += `<div class="adm-media"><video controls src="${m.url}"></video></div>`;
-        }
-        if (m.text) {
-          html += `<div>${m.text}</div>`;
-        }
-        if (!html) {
-          html = `<div><em>Nội dung tin nhắn trống.</em></div>`;
+        if (m.retracted) {
+          html += `<div class="adm-retracted">Tin nhắn đã bị thu hồi.</div>`;
+          el.classList.add('retracted');
+        } else {
+          if (m.type === 'image' && m.url) {
+            html += `<div class="adm-media"><img src="${m.url}" alt="Ảnh chat" onerror="this.style.display='none'" /></div>`;
+          }
+          if (m.type === 'video' && m.url) {
+            html += `<div class="adm-media"><video controls src="${m.url}"></video></div>`;
+          }
+          if (m.text) {
+            html += `<div>${m.text}</div>`;
+          }
+          if (!html) {
+            html = `<div><em>Nội dung tin nhắn trống.</em></div>`;
+          }
         }
 
         el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
