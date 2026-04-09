@@ -647,6 +647,7 @@
       gap: 0;
       flex-direction: column;
       transition: transform .2s;
+      cursor: pointer;
     }
 
     .news-card:hover { transform: translateY(-3px); }
@@ -919,7 +920,8 @@
       transition: background .15s;
     }
     #prechat-start:hover { background: #c94e00; }
-    #product-modal {
+    #product-modal,
+    #news-modal {
       display: none;
       position: fixed; inset: 0;
       z-index: 10000;
@@ -929,13 +931,15 @@
     }
 
     @media (min-width: 520px) {
-      #product-modal {
+      #product-modal,
+      #news-modal {
         align-items: center;
         padding: 16px;
       }
     }
 
-    #product-modal.open { display: flex; }
+    #product-modal.open,
+    #news-modal.open { display: flex; }
 
     .modal-backdrop {
       position: absolute; inset: 0;
@@ -1090,6 +1094,29 @@
       <hr class="modal-divider" />
       <p id="modal-description" class="modal-description"></p>
       <button class="btn-add" id="modal-add-btn">+ Thêm vào giỏ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CHI TIẾT TIN TỨC ===== -->
+<div id="news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box">
+    <div class="modal-drag-bar"></div>
+    <div class="modal-img-wrap">
+      <img id="news-modal-img" class="modal-img" src="" alt="" />
+    </div>
+    <div class="modal-body">
+      <span id="news-modal-tag" class="category-badge"></span>
+      <div class="modal-header-row">
+        <h2 id="news-modal-title"></h2>
+        <button class="modal-close" id="news-modal-close-btn" aria-label="Đóng">✕</button>
+      </div>
+      <div class="news-modal-meta">
+        <div id="news-modal-date" class="news-date"></div>
+      </div>
+      <hr class="modal-divider" />
+      <div id="news-modal-content" class="news-body-html"></div>
     </div>
   </div>
 </div>
@@ -1447,6 +1474,7 @@
   // BIẾN TRẠNG THÁI
   // ==================================================
   let allProducts = [];   // Toàn bộ sản phẩm từ Firestore
+  let allNews = [];       // Toàn bộ tin tức từ Firestore
   let cart = [];          // Giỏ hàng: [{ id, name, price, qty }]
   let currentFilter = 'all'; // Bộ lọc đang chọn
 
@@ -1609,14 +1637,57 @@
     document.body.style.overflow = 'hidden';
   }
 
+  function openNewsModal(post) {
+    const imgEl = document.getElementById('news-modal-img');
+    const imgWrap = imgEl.closest('.modal-img-wrap');
+    if (post.image) {
+      imgEl.src = post.image;
+      imgEl.alt = post.title || 'Tin tức';
+      imgEl.style.display = 'block';
+      if (imgWrap) imgWrap.style.display = 'block';
+    } else {
+      imgEl.src = '';
+      imgEl.alt = '';
+      imgEl.style.display = 'none';
+      if (imgWrap) imgWrap.style.display = 'none';
+    }
+
+    document.getElementById('news-modal-tag').textContent = TAG_LABEL_NEWS[post.tag] || post.tag || 'Tin tức';
+    document.getElementById('news-modal-title').textContent = post.title || 'Tin tức';
+    document.getElementById('news-modal-date').textContent = formatNewsDate(post.timestamp);
+
+    const rawContent = post.content || '';
+    const contentHtml = rawContent.trimStart().startsWith('<')
+      ? rawContent
+      : rawContent.replace(/\n/g, '<br>');
+    document.getElementById('news-modal-content').innerHTML = contentHtml;
+
+    document.getElementById('news-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
   function closeProductModal() {
     document.getElementById('product-modal').classList.remove('open');
     document.body.style.overflow = '';
   }
 
+  function closeNewsModal() {
+    document.getElementById('news-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
   document.getElementById('modal-close-btn').addEventListener('click', closeProductModal);
-  document.querySelector('.modal-backdrop').addEventListener('click', closeProductModal);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
+  document.getElementById('news-modal-close-btn').addEventListener('click', closeNewsModal);
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('click', () => {
+    closeProductModal();
+    closeNewsModal();
+  }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeProductModal();
+      closeNewsModal();
+    }
+  });
   document.getElementById('modal-add-btn').addEventListener('click', () => {
     const id = document.getElementById('modal-add-btn').dataset.id;
     const product = allProducts.find(p => p.id === id);
@@ -1840,14 +1911,14 @@
         return;
       }
 
-      grid.innerHTML = snap.docs.map(d => {
-        const p = d.data();
+      allNews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      grid.innerHTML = allNews.map(p => {
         const rawContent = p.content || '';
         const bodyHtml = rawContent.trimStart().startsWith('<')
           ? rawContent
           : rawContent.replace(/\n/g, '<br>');
         return `
-          <div class="news-card">
+          <div class="news-card" data-id="${p.id}">
             ${p.image ? `<img class="news-img" src="${p.image}" alt="${p.title}" onerror="this.style.display='none'" />` : ''}
             <div class="news-body">
               <span class="news-tag">${TAG_LABEL_NEWS[p.tag] || p.tag || 'Tin tức'}</span>
@@ -1858,6 +1929,13 @@
           </div>
         `;
       }).join('');
+
+      grid.querySelectorAll('.news-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const post = allNews.find(item => item.id === card.dataset.id);
+          if (post) openNewsModal(post);
+        });
+      });
     } catch (err) {
       console.error('Lỗi tải tin tức:', err);
       grid.innerHTML = '<p class="news-empty">Không thể tải tin tức.</p>';
