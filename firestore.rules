@@ -147,6 +147,7 @@ service cloud.firestore {
         allow update: if isAdmin() || (
           request.resource.data.retracted == true
           && resource.data.retracted != true
+          && request.writeFields.hasOnly(['retracted', 'retractedAt'])
         );
         allow delete:       if isAdmin();
       }
