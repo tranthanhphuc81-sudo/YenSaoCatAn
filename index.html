@@ -381,33 +381,50 @@
     #toast.error   { background: #0d3578; }
 
     /* ===== THANH ĐIỀU HƯỚNG TAB ===== */
+    /* ===== THANH ĐIỀU HƯỚNG – luôn hiện đủ 6 tab ===== */
     .main-nav {
-      display: flex;
-      gap: 0;
-      justify-content: center;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-      margin-bottom: 32px;
-      background: rgba(255,255,255,.08);
-      border-radius: 50px;
-      padding: 5px;
-      -webkit-overflow-scrolling: touch;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 28px;
+      padding: 6px;
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    .main-nav::-webkit-scrollbar { display: none; }
+    @media (min-width: 600px) {
+      .main-nav { grid-template-columns: repeat(6, 1fr); }
+    }
 
     .main-nav button {
-      flex-shrink: 0;
-      padding: 9px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 4px 8px;
       border: none;
-      border-radius: 50px;
+      border-radius: 12px;
       background: transparent;
-      color: rgba(255,255,255,.75);
-      font-size: .88rem;
-      font-weight: 600;
+      color: rgba(255,255,255,.78);
       cursor: pointer;
-      transition: background .2s, color .2s;
+      transition: background .2s, color .2s, transform .15s;
+    }
+
+    .main-nav button .nav-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .main-nav button .nav-label {
+      font-size: .70rem;
+      font-weight: 700;
+      letter-spacing: .2px;
       white-space: nowrap;
     }
 
@@ -419,6 +436,7 @@
     .main-nav button:not(.active):hover {
       background: rgba(255,255,255,.15);
       color: #fff;
+      transform: translateY(-1px);
     }
 
     /* ===== TAB PANELS ===== */
@@ -1085,12 +1103,12 @@
 
   <!-- ===== THANH ĐIỀU HƯỚNG TAB ===== -->
   <nav class="main-nav" role="tablist">
-    <button class="active" data-tab="shop"      role="tab">🛒 Mua sắm</button>
-    <button              data-tab="news"      role="tab">📰 Tin tức</button>
-    <button              data-tab="guide"     role="tab">🍜 Hướng dẫn chưng yến</button>
-    <button              data-tab="knowledge" role="tab">🌿 Kiến thức yến sào</button>
-    <button              data-tab="history"   role="tab">📜 Lịch sử thương hiệu</button>
-    <button              data-tab="contact"   role="tab">📞 Liên hệ</button>
+    <button class="active" data-tab="shop"      role="tab"><span class="nav-icon">🛒</span><span class="nav-label">Mua sắm</span></button>
+    <button              data-tab="news"      role="tab"><span class="nav-icon">📰</span><span class="nav-label">Tin tức</span></button>
+    <button              data-tab="guide"     role="tab"><span class="nav-icon">🍜</span><span class="nav-label">Hướng dẫn</span></button>
+    <button              data-tab="knowledge" role="tab"><span class="nav-icon">🌿</span><span class="nav-label">Kiến thức</span></button>
+    <button              data-tab="history"   role="tab"><span class="nav-icon">📜</span><span class="nav-label">Lịch sử</span></button>
+    <button              data-tab="contact"   role="tab"><span class="nav-icon">📞</span><span class="nav-label">Liên hệ</span></button>
   </nav>
 
   <!-- ===== TAB: TIN TỨC ===== -->
