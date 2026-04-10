@@ -2227,7 +2227,9 @@
     form.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       form.append('resource_type', 'video');
-      form.append('eager', 'quality:auto,fetch_format:auto');
+      form.append('eager', 'c_scale,w_720,q_auto');
+    } else {
+      form.append('eager', 'c_scale,w_1280,q_auto');
     }
 
     const res = await fetch(url, { method: 'POST', body: form });
@@ -2239,6 +2241,9 @@
     }
 
     console.info('Cloudinary upload success', { resourceType, preset, url: data.secure_url });
+    if (resourceType === 'video' && data.eager && Array.isArray(data.eager) && data.eager[0]?.secure_url) {
+      return data.eager[0].secure_url;
+    }
     return data.secure_url;
   }
 
@@ -2270,6 +2275,14 @@
     });
   }
 
+  async function compressMediaFile(file) {
+    if (!file) return file;
+    if (file.type.startsWith('image/')) {
+      return await compressImageFile(file);
+    }
+    return file;
+  }
+
   async function sendMedia(file) {
     if (!file) return;
     const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
@@ -2283,7 +2296,7 @@
     const msgCol = collection(db, 'chats', chatSid, 'messages');
     const sesRef = doc(db, 'chats', chatSid);
     try {
-      const uploadFile = type === 'image' ? await compressImageFile(file) : file;
+      const uploadFile = await compressMediaFile(file);
       const url = await uploadToCloudinary(uploadFile, type);
       const text = chatInput.value.trim();
       chatInput.value = '';

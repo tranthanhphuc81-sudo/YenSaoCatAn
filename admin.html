@@ -1040,7 +1040,9 @@
     formData.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       formData.append('resource_type', 'video');
-      formData.append('eager', 'quality:auto,fetch_format:auto');
+      formData.append('eager', 'c_scale,w_720,q_auto');
+    } else {
+      formData.append('eager', 'c_scale,w_1280,q_auto');
     }
 
     const res = await fetch(url, { method: 'POST', body: formData });
@@ -1049,6 +1051,9 @@
       const err = data.error?.message || `${res.status} ${res.statusText}`;
       console.error('Cloudinary upload failed', { resourceType, preset, status: res.status, response: data });
       throw new Error(`Cloudinary upload failed: ${err}`);
+    }
+    if (resourceType === 'video' && data.eager && Array.isArray(data.eager) && data.eager[0]?.secure_url) {
+      return data.eager[0].secure_url;
     }
     return data.secure_url;
   }
@@ -1079,6 +1084,14 @@
       reader.onerror = () => resolve(file);
       reader.readAsDataURL(file);
     });
+  }
+
+  async function compressMediaFile(file) {
+    if (!file) return file;
+    if (file.type.startsWith('image/')) {
+      return await compressImageFile(file);
+    }
+    return file;
   }
 
   document.getElementById('btn-upload-bg').addEventListener('click', async () => {
@@ -1886,7 +1899,7 @@
     try {
       btn.disabled = true;
       attachBtn.disabled = true;
-      const uploadFile = type === 'image' ? await compressImageFile(file) : file;
+      const uploadFile = await compressMediaFile(file);
       const url = await uploadToCloudinary(uploadFile, type);
       if (!text) text = type === 'image' ? 'Ảnh' : 'Video';
       input.value = '';
