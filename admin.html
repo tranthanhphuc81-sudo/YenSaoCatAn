@@ -101,6 +101,30 @@
     .form-group select:focus,
     .form-group textarea:focus { border-color: var(--red); }
 
+    .password-field-wrapper {
+      position: relative;
+    }
+
+    .btn-password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: #475569;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .btn-password-toggle:focus {
+      outline: none;
+    }
+
+    .hidden { display: none !important; }
+
     .btn-primary {
       width: 100%;
       padding: 12px;
@@ -769,6 +793,35 @@
       <button type="submit" class="btn-primary" id="btn-login">Đăng nhập</button>
       <p id="login-error"></p>
     </form>
+    <div style="margin-top:18px;text-align:center;">
+      <button type="button" id="show-password-reset" class="btn-secondary" style="width:100%;">🔐 Đổi mật khẩu</button>
+    </div>
+    <form id="password-reset-form" class="hidden" style="margin-top:18px;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="reset-email">Email đăng nhập</label>
+          <input type="email" id="reset-email" placeholder="admin@example.com" autocomplete="username" required />
+        </div>
+        <div class="form-group password-field-wrapper">
+          <label for="reset-current-password">Mật khẩu hiện tại</label>
+          <input type="password" id="reset-current-password" placeholder="••••••••" autocomplete="current-password" required />
+          <button type="button" class="btn-password-toggle" data-target="reset-current-password" aria-label="Hiển thị mật khẩu hiện tại">👁️</button>
+        </div>
+        <div class="form-group password-field-wrapper">
+          <label for="reset-new-password">Mật khẩu mới</label>
+          <input type="password" id="reset-new-password" placeholder="Mật khẩu mới" autocomplete="new-password" required />
+          <button type="button" class="btn-password-toggle" data-target="reset-new-password" aria-label="Hiển thị mật khẩu mới">👁️</button>
+        </div>
+        <div class="form-group password-field-wrapper">
+          <label for="reset-confirm-password">Xác nhận mật khẩu mới</label>
+          <input type="password" id="reset-confirm-password" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+          <button type="button" class="btn-password-toggle" data-target="reset-confirm-password" aria-label="Hiển thị xác nhận mật khẩu mới">👁️</button>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" id="btn-reset-password">🔁 Cập nhật mật khẩu</button>
+      <button type="button" class="btn-secondary" id="back-to-login" style="margin-top:12px;width:100%;">← Quay lại</button>
+      <p id="password-reset-status" style="margin-top:12px;color:#dc2626"></p>
+    </form>
   </div>
 </div>
 
@@ -906,15 +959,24 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="current-password">Mật khẩu hiện tại</label>
-              <input type="password" id="current-password" placeholder="••••••••" autocomplete="current-password" required />
+              <div class="password-field-wrapper">
+                <input type="password" id="current-password" placeholder="••••••••" autocomplete="current-password" required />
+                <button type="button" class="btn-password-toggle" data-target="current-password" aria-label="Hiển thị mật khẩu hiện tại">👁️</button>
+              </div>
             </div>
             <div class="form-group">
               <label for="new-password">Mật khẩu mới</label>
-              <input type="password" id="new-password" placeholder="Mật khẩu mới" autocomplete="new-password" required />
+              <div class="password-field-wrapper">
+                <input type="password" id="new-password" placeholder="Mật khẩu mới" autocomplete="new-password" required />
+                <button type="button" class="btn-password-toggle" data-target="new-password" aria-label="Hiển thị mật khẩu mới">👁️</button>
+              </div>
             </div>
             <div class="form-group">
               <label for="confirm-new-password">Xác nhận mật khẩu mới</label>
-              <input type="password" id="confirm-new-password" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+              <div class="password-field-wrapper">
+                <input type="password" id="confirm-new-password" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+                <button type="button" class="btn-password-toggle" data-target="confirm-new-password" aria-label="Hiển thị xác nhận mật khẩu mới">👁️</button>
+              </div>
             </div>
           </div>
           <button type="submit" class="btn-save" id="btn-change-password">🔁 Đổi mật khẩu</button>
@@ -1482,6 +1544,57 @@
     }
   });
 
+  document.getElementById('password-reset-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value.trim();
+    const currentPassword = document.getElementById('reset-current-password').value;
+    const newPassword = document.getElementById('reset-new-password').value;
+    const confirmPassword = document.getElementById('reset-confirm-password').value;
+    const statusEl = document.getElementById('password-reset-status');
+    const btnReset = document.getElementById('btn-reset-password');
+
+    statusEl.style.color = '#dc2626';
+    statusEl.textContent = '';
+    if (!email || !currentPassword || !newPassword || !confirmPassword) {
+      statusEl.textContent = 'Vui lòng điền đầy đủ tất cả các trường.';
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      statusEl.textContent = 'Mật khẩu mới và xác nhận không trùng khớp.';
+      return;
+    }
+    if (newPassword.length < 6) {
+      statusEl.textContent = 'Mật khẩu mới cần ít nhất 6 ký tự.';
+      return;
+    }
+
+    btnReset.disabled = true;
+    statusEl.style.color = '#111827';
+    statusEl.textContent = 'Đang cập nhật mật khẩu...';
+
+    try {
+      const signInResult = await signInWithEmailAndPassword(auth, email, currentPassword);
+      const user = signInResult.user;
+      await updatePassword(user, newPassword);
+      statusEl.style.color = '#059669';
+      statusEl.textContent = '✅ Đổi mật khẩu thành công!';
+      document.getElementById('password-reset-form').reset();
+    } catch (err) {
+      console.error('Lỗi đổi mật khẩu trước khi login:', err.code, err.message);
+      const errorMap = {
+        'auth/invalid-email': 'Email không hợp lệ.',
+        'auth/user-not-found': 'Tài khoản không tồn tại.',
+        'auth/wrong-password': 'Mật khẩu hiện tại không đúng.',
+        'auth/weak-password': 'Mật khẩu mới quá yếu. Vui lòng dùng ít nhất 6 ký tự.',
+        'auth/network-request-failed': 'Mất kết nối mạng. Vui lòng thử lại.',
+      };
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = errorMap[err.code] || `Đổi mật khẩu thất bại: ${err.message}`;
+    } finally {
+      btnReset.disabled = false;
+    }
+  });
+
   // ==================================================
   // ĐĂNG XUẤT
   // ==================================================
@@ -1669,6 +1782,33 @@
     } finally {
       btnChange.disabled = false;
     }
+  });
+
+  const showPasswordResetBtn = document.getElementById('show-password-reset');
+  const backToLoginBtn = document.getElementById('back-to-login');
+  const passwordResetForm = document.getElementById('password-reset-form');
+  const loginForm = document.getElementById('login-form');
+
+  showPasswordResetBtn.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    passwordResetForm.classList.remove('hidden');
+  });
+
+  backToLoginBtn.addEventListener('click', () => {
+    passwordResetForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.btn-password-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.textContent = isHidden ? '🙈' : '👁️';
+      btn.setAttribute('aria-label', isHidden ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu');
+    });
   });
 
   // ==================================================
