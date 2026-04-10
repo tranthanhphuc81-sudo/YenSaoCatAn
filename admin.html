@@ -566,6 +566,20 @@
     .adm-msg.bot   { background: #f4f4f4; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg.admin { background: #e8f5e9; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
     .adm-msg .msg-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+    .adm-msg .btn-retract {
+      margin-top: 8px;
+      background: transparent;
+      border: 1px solid rgba(0,0,0,.15);
+      color: #333;
+      padding: 4px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .78rem;
+    }
+    .adm-msg .btn-retract:hover {
+      border-color: #c92a2a;
+      color: #c92a2a;
+    }
     .adm-msg.retracted { opacity: 0.76; font-style: italic; background: #f0f0f0; color: #555; }
     .adm-msg .adm-media { margin-bottom: 8px; }
     .adm-msg .adm-media img,
@@ -942,7 +956,7 @@
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
     getFirestore,
-    doc, getDoc, setDoc,
+    doc, getDoc, setDoc, updateDoc,
     collection, getDocs, addDoc, deleteDoc,
     query, orderBy, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -1757,6 +1771,17 @@
         }
 
         el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
+        if (!m.retracted) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn-retract';
+          btn.textContent = 'Thu hồi';
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await adminRetractMessage(d.id);
+          });
+          el.appendChild(btn);
+        }
         msgsEl.appendChild(el);
       });
       msgsEl.scrollTop = msgsEl.scrollHeight;
@@ -1786,6 +1811,17 @@
     } finally {
       btn.disabled = false;
       input.focus();
+    }
+  }
+
+  async function adminRetractMessage(msgId) {
+    if (!activeChatSid || !msgId) return;
+    try {
+      await updateDoc(doc(db, 'chats', activeChatSid, 'messages', msgId), { retracted: true });
+      showToast('Đã thu hồi tin nhắn.', 'success');
+    } catch (err) {
+      console.error('Lỗi thu hồi tin admin:', err);
+      showToast('Không thể thu hồi tin nhắn: ' + (err.message || err.code || ''), 'error');
     }
   }
 
