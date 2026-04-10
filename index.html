@@ -2223,8 +2223,6 @@
     const form = new FormData();
     form.append('file', file);
     form.append('upload_preset', preset);
-    form.append('quality', 'auto');
-    form.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       form.append('resource_type', 'video');
     }

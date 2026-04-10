@@ -1036,8 +1036,6 @@
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', preset);
-    formData.append('quality', 'auto');
-    formData.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       formData.append('resource_type', 'video');
     }
