@@ -580,20 +580,28 @@
     .chat-thread-input .emoji-btn:hover {
       background: #ebedef;
     }
-    .adm-msg .btn-like {
+    .reaction-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
       margin-top: 8px;
-      margin-right: 8px;
-      background: transparent;
-      border: 1px solid rgba(0,0,0,.15);
-      color: #333;
-      padding: 4px 8px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: .78rem;
     }
-    .adm-msg .btn-like:hover {
-      border-color: #0b7285;
-      color: #0b7285;
+    .reaction-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: #333;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .reaction-pill:hover {
+      background: rgba(232,93,4,0.12);
+      border-color: rgba(232,93,4,0.25);
     }
     .adm-msg {
       max-width: 80%;
@@ -1867,23 +1875,36 @@
 
         el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
         if (!m.retracted) {
-          const likeBtn = document.createElement('button');
-          likeBtn.type = 'button';
-          likeBtn.className = 'btn-like';
-          let likeCount = Number(m.likeCount || 0);
-          likeBtn.textContent = `👍 ${likeCount}`;
-          likeBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            try {
-              likeBtn.disabled = true;
-              await adminLikeMessage(d.id);
-              likeCount += 1;
-              likeBtn.textContent = `👍 ${likeCount}`;
-            } finally {
-              likeBtn.disabled = false;
-            }
+          const reactionRow = document.createElement('div');
+          reactionRow.className = 'reaction-row';
+          const reactions = m.reactions || {};
+          const reactionButtons = [
+            { key: 'like', emoji: '👍' },
+            { key: 'heart', emoji: '❤️' },
+            { key: 'haha', emoji: '😂' },
+            { key: 'sad', emoji: '😢' },
+            { key: 'wow', emoji: '😲' },
+          ];
+          reactionButtons.forEach(({ key, emoji }) => {
+            const count = Number(reactions[key] || 0);
+            const pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = 'reaction-pill';
+            pill.textContent = count ? `${emoji} ${count}` : emoji;
+            pill.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              pill.disabled = true;
+              try {
+                await adminLikeMessage(d.id, key);
+                const next = count + 1;
+                pill.textContent = `${emoji} ${next}`;
+              } finally {
+                pill.disabled = false;
+              }
+            });
+            reactionRow.appendChild(pill);
           });
-          el.appendChild(likeBtn);
+          el.appendChild(reactionRow);
 
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -1988,9 +2009,9 @@
     }
   }
 
-  async function adminLikeMessage(msgId) {
+  async function adminLikeMessage(msgId, reaction = 'like') {
     if (!activeChatSid || !msgId) return;
-    await updateDoc(doc(db, 'chats', activeChatSid, 'messages', msgId), { likeCount: increment(1) });
+    await updateDoc(doc(db, 'chats', activeChatSid, 'messages', msgId), { [`reactions.${reaction}`]: increment(1) });
   }
 
   document.getElementById('admin-chat-send').addEventListener('click', adminSendChat);

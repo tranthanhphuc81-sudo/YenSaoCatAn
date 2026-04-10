@@ -881,6 +881,29 @@
     .chat-input-row .emoji-panel button:hover {
       background: #f3f4f6;
     }
+    .reaction-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .reaction-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: #333;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .reaction-pill:hover {
+      background: rgba(232,93,4,0.12);
+      border-color: rgba(232,93,4,0.25);
+    }
     .like-btn {
       margin-top: 8px;
       background: transparent;
@@ -2217,21 +2240,36 @@
     el.appendChild(meta);
 
     if (!msg.retracted && msg.id) {
-      const likeBtn = document.createElement('button');
-      likeBtn.type = 'button';
-      likeBtn.className = 'like-btn';
-      likeBtn.textContent = `👍 ${msg.likeCount || 0}`;
-      likeBtn.addEventListener('click', async () => {
-        likeBtn.disabled = true;
-        try {
-          await likeMessage(msg.id);
-          const next = Number(likeBtn.textContent.replace(/[^0-9]/g, '')) + 1;
-          likeBtn.textContent = `👍 ${next}`;
-        } finally {
-          likeBtn.disabled = false;
-        }
+      const reactionRow = document.createElement('div');
+      reactionRow.className = 'reaction-row';
+      const reactions = msg.reactions || {};
+      const reactionButtons = [
+        { key: 'like', emoji: '👍' },
+        { key: 'heart', emoji: '❤️' },
+        { key: 'haha', emoji: '😂' },
+        { key: 'sad', emoji: '😢' },
+        { key: 'wow', emoji: '😲' },
+      ];
+      reactionButtons.forEach(({ key, emoji }) => {
+        const count = Number(reactions[key] || 0);
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'reaction-pill';
+        pill.textContent = count ? `${emoji} ${count}` : emoji;
+        pill.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          pill.disabled = true;
+          try {
+            await likeMessage(msg.id, key);
+            const next = count + 1;
+            pill.textContent = `${emoji} ${next}`;
+          } finally {
+            pill.disabled = false;
+          }
+        });
+        reactionRow.appendChild(pill);
       });
-      el.appendChild(likeBtn);
+      el.appendChild(reactionRow);
     }
     if (msg.sender === 'guest' && !msg.retracted && msg.id) {
       const retract = document.createElement('button');
