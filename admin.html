@@ -1196,7 +1196,11 @@
     });
   }
 
-  async function uploadToCloudinary(file, resourceType = 'image') {
+  async function uploadToCloudinary(file, options = {}) {
+    const resourceType = options.resourceType || 'image';
+    const folder = options.folder || null;
+    const publicId = options.publicId || null;
+
     const preset = resourceType === 'video'
       ? CLOUDINARY_VIDEO_UPLOAD_PRESET
       : CLOUDINARY_IMAGE_UPLOAD_PRESET;
@@ -1212,12 +1216,18 @@
     if (resourceType === 'video') {
       formData.append('resource_type', 'video');
     }
+    if (folder) {
+      formData.append('folder', folder);
+    }
+    if (publicId) {
+      formData.append('public_id', publicId);
+    }
 
     const res = await fetch(url, { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok || !data.secure_url) {
       const err = data.error?.message || `${res.status} ${res.statusText}`;
-      console.error('Cloudinary upload failed', { resourceType, preset, status: res.status, response: data });
+      console.error('Cloudinary upload failed', { resourceType, preset, folder, publicId, status: res.status, response: data });
       throw new Error(`Cloudinary upload failed: ${err}`);
     }
     if (resourceType === 'video' && data.eager && Array.isArray(data.eager) && data.eager[0]?.secure_url) {
@@ -1280,7 +1290,7 @@
       const sizeKB     = (compressed.size / 1024).toFixed(0);
       statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
 
-      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/backgrounds', 'bg.webp');
+      const downloadURL    = await uploadToCloudinary(compressed, { folder: 'yensaocatan/backgrounds', publicId: 'bg' });
       urlInput.value       = downloadURL;
       statusEl.textContent = `✅ Upload xong (${sizeKB} KB) – nhấn Lưu Cấu Hình để áp dụng`;
       fileInput.value      = '';
@@ -1311,7 +1321,7 @@
       const sizeKB     = (compressed.size / 1024).toFixed(0);
       statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
 
-      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/logo', 'logo.webp');
+      const downloadURL    = await uploadToCloudinary(compressed, { folder: 'yensaocatan/logo', publicId: 'logo' });
       urlInput.value       = downloadURL;
       statusEl.textContent = `✅ Upload xong – nhấn Lưu Cấu Hình để áp dụng`;
       fileInput.value      = '';
@@ -1342,7 +1352,7 @@
       const sizeKB     = (compressed.size / 1024).toFixed(0);
       statusEl.textContent = `⏳ Đang upload (${sizeKB} KB)...`;
 
-      const downloadURL    = await uploadToCloudinary(compressed, 'yensaocatan/products', `prod_${Date.now()}.webp`);
+      const downloadURL    = await uploadToCloudinary(compressed, { folder: 'yensaocatan/products', publicId: `prod_${Date.now()}` });
       urlInput.value       = downloadURL;
       statusEl.textContent = `✅ Upload xong (${sizeKB} KB)`;
       fileInput.value      = '';
@@ -1782,7 +1792,7 @@
     status.textContent = 'Đang nén & upload...';
     try {
       const compressed  = await compressImage(file, 1200, 0.82);
-      const downloadURL = await uploadToCloudinary(compressed, 'yensaocatan/posts', `post_${Date.now()}.webp`);
+      const downloadURL = await uploadToCloudinary(compressed, { folder: 'yensaocatan/posts', publicId: `post_${Date.now()}` });
       document.getElementById('post-image').value = downloadURL;
       status.textContent = '✅ Upload thành công!';
     } catch (err) {
@@ -2260,7 +2270,7 @@
       attachBtn.disabled = true;
       const uploadFile = await compressMediaFile(file);
       console.log('adminSendMedia uploadFile', { uploadFileType: uploadFile.type, uploadFileSize: uploadFile.size });
-      const url = await uploadToCloudinary(uploadFile, type);
+      const url = await uploadToCloudinary(uploadFile, { resourceType: type });
       console.log('adminSendMedia uploaded url', url);
       if (!text) text = type === 'image' ? 'Ảnh' : 'Video';
       input.value = '';
