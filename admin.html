@@ -760,7 +760,7 @@
     <form id="login-form" novalidate>
       <div class="form-group">
         <label for="email">Email đăng nhập</label>
-        <input type="email" id="email" placeholder="admin@example.com" required />
+        <input type="email" id="email" placeholder="admin@example.com" autocomplete="username" required />
       </div>
       <div class="form-group">
         <label for="password">Mật khẩu</label>
@@ -1392,11 +1392,13 @@
   }
 
   onAuthStateChanged(auth, (user) => {
+    console.info('Auth state changed', user ? user.email : null, user);
     if (user) {
       // Đã đăng nhập → ẩn login, hiện dashboard
       document.getElementById('login-page').style.display  = 'none';
       document.getElementById('dashboard').style.display   = 'block';
       document.getElementById('admin-email').textContent   = user.email;
+      document.getElementById('login-error').textContent   = '';
 
       // Đánh dấu admin đang online + heartbeat mỗi 60 giây
       setAdminOnline(true);
@@ -1439,7 +1441,7 @@
       await signInWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged sẽ xử lý chuyển trang
     } catch (err) {
-      console.error('Lỗi đăng nhập:', err.code);
+      console.error('Lỗi đăng nhập:', err.code, err.message);
 
       // Chuyển mã lỗi Firebase sang tiếng Việt
       const errorMap = {
@@ -1448,8 +1450,9 @@
         'auth/wrong-password':       'Mật khẩu sai.',
         'auth/invalid-credential':   'Email hoặc mật khẩu không đúng.',
         'auth/too-many-requests':    'Quá nhiều lần thất bại. Thử lại sau.',
+        'auth/network-request-failed': 'Mất kết nối mạng. Vui lòng thử lại.',
       };
-      errEl.textContent = errorMap[err.code] || 'Đăng nhập thất bại. Kiểm tra lại thông tin.';
+      errEl.textContent = errorMap[err.code] || `Đăng nhập thất bại: ${err.message}`;
     } finally {
       btnLogin.disabled = false;
       btnLogin.textContent = 'Đăng nhập';
