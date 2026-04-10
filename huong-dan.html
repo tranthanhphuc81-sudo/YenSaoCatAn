@@ -327,9 +327,11 @@
       <li><a href="#s5">Security Rules Firestore</a></li>
       <li><a href="#s6">Hướng dẫn dùng trang Khách Hàng (<code>index.html</code>)</a></li>
       <li><a href="#s7">Hướng dẫn dùng trang Quản Trị (<code>admin.html</code>)</a></li>
-      <li><a href="#s8">Triển khai lên GitHub Pages</a></li>
-      <li><a href="#s9">Cấu trúc dữ liệu Firestore</a></li>
-      <li><a href="#s10">Xử lý sự cố thường gặp</a></li>
+      <li><a href="#s8">Hướng dẫn dùng trang Kho Hàng (<code>inventory.html</code>)</a></li>
+      <li><a href="#s9">Triển khai lên GitHub Pages</a></li>
+      <li><a href="#s10">Cấu trúc dữ liệu Firestore</a></li>
+      <li><a href="#s11">Xử lý sự cố thường gặp</a></li>
+      <li><a href="#s12">Luồng hoạt động & kiểm soát</a></li>
     </ol>
   </div>
 
@@ -523,6 +525,15 @@ service cloud.firestore {<br/>
       <li>Giỏ hàng chỉ lưu trong phiên trình duyệt, sẽ mất khi tải lại trang.</li>
       <li>Có thể thêm cùng một sản phẩm nhiều lần – số lượng sẽ tự cộng dồn.</li>
     </ul>
+
+    <h3>Tính năng nạp đơn tự động và xác nhận</h3>
+    <ul class="plain">
+      <li>Trang khách có thể nhận đơn từ URL bằng tham số <code>autoOrder=1</code>.</li>
+      <li>Tham số <code>items</code> chứa danh sách <code>identifier:qty</code>, ví dụ <code>items=yen-sao-bac:2,1234567890123:1</code>. Tham số <code>productIds</code> cũng được hỗ trợ như alias.</li>
+      <li>Hệ thống tìm sản phẩm theo <strong>ID</strong> hoặc <strong>mã vạch</strong>, nếu không tìm được sẽ thử theo <strong>tên</strong>.</li>
+      <li>Nếu có <code>autoConfirm=1</code>, hệ thống sẽ mở popup xác nhận trước khi gửi đơn.</li>
+      <li>Popup xác nhận chỉ cho phép đặt hàng khi form thông tin khách hàng đã hợp lệ.</li>
+    </ul>
   </div>
 
   <!-- ===== SECTION 7 ===== -->
@@ -558,8 +569,9 @@ service cloud.firestore {<br/>
     <h3>Tab 📋 Đơn Hàng</h3>
     <ul class="plain">
       <li>Hiển thị toàn bộ đơn đã đặt, sắp xếp từ mới nhất đến cũ nhất.</li>
-      <li>Mỗi dòng hiển thị: thời gian, tên khách, SĐT, địa chỉ, tổng tiền, hình thức thanh toán.</li>
-      <li>Tên các sản phẩm trong đơn hiển thị nhỏ bên dưới tên khách.</li>
+      <li>Mỗi dòng hiển thị: thời gian, tên khách, SĐT, địa chỉ, tổng tiền, trạng thái, nguồn đơn.</li>
+      <li>Có bộ lọc <strong>Tất cả / Tự động / Thủ công</strong> để xem nhanh đơn theo nguồn.</li>
+      <li>Nhấn <strong>Xem chi tiết</strong> để mở modal xem rõ danh sách sản phẩm, trạng thái, thanh toán và nguồn.</li>
     </ul>
 
     <h3>Đăng xuất</h3>
@@ -569,8 +581,39 @@ service cloud.firestore {<br/>
   <!-- ===== SECTION 8 ===== -->
   <div class="section" id="s8">
     <div class="section-header">
+      <div class="section-icon">🏬</div>
+      <h2>8. Hướng Dẫn Trang Kho Hàng (<code>inventory.html</code>)</h2>
+      <span class="badge-step">Dành cho quản lý kho</span>
+    </div>
+
+    <h3>Chức năng chính</h3>
+    <ul class="plain">
+      <li>Nhập mã vạch hoặc quét mã bằng camera để tìm sản phẩm trong kho.</li>
+      <li>Hệ thống đọc mã vạch và tự động nạp sản phẩm lên form nếu đã có trong <code>products</code>.</li>
+      <li>Điều chỉnh tồn kho bằng <strong>Nhập</strong> hoặc <strong>Xuất</strong> với số lượng và ghi chú.</li>
+      <li>Nhấn <strong>Lưu tồn kho</strong> để cập nhật số lượng trên Firestore và đồng thời ghi lại bản ghi vào <code>stockMovements</code>.</li>
+      <li>Danh sách sản phẩm và lịch sử nhập xuất được tải từ Firestore; có thể tìm theo mã vạch, tên, vị trí kho.</li>
+    </ul>
+
+    <h3>Quy trình vận hành</h3>
+    <ol class="steps">
+      <li>Nhập hoặc quét mã vạch trên sản phẩm.</li>
+      <li>Hệ thống tìm sản phẩm trong collection <code>products</code> theo trường <code>barcode</code>.</li>
+      <li>Nếu tìm thấy, form sẽ hiển thị tên, ảnh, tồn kho hiện tại để admin chỉnh sửa.</li>
+      <li>Chọn loại thao tác <strong>Nhập</strong> hoặc <strong>Xuất</strong>, nhập số lượng và ghi chú.</li>
+      <li>Nhấn <strong>Lưu tồn kho</strong> để cập nhật <code>products.quantity</code> và tạo bản ghi mới trong <code>stockMovements</code>.</li>
+    </ol>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span>
+      <span>Nếu sản phẩm chưa tồn tại trên admin, hệ thống sẽ yêu cầu tạo sản phẩm trước rồi mới cập nhật tồn kho.</span>
+    </div>
+  </div>
+
+  <div class="section" id="s9">
+    <div class="section-header">
       <div class="section-icon">🚀</div>
-      <h2>8. Triển Khai Lên GitHub Pages</h2>
+      <h2>9. Triển Khai Lên GitHub Pages</h2>
       <span class="badge-step">Xuất bản</span>
     </div>
 
@@ -594,10 +637,10 @@ service cloud.firestore {<br/>
   </div>
 
   <!-- ===== SECTION 9 ===== -->
-  <div class="section" id="s9">
+  <div class="section" id="s10">
     <div class="section-header">
       <div class="section-icon">🗄️</div>
-      <h2>9. Cấu Trúc Dữ Liệu Firestore</h2>
+      <h2>10. Cấu Trúc Dữ Liệu Firestore</h2>
       <span class="badge-step">Tham khảo</span>
     </div>
 
@@ -621,6 +664,9 @@ service cloud.firestore {<br/>
         <tr><td>price</td><td>number</td><td>Giá (VNĐ, số nguyên)</td></tr>
         <tr><td>image</td><td>string</td><td>URL ảnh sản phẩm</td></tr>
         <tr><td>category</td><td>string</td><td><code>yen</code> | <code>sam</code> | <code>us-japan</code></td></tr>
+        <tr><td>barcode</td><td>string</td><td>Mã vạch / SKU</td></tr>
+        <tr><td>quantity</td><td>number</td><td>Tồn kho hiện tại</td></tr>
+        <tr><td>updatedAt</td><td>timestamp</td><td>Thời gian cập nhật gần nhất</td></tr>
       </tbody>
     </table>
 
@@ -634,16 +680,35 @@ service cloud.firestore {<br/>
         <tr><td>paymentMethod</td><td>string</td><td><code>cash</code> | <code>transfer</code></td></tr>
         <tr><td>items</td><td>array</td><td>Mảng sản phẩm: <code>{productId, name, price, qty}</code></td></tr>
         <tr><td>total</td><td>number</td><td>Tổng tiền (VNĐ)</td></tr>
+        <tr><td>source</td><td>string</td><td><code>auto</code> | <code>website</code></td></tr>
+        <tr><td>createdAt</td><td>timestamp</td><td>Thời gian tạo đơn (server time)</td></tr>
         <tr><td>timestamp</td><td>timestamp</td><td>Thời gian đặt hàng (server time)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Collection: <code>stockMovements</code> (Auto-ID)</h3>
+    <table>
+      <thead><tr><th>Field</th><th>Kiểu</th><th>Mô tả</th></tr></thead>
+      <tbody>
+        <tr><td>productId</td><td>string</td><td>ID sản phẩm từ <code>products</code></td></tr>
+        <tr><td>barcode</td><td>string</td><td>Mã vạch của sản phẩm</td></tr>
+        <tr><td>productName</td><td>string</td><td>Tên sản phẩm</td></tr>
+        <tr><td>type</td><td>string</td><td><code>in</code> | <code>out</code></td></tr>
+        <tr><td>delta</td><td>number</td><td>Số lượng thay đổi (âm hoặc dương)</td></tr>
+        <tr><td>previousQuantity</td><td>number</td><td>Tồn kho trước khi thay đổi</td></tr>
+        <tr><td>newQuantity</td><td>number</td><td>Tồn kho sau khi thay đổi</td></tr>
+        <tr><td>location</td><td>string</td><td>Vị trí kho</td></tr>
+        <tr><td>note</td><td>string</td><td>Ghi chú thao tác</td></tr>
+        <tr><td>timestamp</td><td>timestamp</td><td>Thời gian ghi nhận</td></tr>
       </tbody>
     </table>
   </div>
 
   <!-- ===== SECTION 10 ===== -->
-  <div class="section" id="s10">
+  <div class="section" id="s11">
     <div class="section-header">
       <div class="section-icon">🔍</div>
-      <h2>10. Xử Lý Sự Cố Thường Gặp</h2>
+      <h2>11. Xử Lý Sự Cố Thường Gặp</h2>
       <span class="badge-step">Troubleshooting</span>
     </div>
 
@@ -684,6 +749,49 @@ service cloud.firestore {<br/>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="section" id="s12">
+    <div class="section-header">
+      <div class="section-icon">🧭</div>
+      <h2>12. Luồng Hoạt Động & Kiểm Soát</h2>
+      <span class="badge-step">Kiến trúc</span>
+    </div>
+
+    <h3>Chủ thể và nhiệm vụ</h3>
+    <ul class="plain">
+      <li><strong>Khách hàng</strong>: duyệt sản phẩm, nạp giỏ, điền thông tin, đặt hàng.</li>
+      <li><strong>Admin</strong>: quản lý sản phẩm, xem đơn, lọc đơn theo <code>auto</code> hoặc <code>manual</code>, điều chỉnh tồn kho.</li>
+      <li><strong>Firestore</strong>: lưu trữ cấu hình, sản phẩm, đơn hàng và lịch sử nhập xuất.</li>
+    </ul>
+
+    <h3>Ảnh hưởng và kiểm soát</h3>
+    <ul class="plain">
+      <li><strong>Order source</strong>: đơn tự động được gán <code>source: 'auto'</code>, đơn website thông thường gán <code>source: 'website'</code>.</li>
+      <li><strong>Kiểm soát admin</strong>: chỉ admin đăng nhập mới đọc/sửa dữ liệu<br/>trong <code>admin.html</code>, theo rules đã đặt trong Firestore.</li>
+      <li><strong>Kiểm soát tồn kho</strong>: mỗi khi đặt hàng, hệ thống trừ <code>products.quantity</code> và ghi vào <code>stockMovements</code>.</li>
+      <li><strong>Xác nhận đơn tự động</strong>: popup chỉ cho phép gửi khi dữ liệu khách hàng hợp lệ, tránh đơn thiếu thông tin.</li>
+    </ul>
+
+    <h3>Sơ đồ luồng hoạt động</h3>
+    <div class="code-box">
+<span class="cmt">// Mermaid syntax cho sơ đồ hoạt động</span><br/>
+<span class="key">graph</span> LR<br/>
+&nbsp;&nbsp;KH[Khách hàng] -->|Xem sản phẩm| WEB[index.html]<br/>
+&nbsp;&nbsp;WEB -->|Đặt hàng| FIRESTORE[Firestore orders]<br/>
+&nbsp;&nbsp;WEB -->|Nạp đơn tự động| WEB<br/>
+&nbsp;&nbsp;WEB -->|Kiểm tra| STOCK[products.quantity]<br/>
+&nbsp;&nbsp;FIRESTORE -->|Ghi order| ORD[orders collection]<br/>
+&nbsp;&nbsp;FIRESTORE -->|Cập nhật| STOCK<br/>
+&nbsp;&nbsp;ADMIN[Admin] -->|Xem/lọc đơn| ORD<br/>
+&nbsp;&nbsp;ADMIN -->|Quản lý sản phẩm| PRODUCTS<br/>
+&nbsp;&nbsp;ADMIN -->|Quản lý kho| STOCKMOV[stockMovements collection]<br/>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-icon">✅</span>
+      <span>Đây là sơ đồ đơn giản thể hiện 3 chủ thể chính: Khách hàng, Admin, Firestore. Mỗi hành động đều ảnh hưởng đến dữ liệu và được kiểm soát qua phép viết đọc của Firestore.</span>
+    </div>
   </div>
 
   <!-- ĐIỀU HƯỚNG -->
