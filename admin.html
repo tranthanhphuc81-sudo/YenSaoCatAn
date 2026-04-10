@@ -915,7 +915,24 @@
             </div>
             <div class="form-group">
               <label for="prod-barcode">Mã vạch / SKU</label>
-              <input type="text" id="prod-barcode" placeholder="1234567890123" />
+              <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+                <input type="text" id="prod-barcode" placeholder="1234567890123" />
+                <button type="button" class="btn-small" id="btn-generate-code">Tạo mã</button>
+                <button type="button" class="btn-small" id="btn-print-label" disabled>In nhãn</button>
+              </div>
+              <small style="color:#475569">Nếu để trống, hệ thống sẽ tạo mã tự động khi lưu sản phẩm.</small>
+            </div>
+            <div id="code-preview" style="display:none; margin-top:14px; padding:14px; border:1px solid rgba(148,163,184,.35); border-radius:14px; background:#f8fafc;">
+              <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:flex-start">
+                <div style="text-align:center; min-width:160px;">
+                  <div style="font-size:.85rem;color:#334155;margin-bottom:8px">Barcode</div>
+                  <img id="barcode-preview" src="" alt="Mã vạch" style="max-width:220px;display:block;margin:0 auto" />
+                </div>
+                <div style="text-align:center; min-width:160px;">
+                  <div style="font-size:.85rem;color:#334155;margin-bottom:8px">QR Code</div>
+                  <img id="qr-preview" src="" alt="QR code" style="max-width:160px;display:block;margin:0 auto" />
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label for="prod-price">Giá (VNĐ) *</label>
@@ -1621,11 +1638,85 @@
   // ==================================================
   // TAB SẢN PHẨM: Thêm mới
   // ==================================================
+  const btnGenerateCode = document.getElementById('btn-generate-code');
+  const btnPrintLabel = document.getElementById('btn-print-label');
+  const barcodePreview = document.getElementById('barcode-preview');
+  const qrPreview = document.getElementById('qr-preview');
+  const codePreview = document.getElementById('code-preview');
+
+  function generateProductBarcodeValue() {
+    let barcode = document.getElementById('prod-barcode').value.trim();
+    if (!barcode) {
+      barcode = `YS${Date.now().toString().slice(-10)}`;
+      document.getElementById('prod-barcode').value = barcode;
+    }
+    return barcode;
+  }
+
+  function updateProductCodePreview() {
+    const barcode = generateProductBarcodeValue();
+    const qrText = `product:${barcode}`;
+    barcodePreview.src = `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`;
+    qrPreview.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`;
+    codePreview.style.display = 'block';
+    btnPrintLabel.disabled = false;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function printProductLabel() {
+    const name = document.getElementById('prod-name').value.trim();
+    const price = Number(document.getElementById('prod-price').value) || 0;
+    const barcode = document.getElementById('prod-barcode').value.trim();
+    const image = document.getElementById('prod-image').value.trim();
+    const barcodeUrl = barcodePreview.src;
+    const qrUrl = qrPreview.src;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>In nhãn sản phẩm</title>
+        <style>
+          body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:16px;}
+          .label{width:320px;padding:16px;border:1px dashed #333;line-height:1.3;}
+          .label h1{font-size:18px;margin:0 0 10px;}
+          .label .price{font-size:14px;margin-bottom:10px;}
+          .label img{display:block;margin:0 auto 10px;max-width:100%;}
+          .label .meta{font-size:12px;color:#333;text-align:center;margin-top:8px;}
+        </style>
+      </head>
+      <body onload="window.print();window.onafterprint=function(){window.close();}">
+        <div class="label">
+          <h1>${escapeHtml(name || 'Sản phẩm')}</h1>
+          ${image ? `<img src="${escapeHtml(image)}" alt="Ảnh sản phẩm" />` : ''}
+          <div class="price">Giá: ${formatVND(price)}</div>
+          <img src="${escapeHtml(barcodeUrl)}" alt="Barcode" />
+          <img src="${escapeHtml(qrUrl)}" alt="QR code" style="margin-top:8px;max-width:140px;" />
+          <div class="meta">${escapeHtml(barcode)}</div>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+
+  btnGenerateCode.addEventListener('click', updateProductCodePreview);
+  btnPrintLabel.addEventListener('click', printProductLabel);
+
   document.getElementById('product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const name        = document.getElementById('prod-name').value.trim();
-    const barcode     = document.getElementById('prod-barcode').value.trim();
+    let barcode       = document.getElementById('prod-barcode').value.trim();
     const price       = parseFloat(document.getElementById('prod-price').value);
     const image       = document.getElementById('prod-image').value.trim();
     const category    = document.getElementById('prod-category').value;
@@ -1636,17 +1727,23 @@
       return;
     }
 
+    if (!barcode) {
+      barcode = generateProductBarcodeValue();
+      updateProductCodePreview();
+    }
+
     const btnAdd = document.getElementById('btn-add-product');
     btnAdd.disabled    = true;
     btnAdd.textContent = 'Đang thêm...';
 
     try {
-      const productData = { name, price, image, category };
-      if (barcode) productData.barcode = barcode;
+      const productData = { name, price, image, category, barcode };
       if (description) productData.description = description;
       await addDoc(collection(db, 'products'), productData);
       showToast('✅ Thêm sản phẩm thành công!');
       document.getElementById('product-form').reset();
+      codePreview.style.display = 'none';
+      btnPrintLabel.disabled = true;
       await loadProducts(); // Làm mới bảng danh sách
     } catch (err) {
       console.error('Lỗi thêm sản phẩm:', err);
