@@ -2311,12 +2311,13 @@
   async function retractMessage(id) {
     if (!id) return;
     const msgRef = doc(db, 'chats', chatSid, 'messages', id);
+    console.log('Thu hồi tin nhắn:', msgRef.path, id);
     try {
-      await updateDoc(msgRef, { retracted: true, retractedAt: serverTimestamp() });
+      await updateDoc(msgRef, { retracted: true });
       showToast('Tin nhắn đã được thu hồi.', 'success');
     } catch (err) {
-      console.error('Lỗi thu hồi tin nhắn:', err.code || '', err.message || err);
-      showToast('Không thể thu hồi tin nhắn. ' + (err.message || ''), 'error');
+      console.error('Lỗi thu hồi tin nhắn:', err);
+      showToast('Không thể thu hồi tin nhắn. ' + (err.code || err.message || ''), 'error');
     }
   }
 
