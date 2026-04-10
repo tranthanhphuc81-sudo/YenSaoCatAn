@@ -528,6 +528,7 @@
       gap: 8px;
     }
     .chat-thread-input {
+      position: relative;
       padding: 10px 12px;
       border-top: 1px solid #e5e7eb;
       display: flex;
@@ -565,6 +566,34 @@
     }
     .chat-thread-input .attach-btn:hover {
       background: #f5f5f5;
+    }
+    .chat-thread-input .emoji-btn {
+      background: #f3f4f6;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      min-width: 46px;
+    }
+    .chat-thread-input .emoji-btn:hover {
+      background: #ebedef;
+    }
+    .adm-msg .btn-like {
+      margin-top: 8px;
+      margin-right: 8px;
+      background: transparent;
+      border: 1px solid rgba(0,0,0,.15);
+      color: #333;
+      padding: 4px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .78rem;
+    }
+    .adm-msg .btn-like:hover {
+      border-color: #0b7285;
+      color: #0b7285;
     }
     .adm-msg {
       max-width: 80%;
@@ -919,10 +948,14 @@
             <div class="chat-thread-header" id="chat-thread-header">Tin nhắn</div>
             <div class="chat-thread-msgs" id="chat-thread-msgs"></div>
             <div class="chat-thread-input">
+              <button id="admin-chat-emoji" type="button" class="emoji-btn" title="Chèn emoji">😊</button>
               <button id="admin-chat-attach" type="button" class="attach-btn" title="Gửi ảnh / video">📎</button>
               <input id="admin-chat-input" type="text" placeholder="Trả lời khách..." maxlength="500" autocomplete="off" />
               <button id="admin-chat-send">Gửi</button>
               <input id="admin-chat-file-input" type="file" accept="image/*,video/*" style="display:none" />
+              <div class="emoji-panel" id="admin-chat-emoji-panel" style="display:none">
+                <button type="button" data-em="😊">😊</button><button type="button" data-em="😂">😂</button><button type="button" data-em="😍">😍</button><button type="button" data-em="👍">👍</button><button type="button" data-em="🎉">🎉</button><button type="button" data-em="❤️">❤️</button><button type="button" data-em="🔥">🔥</button><button type="button" data-em="✨">✨</button><button type="button" data-em="👏">👏</button><button type="button" data-em="🌟">🌟</button>
+              </div>
             </div>
           </div>
         </div>
@@ -972,7 +1005,7 @@
     getFirestore,
     doc, getDoc, setDoc, updateDoc,
     collection, getDocs, addDoc, deleteDoc,
-    query, orderBy, onSnapshot, serverTimestamp
+    query, orderBy, onSnapshot, serverTimestamp, increment
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 
@@ -1806,7 +1839,7 @@
     chatThreadUnsub = onSnapshot(q, snap => {
       msgsEl.innerHTML = '';
       snap.docs.forEach(d => {
-        const m    = d.data();
+        const m    = { id: d.id, ...d.data() };
         const el   = document.createElement('div');
         el.className = 'adm-msg ' + m.sender;
         const label   = m.sender === 'guest' ? '👤 Khách' : m.sender === 'bot' ? '🤖 Bot' : '👨‍💼 Admin';
@@ -1834,6 +1867,24 @@
 
         el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
         if (!m.retracted) {
+          const likeBtn = document.createElement('button');
+          likeBtn.type = 'button';
+          likeBtn.className = 'btn-like';
+          let likeCount = Number(m.likeCount || 0);
+          likeBtn.textContent = `👍 ${likeCount}`;
+          likeBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+              likeBtn.disabled = true;
+              await adminLikeMessage(d.id);
+              likeCount += 1;
+              likeBtn.textContent = `👍 ${likeCount}`;
+            } finally {
+              likeBtn.disabled = false;
+            }
+          });
+          el.appendChild(likeBtn);
+
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'btn-retract';
@@ -1937,6 +1988,11 @@
     }
   }
 
+  async function adminLikeMessage(msgId) {
+    if (!activeChatSid || !msgId) return;
+    await updateDoc(doc(db, 'chats', activeChatSid, 'messages', msgId), { likeCount: increment(1) });
+  }
+
   document.getElementById('admin-chat-send').addEventListener('click', adminSendChat);
   document.getElementById('admin-chat-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); adminSendChat(); }
@@ -1948,6 +2004,30 @@
     const file = e.target.files?.[0];
     if (file) await adminSendMedia(file);
     e.target.value = '';
+  });
+
+  const adminChatEmojiBtn = document.getElementById('admin-chat-emoji');
+  const adminChatEmojiPanel = document.getElementById('admin-chat-emoji-panel');
+  adminChatEmojiBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    adminChatEmojiPanel.style.display = adminChatEmojiPanel.style.display === 'none' ? 'flex' : 'none';
+  });
+  adminChatEmojiPanel.addEventListener('click', e => {
+    const emoji = e.target.closest('[data-em]')?.dataset.em;
+    if (!emoji) return;
+    const input = document.getElementById('admin-chat-input');
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+    const pos = start + [...emoji].length;
+    input.setSelectionRange(pos, pos);
+    input.focus();
+    adminChatEmojiPanel.style.display = 'none';
+  });
+  document.addEventListener('click', e => {
+    if (!adminChatEmojiPanel.contains(e.target) && e.target !== adminChatEmojiBtn) {
+      adminChatEmojiPanel.style.display = 'none';
+    }
   });
 
   // ==================================================

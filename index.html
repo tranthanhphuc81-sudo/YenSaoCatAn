@@ -835,10 +835,65 @@
       margin-top: 3px;
     }
     .chat-input-row {
+      position: relative;
       padding: 10px;
       border-top: 1px solid #eee;
       display: flex;
       gap: 8px;
+    }
+    .chat-input-row .emoji-btn {
+      background: #f3f4f6;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      min-width: 44px;
+    }
+    .chat-input-row .emoji-btn:hover {
+      background: #ebedef;
+    }
+    .chat-input-row .emoji-panel {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 8px;
+      width: 280px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 999;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .chat-input-row .emoji-panel button {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+    }
+    .chat-input-row .emoji-panel button:hover {
+      background: #f3f4f6;
+    }
+    .like-btn {
+      margin-top: 8px;
+      background: transparent;
+      border: 1px solid rgba(0,0,0,.15);
+      color: #333;
+      padding: 4px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .78rem;
+    }
+    .like-btn:hover {
+      border-color: #0b7285;
+      color: #0b7285;
     }
     .chat-input-row input {
       flex: 1;
@@ -1487,7 +1542,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs,
-    addDoc, serverTimestamp, query, orderBy, onSnapshot
+    addDoc, serverTimestamp, query, orderBy, onSnapshot, increment
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = { 
@@ -2161,6 +2216,23 @@
     meta.textContent = `${label} · ${formatChatTime(msg.timestamp)}`;
     el.appendChild(meta);
 
+    if (!msg.retracted && msg.id) {
+      const likeBtn = document.createElement('button');
+      likeBtn.type = 'button';
+      likeBtn.className = 'like-btn';
+      likeBtn.textContent = `👍 ${msg.likeCount || 0}`;
+      likeBtn.addEventListener('click', async () => {
+        likeBtn.disabled = true;
+        try {
+          await likeMessage(msg.id);
+          const next = Number(likeBtn.textContent.replace(/[^0-9]/g, '')) + 1;
+          likeBtn.textContent = `👍 ${next}`;
+        } finally {
+          likeBtn.disabled = false;
+        }
+      });
+      el.appendChild(likeBtn);
+    }
     if (msg.sender === 'guest' && !msg.retracted && msg.id) {
       const retract = document.createElement('button');
       retract.type = 'button';
@@ -2329,6 +2401,11 @@
     }
   }
 
+  async function likeMessage(id) {
+    if (!id) return;
+    await updateDoc(doc(db, 'chats', chatSid, 'messages', id), { likeCount: increment(1) });
+  }
+
   async function sendChat() {
     const text = chatInput.value.trim();
     if (!text) return;
@@ -2402,11 +2479,33 @@
 
   const chatAttachBtn = document.getElementById('chat-attach-btn');
   const chatFileInput = document.getElementById('chat-file-input');
+  const chatEmojiBtn = document.getElementById('chat-emoji-btn');
+  const chatEmojiPanel = document.getElementById('chat-emoji-panel');
 
   chatClose.addEventListener('click', closeChat);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
   chatSendBtn.addEventListener('click', sendChat);
   chatAttachBtn.addEventListener('click', () => chatFileInput.click());
+  chatEmojiBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    chatEmojiPanel.style.display = chatEmojiPanel.style.display === 'none' ? 'flex' : 'none';
+  });
+  chatEmojiPanel.addEventListener('click', e => {
+    const emoji = e.target.closest('[data-em]')?.dataset.em;
+    if (!emoji) return;
+    const start = chatInput.selectionStart ?? chatInput.value.length;
+    const end = chatInput.selectionEnd ?? start;
+    chatInput.value = chatInput.value.slice(0, start) + emoji + chatInput.value.slice(end);
+    const pos = start + [...emoji].length;
+    chatInput.setSelectionRange(pos, pos);
+    chatInput.focus();
+    chatEmojiPanel.style.display = 'none';
+  });
+  document.addEventListener('click', e => {
+    if (!chatEmojiPanel.contains(e.target) && e.target !== chatEmojiBtn) {
+      chatEmojiPanel.style.display = 'none';
+    }
+  });
   chatFileInput.addEventListener('change', async () => {
     const file = chatFileInput.files?.[0];
     if (file) await sendMedia(file);
@@ -2444,10 +2543,14 @@
   <div id="chat-body" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
     <div id="chat-messages" class="chat-messages"></div>
     <div class="chat-input-row">
+      <button id="chat-emoji-btn" type="button" class="emoji-btn" title="Chèn emoji">😊</button>
       <button id="chat-attach-btn" type="button" class="attach-btn" title="Gửi ảnh / video">📎</button>
       <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
       <button id="chat-send">Gửi</button>
       <input id="chat-file-input" type="file" accept="image/*,video/*" style="display:none" />
+      <div class="emoji-panel" id="chat-emoji-panel" style="display:none">
+        <button type="button" data-em="😊">😊</button><button type="button" data-em="😂">😂</button><button type="button" data-em="😍">😍</button><button type="button" data-em="👍">👍</button><button type="button" data-em="🎉">🎉</button><button type="button" data-em="❤️">❤️</button><button type="button" data-em="🔥">🔥</button><button type="button" data-em="✨">✨</button><button type="button" data-em="👏">👏</button><button type="button" data-em="🌟">🌟</button>
+      </div>
     </div>
   </div>
 </div>
