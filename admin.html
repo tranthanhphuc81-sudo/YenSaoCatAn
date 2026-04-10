@@ -174,15 +174,39 @@
       background: var(--red);
       color: #fff;
       border: none;
-      padding: 7px 18px;
+      padding: 8px 16px;
       border-radius: 20px;
-      font-size: .85rem;
+      font-size: .88rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background .2s;
+      transition: background .2s, transform .2s;
+      min-height: 40px;
     }
 
-    .btn-logout:hover { background: var(--red-dk); }
+    .btn-logout:hover { background: var(--red-dk); transform: translateY(-1px); }
+
+    .btn-highlight {
+      background: #f59e0b;
+      color: #111;
+      border: 1px solid rgba(255,255,255,.85);
+      box-shadow: 0 10px 22px rgba(245,158,11,.16);
+      font-weight: 600;
+      font-size: .88rem;
+      padding: 8px 16px;
+      border-radius: 20px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .btn-highlight:hover {
+      background: #d97706;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(245,158,11,.2);
+    }
 
     /* ===== TABS – luôn hiện đủ 5 tab ===== */
     .tab-bar {
@@ -654,6 +678,69 @@
     .emoji-panel { position:absolute; top:calc(100% + 4px); left:auto; right:0; background:#fff; border:1px solid #d1d5db; border-radius:10px; padding:8px; width:300px; max-height:220px; overflow-y:auto; z-index:999; box-shadow:0 8px 24px rgba(0,0,0,.15); flex-wrap:wrap; gap:3px; }
     .emoji-panel button { background:none; border:none; font-size:1.25rem; cursor:pointer; padding:3px 5px; border-radius:6px; line-height:1; }
     .emoji-panel button:hover { background:#f3f4f6; }
+
+    .table-actions {
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .table-actions label {
+      font-weight:700;
+      color:#1f2937;
+    }
+    .table-actions select {
+      padding:8px 10px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      background:#fff;
+      color:#111;
+    }
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:9999;
+    }
+    .modal-backdrop.active { display:flex; }
+    .modal-detail {
+      width:100%;
+      max-width:520px;
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 22px 60px rgba(0,0,0,.2);
+      padding:24px;
+    }
+    .modal-detail h3 {
+      margin-bottom:14px;
+      font-size:1.3rem;
+      color:#111827;
+    }
+    .modal-row {
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+      font-size:.95rem;
+      color:#374151;
+    }
+    .modal-row strong { color:#111827; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+    .btn-small {
+      border:none;
+      border-radius:10px;
+      padding:8px 12px;
+      background:#1a56a0;
+      color:#fff;
+      cursor:pointer;
+      transition:background .2s;
+    }
+    .btn-small:hover { background:#0f4375; }
   </style>
   <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
 </head>
@@ -694,7 +781,7 @@
   <div class="topbar">
     <h1>🪺 Admin – Yến Sào Cát An</h1>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <a href="inventory.html" class="btn btn-secondary" style="padding:10px 16px;">Kho hàng</a>
+      <a href="inventory.html" class="btn btn-highlight">Kho hàng</a>
       <div class="admin-info">
         <span id="admin-email"></span>
         <button class="btn-logout" id="btn-logout">Đăng xuất</button>
@@ -827,6 +914,10 @@
               <input type="text" id="prod-name" placeholder="Yến sào tinh chế 100g" required />
             </div>
             <div class="form-group">
+              <label for="prod-barcode">Mã vạch / SKU</label>
+              <input type="text" id="prod-barcode" placeholder="1234567890123" />
+            </div>
+            <div class="form-group">
               <label for="prod-price">Giá (VNĐ) *</label>
               <input type="number" id="prod-price" placeholder="500000" min="0" required />
             </div>
@@ -865,6 +956,8 @@
               <tr>
                 <th>Hình</th>
                 <th>Tên sản phẩm</th>
+                <th>Mã vạch</th>
+                <th>Số lượng</th>
                 <th>Giá</th>
                 <th>Phân loại</th>
                 <th>Hành động</th>
@@ -977,6 +1070,14 @@
     <div class="tab-panel" id="tab-orders">
       <div class="card">
         <h2>📋 Danh Sách Đơn Hàng</h2>
+        <div class="table-actions">
+          <label for="order-filter">Lọc đơn:</label>
+          <select id="order-filter">
+            <option value="all">Tất cả</option>
+            <option value="auto">Tự động</option>
+            <option value="manual">Thủ công</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -986,17 +1087,28 @@
                 <th>SĐT</th>
                 <th>Địa chỉ</th>
                 <th>Tổng tiền</th>
-                <th>Thanh toán</th>
+                <th>Trạng thái</th>
+                <th>Nguồn</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody id="order-list">
-              <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
+              <tr><td colspan="8" class="empty-state">Đang tải...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
+  <div id="order-detail-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-detail">
+      <h3>Chi tiết đơn hàng</h3>
+      <div id="order-detail-content"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" id="order-detail-close">Đóng</button>
+      </div>
+    </div>
+  </div>
   </div><!-- /main-content -->
 </div><!-- /dashboard -->
 
@@ -1477,7 +1589,7 @@
     const tbody = document.getElementById('product-list');
 
     if (products.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có sản phẩm nào.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Chưa có sản phẩm nào.</td></tr>';
       return;
     }
 
@@ -1490,6 +1602,8 @@
                onerror="this.src='https://placehold.co/52x52?text=?'" />
         </td>
         <td>${p.name}</td>
+        <td>${p.barcode || '-'}</td>
+        <td>${p.quantity ?? 0}</td>
         <td style="white-space:nowrap">${formatVND(p.price)}</td>
         <td><span class="badge">${CAT_LABEL[p.category] || p.category}</span></td>
         <td>
@@ -1511,6 +1625,7 @@
     e.preventDefault();
 
     const name        = document.getElementById('prod-name').value.trim();
+    const barcode     = document.getElementById('prod-barcode').value.trim();
     const price       = parseFloat(document.getElementById('prod-price').value);
     const image       = document.getElementById('prod-image').value.trim();
     const category    = document.getElementById('prod-category').value;
@@ -1527,6 +1642,7 @@
 
     try {
       const productData = { name, price, image, category };
+      if (barcode) productData.barcode = barcode;
       if (description) productData.description = description;
       await addDoc(collection(db, 'products'), productData);
       showToast('✅ Thêm sản phẩm thành công!');
@@ -1723,52 +1839,123 @@
   // ==================================================
   // TAB ĐƠN HÀNG: Tải danh sách (mới nhất trước)
   // ==================================================
+  let allOrders = [];
+  let orderFilter = 'all';
+
   async function loadOrders() {
     try {
       const q    = query(collection(db, 'orders'), orderBy('timestamp', 'desc'));
       const snap = await getDocs(q);
-
-      const tbody = document.getElementById('order-list');
-
-      if (snap.empty) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Chưa có đơn hàng nào.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = snap.docs.map(d => {
-        const o = d.data();
-        const methodBadge = o.paymentMethod === 'transfer'
-          ? '<span class="badge badge-transfer">Chuyển khoản</span>'
-          : '<span class="badge badge-cash">Tiền mặt</span>';
-
-        // Tóm tắt danh sách sản phẩm trong đơn
-        const itemSummary = Array.isArray(o.items)
-          ? o.items.map(i => `${i.name} x${i.qty}`).join(', ')
-          : '—';
-
-        return `
-          <tr>
-            <td style="white-space:nowrap">${formatDate(o.timestamp)}</td>
-            <td>
-              <strong>${o.customerName || '—'}</strong>
-              <br/><small style="color:#888">${itemSummary}</small>
-            </td>
-            <td style="white-space:nowrap">${o.customerPhone || '—'}</td>
-            <td>${o.customerAddress || '—'}</td>
-            <td style="white-space:nowrap;font-weight:700;color:#1a56a0">
-              ${formatVND(o.total || 0)}
-            </td>
-            <td>${methodBadge}</td>
-          </tr>
-        `;
-      }).join('');
-
+      allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderOrders();
     } catch (err) {
       console.error('Lỗi tải đơn hàng:', err);
       document.getElementById('order-list').innerHTML =
-        '<tr><td colspan="6" class="empty-state">Không thể tải đơn hàng.</td></tr>';
+        '<tr><td colspan="8" class="empty-state">Không thể tải đơn hàng.</td></tr>';
     }
   }
+
+  function renderOrders() {
+    const tbody = document.getElementById('order-list');
+    const filtered = allOrders.filter(o => {
+      if (orderFilter === 'all') return true;
+      if (orderFilter === 'auto') return o.source === 'auto';
+      if (orderFilter === 'manual') return o.source !== 'auto';
+      return true;
+    });
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Không có đơn hàng phù hợp.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(o => {
+      const methodBadge = o.paymentMethod === 'transfer'
+        ? '<span class="badge badge-transfer">Chuyển khoản</span>'
+        : '<span class="badge badge-cash">Tiền mặt</span>';
+
+      const itemSummary = Array.isArray(o.items)
+        ? o.items.map(i => `${i.name} x${i.qty}`).join(', ')
+        : '—';
+
+      const status = o.status || 'pending';
+      const statusBadge = status === 'completed'
+        ? '<span class="badge" style="background:#22c55e;color:#fff">Hoàn thành</span>'
+        : status === 'processing'
+          ? '<span class="badge" style="background:#0ea5e9;color:#fff">Đang xử lý</span>'
+          : '<span class="badge" style="background:#f59e0b;color:#111">Chờ xử lý</span>';
+
+      const sourceBadge = o.source === 'auto'
+        ? '<span class="badge" style="background:#8b5cf6;color:#fff">Tự động</span>'
+        : '<span class="badge" style="background:#64748b;color:#fff">Thủ công</span>';
+
+      return `
+        <tr>
+          <td style="white-space:nowrap">${formatDate(o.timestamp)}</td>
+          <td>
+            <strong>${o.customerName || '—'}</strong>
+            <br/><small style="color:#888">${itemSummary}</small>
+          </td>
+          <td style="white-space:nowrap">${o.customerPhone || '—'}</td>
+          <td>${o.customerAddress || '—'}</td>
+          <td style="white-space:nowrap;font-weight:700;color:#1a56a0">
+            ${formatVND(o.total || 0)}
+          </td>
+          <td>${statusBadge}</td>
+          <td>${sourceBadge}</td>
+          <td>
+            <button type="button" class="btn btn-small" onclick="showOrderDetails('${o.id}')">Xem chi tiết</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function showOrderDetails(orderId) {
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const items = Array.isArray(order.items) && order.items.length
+      ? order.items.map(i => `<li>${i.name} x${i.qty} — ${formatVND(i.price)}</li>`).join('')
+      : '<li>Không có sản phẩm.</li>';
+
+    const sourceLabel = order.source === 'auto' ? 'Tự động' : 'Thủ công';
+    const methodLabel = order.paymentMethod === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt';
+    const status = order.status || 'pending';
+
+    document.getElementById('order-detail-content').innerHTML = `
+      <div class="modal-row"><strong>Khách hàng:</strong><span>${order.customerName || '—'}</span></div>
+      <div class="modal-row"><strong>SĐT:</strong><span>${order.customerPhone || '—'}</span></div>
+      <div class="modal-row"><strong>Địa chỉ:</strong><span>${order.customerAddress || '—'}</span></div>
+      <div class="modal-row"><strong>Trạng thái:</strong><span>${status === 'completed' ? 'Hoàn thành' : status === 'processing' ? 'Đang xử lý' : 'Chờ xử lý'}</span></div>
+      <div class="modal-row"><strong>Thanh toán:</strong><span>${methodLabel}</span></div>
+      <div class="modal-row"><strong>Nguồn:</strong><span>${sourceLabel}</span></div>
+      <div class="modal-row"><strong>Tổng tiền:</strong><span>${formatVND(order.total || 0)}</span></div>
+      <div style="margin-top:16px"><strong>Sản phẩm:</strong><ul style="padding-left:18px;margin-top:8px">${items}</ul></div>
+    `;
+
+    const modal = document.getElementById('order-detail-modal');
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeOrderDetails() {
+    const modal = document.getElementById('order-detail-modal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  document.getElementById('order-detail-close').addEventListener('click', closeOrderDetails);
+  document.getElementById('order-detail-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('order-detail-modal')) {
+      closeOrderDetails();
+    }
+  });
+
+  document.getElementById('order-filter').addEventListener('change', function () {
+    orderFilter = this.value;
+    renderOrders();
+  });
 
   // ==================================================
   // CHAT: Lắng nghe danh sách session

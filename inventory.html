@@ -56,7 +56,7 @@
     <div class="header">
       <div>
         <h1>Quản lý tồn kho</h1>
-        <p>Ghi nhận sản phẩm bằng ảnh và mã vạch / nhập tay.</p>
+        <p>Chỉ quản lý nhập xuất số lượng. Thông tin sản phẩm chi tiết giữ ở admin.</p>
       </div>
       <div>
         <a href="admin.html" class="btn btn-secondary">← Về Admin</a>
@@ -64,20 +64,42 @@
     </div>
 
     <div class="card">
-      <h2>Thêm sản phẩm mới</h2>
+      <h2>Nhập / Xuất kho</h2>
       <div class="form-grid">
         <div>
           <label for="item-barcode">Mã vạch / SKU</label>
           <input id="item-barcode" type="text" placeholder="Nhập hoặc quét mã vạch" autocomplete="off" />
-          <div class="field-note">Quét mã bằng máy quét tay hoặc nhập bằng bàn phím.</div>
+          <div class="field-note">
+            Quét mã để nạp sản phẩm. Nếu mã chưa tồn tại, hãy thêm sản phẩm chi tiết trong admin.
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center;">
+            <button id="scan-barcode" type="button" class="btn btn-secondary" style="padding:10px 16px;">📷 Quét mã vạch</button>
+            <span id="barcode-status" class="field-note" style="margin:0;">Chưa quét mã</span>
+          </div>
+          <div id="barcode-camera" style="display:none;margin-top:14px;">
+            <video id="barcode-video" autoplay muted playsinline style="width:100%;max-width:360px;border-radius:14px;border:1px solid #cbd5e1;"></video>
+            <button id="stop-barcode" type="button" class="btn btn-secondary" style="margin-top:10px;">Dừng camera</button>
+          </div>
         </div>
         <div>
-          <label for="item-name">Tên sản phẩm</label>
-          <input id="item-name" type="text" placeholder="Ví dụ: Yến sào thượng hạng" autocomplete="off" />
+          <label for="item-name">Sản phẩm</label>
+          <input id="item-name" type="text" placeholder="Nạp mã vạch để hiển thị sản phẩm" readonly />
         </div>
         <div>
-          <label for="item-quantity">Số lượng</label>
-          <input id="item-quantity" type="number" min="0" value="1" />
+          <label for="item-quantity">Tồn kho hiện tại</label>
+          <input id="item-quantity" type="number" readonly value="0" />
+        </div>
+        <div>
+          <label for="item-adjust">Số lượng điều chỉnh</label>
+          <input id="item-adjust" type="number" min="1" value="1" />
+          <div class="field-note">Nhập số lượng cho nhập hoặc xuất kho.</div>
+        </div>
+        <div>
+          <label for="item-type">Loại thao tác</label>
+          <select id="item-type">
+            <option value="in">Nhập kho</option>
+            <option value="out">Xuất kho</option>
+          </select>
         </div>
         <div>
           <label for="item-location">Vị trí kho</label>
@@ -86,11 +108,6 @@
         <div class="span-2">
           <label for="item-note">Ghi chú</label>
           <textarea id="item-note" placeholder="Ghi chú thêm nếu cần..."></textarea>
-        </div>
-        <div>
-          <label for="item-photo">Ảnh sản phẩm</label>
-          <input id="item-photo" type="file" accept="image/*" capture="environment" />
-          <div class="field-note">Chụp ảnh trực tiếp từ điện thoại hoặc chọn file ảnh.</div>
         </div>
         <div class="preview" id="photo-preview"></div>
       </div>
@@ -127,6 +144,34 @@
         </table>
       </div>
     </div>
+
+    <div class="card">
+      <div class="inventory-actions">
+        <div>
+          <h2 style="margin:0;font-size:1.1rem;color:#1a56a0;">Lịch sử nhập xuất</h2>
+        </div>
+        <button id="refresh-history" class="btn btn-secondary">Làm mới lịch sử</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="inventory-list">
+          <thead>
+            <tr>
+              <th>Thời gian</th>
+              <th>Mã vạch</th>
+              <th>Sản phẩm</th>
+              <th>Loại</th>
+              <th>Số lượng</th>
+              <th>SL trước</th>
+              <th>SL sau</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Đang tải lịch sử...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -146,7 +191,9 @@
       orderBy,
       onSnapshot,
       serverTimestamp,
-      getDoc
+      getDoc,
+      where,
+      limit
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -171,6 +218,15 @@
       toast.style.background = type === 'error' ? '#b91c1c' : type === 'success' ? '#059669' : 'rgba(15,23,42,.9)';
       toast.style.display = 'block';
       setTimeout(() => toast.style.display = 'none', 3200);
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp || !timestamp.toDate) return '—';
+      const date = timestamp.toDate();
+      return new Intl.DateTimeFormat('vi-VN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      }).format(date);
     }
 
     function compressImage(file, maxWidth = 1280, quality = 0.82) {
@@ -207,48 +263,126 @@
     const itemBarcode = document.getElementById('item-barcode');
     const itemName = document.getElementById('item-name');
     const itemQuantity = document.getElementById('item-quantity');
+    const itemAdjust = document.getElementById('item-adjust');
+    const itemType = document.getElementById('item-type');
     const itemLocation = document.getElementById('item-location');
     const itemNote = document.getElementById('item-note');
-    const itemPhoto = document.getElementById('item-photo');
     const photoPreview = document.getElementById('photo-preview');
     const saveItem = document.getElementById('save-item');
     const clearForm = document.getElementById('clear-form');
     const inventoryBody = document.getElementById('inventory-body');
     const searchBarcode = document.getElementById('search-barcode');
     const refreshList = document.getElementById('refresh-list');
+    const refreshHistory = document.getElementById('refresh-history');
+    const historyBody = document.getElementById('history-body');
+    const scanBarcodeBtn = document.getElementById('scan-barcode');
+    const barcodeStatus = document.getElementById('barcode-status');
+    const barcodeCamera = document.getElementById('barcode-camera');
+    const barcodeVideo = document.getElementById('barcode-video');
+    const stopBarcode = document.getElementById('stop-barcode');
 
-    let currentPhotoFile = null;
+    let currentProduct = null;
     let inventoryItems = [];
-
-    itemPhoto.addEventListener('change', () => {
-      const file = itemPhoto.files?.[0];
-      currentPhotoFile = file || null;
-      photoPreview.innerHTML = '';
-      if (file) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.onload = () => URL.revokeObjectURL(img.src);
-        photoPreview.appendChild(img);
-      }
-    });
+    let historyItems = [];
+    let barcodeStream = null;
+    let barcodeDetector = null;
+    let barcodeScanInterval = null;
 
     clearForm.addEventListener('click', () => {
       itemBarcode.value = '';
       itemName.value = '';
-      itemQuantity.value = '1';
+      itemQuantity.value = '0';
+      itemAdjust.value = '1';
+      itemType.value = 'in';
       itemLocation.value = '';
       itemNote.value = '';
-      itemPhoto.value = '';
       photoPreview.innerHTML = '';
-      currentPhotoFile = null;
+      currentProduct = null;
+      saveItem.removeAttribute('data-edit-id');
+      saveItem.textContent = 'Lưu tồn kho';
+      barcodeStatus.textContent = 'Chưa quét mã';
     });
+
+    async function findProductByBarcode(barcode) {
+      if (!barcode) return null;
+      const q = query(collection(db, 'products'), where('barcode', '==', barcode), limit(1));
+      const snap = await getDocs(q);
+      return snap.docs[0] ? { id: snap.docs[0].id, ...snap.docs[0].data() } : null;
+    }
+
+    async function fillProductFromBarcode(barcode) {
+      const normalized = barcode?.trim();
+      if (!normalized) {
+        currentProduct = null;
+        itemName.value = '';
+        itemQuantity.value = '0';
+        photoPreview.innerHTML = '';
+        barcodeStatus.textContent = 'Chưa quét mã';
+        return;
+      }
+      const product = await findProductByBarcode(normalized);
+      if (!product) {
+        currentProduct = null;
+        itemName.value = '';
+        itemQuantity.value = '0';
+        photoPreview.innerHTML = '';
+        saveItem.removeAttribute('data-edit-id');
+        saveItem.textContent = 'Lưu tồn kho';
+        barcodeStatus.textContent = 'Không tìm thấy sản phẩm. Thêm trên admin.';
+        showToast('Sản phẩm chưa có trong admin. Vui lòng thêm chi tiết sản phẩm.', 'error');
+        return;
+      }
+
+      currentProduct = product;
+      itemName.value = product.name || '';
+      itemQuantity.value = product.quantity ?? 0;
+      if (product.image || product.imageUrl) {
+        photoPreview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = product.image || product.imageUrl;
+        photoPreview.appendChild(img);
+      } else {
+        photoPreview.innerHTML = '';
+      }
+      saveItem.dataset.editId = product.id;
+      saveItem.textContent = 'Cập nhật tồn kho';
+      barcodeStatus.textContent = `Sản phẩm: ${product.name || 'Chưa đặt tên'}`;
+      showToast('Đã nạp dữ liệu sản phẩm đang có.', 'success');
+    }
 
     async function loadInventory() {
       inventoryBody.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Đang tải dữ liệu...</td></tr>';
-      const q = query(collection(db, 'inventory'), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, 'products'), orderBy('name'));
       const snap = await getDocs(q);
       inventoryItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       renderInventory();
+    }
+
+    async function loadHistory() {
+      historyBody.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Đang tải lịch sử...</td></tr>';
+      const q = query(collection(db, 'stockMovements'), orderBy('timestamp', 'desc'));
+      const snap = await getDocs(q);
+      historyItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!historyItems.length) {
+        historyBody.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Chưa có lịch sử nhập xuất.</td></tr>';
+        return;
+      }
+      historyBody.innerHTML = historyItems.map(item => `
+        <tr>
+          <td>${formatDate(item.timestamp)}</td>
+          <td>${item.barcode || '-'}</td>
+          <td>${item.productName || '-'}</td>
+          <td>${item.type === 'out' ? 'Xuất' : 'Nhập'}</td>
+          <td>${item.delta}</td>
+          <td>${item.previousQuantity ?? '-'}</td>
+          <td>${item.newQuantity ?? '-'}</td>
+          <td>${item.note || '-'}</td>
+        </tr>
+      `).join('');
     }
 
     function renderInventory() {
@@ -265,42 +399,30 @@
       }
       inventoryBody.innerHTML = filtered.map(item => `
         <tr>
-          <td>${item.imageUrl ? `<img src="${item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
+          <td>${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
           <td>${item.barcode || '<span style="color:#94a3b8">Không có</span>'}</td>
           <td>${item.name || '<em>Chưa đặt tên</em>'}</td>
           <td>${item.quantity ?? 0}</td>
           <td>${item.location || '-'}</td>
           <td>${item.note || '-'}</td>
           <td style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-edit" type="button" data-id="${item.id}">Sửa</button>
-            <button class="btn-delete" type="button" data-id="${item.id}">Xóa</button>
+            <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
           </td>
         </tr>
       `).join('');
-      inventoryBody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editItem(btn.dataset.id)));
-      inventoryBody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', () => deleteItem(btn.dataset.id)));
+      inventoryBody.querySelectorAll('.btn-select').forEach(btn => btn.addEventListener('click', () => selectItem(btn.dataset.id)));
     }
 
-    async function editItem(id) {
+    async function selectItem(id) {
       const item = inventoryItems.find(i => i.id === id);
       if (!item) return;
       itemBarcode.value = item.barcode || '';
-      itemName.value = item.name || '';
-      itemQuantity.value = item.quantity ?? 0;
-      itemLocation.value = item.location || '';
-      itemNote.value = item.note || '';
-      photoPreview.innerHTML = '';
-      if (item.imageUrl) {
-        const img = document.createElement('img');
-        img.src = item.imageUrl;
-        photoPreview.appendChild(img);
-      }
-      saveItem.dataset.editId = id;
+      await fillProductFromBarcode(item.barcode);
     }
 
     async function deleteItem(id) {
       if (!confirm('Xóa sản phẩm này khỏi kho?')) return;
-      await deleteDoc(doc(db, 'inventory', id));
+      await deleteDoc(doc(db, 'products', id));
       inventoryItems = inventoryItems.filter(i => i.id !== id);
       renderInventory();
       showToast('Đã xóa sản phẩm.', 'success');
@@ -308,36 +430,49 @@
 
     async function saveInventoryItem() {
       const barcode = itemBarcode.value.trim();
-      const name = itemName.value.trim();
-      const quantity = Number(itemQuantity.value) || 0;
+      const adjust = Number(itemAdjust.value) || 0;
+      const type = itemType.value;
       const location = itemLocation.value.trim();
       const note = itemNote.value.trim();
-      if (!name) { showToast('Tên sản phẩm không được để trống.', 'error'); return; }
-      const data = {
-        barcode,
-        name,
-        quantity,
-        location,
-        note,
-        updatedAt: serverTimestamp(),
-      };
+      if (!barcode) { showToast('Vui lòng nhập mã vạch.', 'error'); return; }
+      if (!currentProduct) {
+        showToast('Chưa có sản phẩm tương ứng. Thêm sản phẩm chi tiết trong admin trước.', 'error');
+        return;
+      }
+      if (adjust <= 0) { showToast('Số lượng điều chỉnh phải lớn hơn 0.', 'error'); return; }
+
+      const currentQty = Number(currentProduct.quantity) || 0;
+      const delta = type === 'out' ? -adjust : adjust;
+      const newQty = currentQty + delta;
+      if (newQty < 0) {
+        showToast('Không thể xuất vượt quá số lượng hiện có.', 'error');
+        return;
+      }
+
       try {
         saveItem.disabled = true;
-        if (currentPhotoFile) {
-          const compressed = await compressImage(currentPhotoFile);
-          const imageUrl = await uploadToCloudinary(compressed);
-          data.imageUrl = imageUrl;
-        }
-        if (saveItem.dataset.editId) {
-          const id = saveItem.dataset.editId;
-          await updateDoc(doc(db, 'inventory', id), data);
-          saveItem.removeAttribute('data-edit-id');
-          showToast('Đã cập nhật sản phẩm.', 'success');
-        } else {
-          data.createdAt = serverTimestamp();
-          await addDoc(collection(db, 'inventory'), data);
-          showToast('Đã thêm sản phẩm vào kho.', 'success');
-        }
+        const updateData = {
+          quantity: newQty,
+          updatedAt: serverTimestamp(),
+        };
+        if (location) updateData.location = location;
+        if (note) updateData.note = note;
+
+        await updateDoc(doc(db, 'products', currentProduct.id), updateData);
+        await addDoc(collection(db, 'stockMovements'), {
+          productId: currentProduct.id,
+          barcode,
+          productName: currentProduct.name || '',
+          type,
+          delta,
+          previousQuantity: currentQty,
+          newQuantity: newQty,
+          location,
+          note,
+          timestamp: serverTimestamp(),
+        });
+
+        showToast(`Đã ${type === 'out' ? 'xuất' : 'nhập'} ${adjust} sản phẩm.`, 'success');
         clearForm.click();
         await loadInventory();
       } catch (err) {
@@ -352,7 +487,92 @@
     refreshList.addEventListener('click', loadInventory);
     searchBarcode.addEventListener('input', renderInventory);
 
-    loadInventory();
+    async function ensureBarcodeDetector() {
+      if (barcodeDetector !== null) return barcodeDetector !== false;
+      if (!('BarcodeDetector' in window)) {
+        barcodeDetector = false;
+        return false;
+      }
+      try {
+        const formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'];
+        const supportedFormats = await BarcodeDetector.getSupportedFormats();
+        const available = formats.filter(format => supportedFormats.includes(format));
+        if (!available.length) {
+          barcodeDetector = false;
+          return false;
+        }
+        barcodeDetector = new BarcodeDetector({ formats: available });
+        return true;
+      } catch (err) {
+        console.warn('BarcodeDetector unsupported', err);
+        barcodeDetector = false;
+        return false;
+      }
+    }
+
+    async function stopBarcodeScan() {
+      if (barcodeScanInterval) {
+        clearInterval(barcodeScanInterval);
+        barcodeScanInterval = null;
+      }
+      if (barcodeStream) {
+        barcodeStream.getTracks().forEach(track => track.stop());
+        barcodeStream = null;
+      }
+      barcodeVideo.srcObject = null;
+      barcodeCamera.style.display = 'none';
+      barcodeStatus.textContent = 'Dừng quét mã';
+    }
+
+    async function startBarcodeScan() {
+      const available = await ensureBarcodeDetector();
+      if (!available) {
+        showToast('Trình duyệt không hỗ trợ quét mã vạch bằng camera.', 'error');
+        barcodeStatus.textContent = 'Không hỗ trợ quét mã vạch.';
+        return;
+      }
+      if (barcodeStream) return;
+      try {
+        barcodeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        barcodeVideo.srcObject = barcodeStream;
+        barcodeCamera.style.display = 'block';
+        barcodeStatus.textContent = 'Đang quét mã...';
+        await barcodeVideo.play();
+        barcodeScanInterval = setInterval(async () => {
+          try {
+            const barcodes = await barcodeDetector.detect(barcodeVideo);
+            if (barcodes.length) {
+              const result = barcodes[0].rawValue;
+              if (result) {
+                itemBarcode.value = result;
+                barcodeStatus.textContent = `Mã đã quét: ${result}`;
+                showToast('Quét mã vạch thành công.', 'success');
+                await fillProductFromBarcode(result);
+                await stopBarcodeScan();
+              }
+            }
+          } catch (err) {
+            console.warn('Barcode scan error', err);
+          }
+        }, 700);
+      } catch (err) {
+        console.error('Lỗi mở camera quét mã vạch', err);
+        showToast('Không thể mở camera để quét mã vạch.', 'error');
+        barcodeStatus.textContent = 'Không thể mở camera.';
+        if (barcodeStream) await stopBarcodeScan();
+      }
+    }
+
+    scanBarcodeBtn.addEventListener('click', startBarcodeScan);
+    stopBarcode.addEventListener('click', stopBarcodeScan);
+    itemBarcode.addEventListener('blur', () => fillProductFromBarcode(itemBarcode.value.trim()));
+    saveItem.addEventListener('click', saveInventoryItem);
+    refreshList.addEventListener('click', loadInventory);
+    refreshHistory.addEventListener('click', loadHistory);
+    searchBarcode.addEventListener('input', renderInventory);
+
+    await loadInventory();
+    await loadHistory();
   </script>
 </body>
 </html>

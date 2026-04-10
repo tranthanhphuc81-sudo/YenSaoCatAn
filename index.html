@@ -380,6 +380,55 @@
     #toast.success { background: #2e7d32; }
     #toast.error   { background: #0d3578; }
 
+    .confirm-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 10000;
+    }
+
+    .confirm-modal-backdrop.open {
+      display: flex;
+    }
+
+    .confirm-modal {
+      background: #fff;
+      border-radius: 18px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 22px 60px rgba(0,0,0,.22);
+      padding: 26px;
+      text-align: left;
+    }
+
+    .confirm-modal h3 {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+      color: #1a202c;
+    }
+
+    .confirm-modal p {
+      margin: 0 0 22px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    .confirm-modal .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .confirm-modal .btn-cancel {
+      background: #f3f4f6;
+      color: #111;
+    }
+
     /* ===== THANH ĐIỀU HƯỚNG TAB ===== */
     /* ===== THANH ĐIỀU HƯỚNG – luôn hiện đủ 6 tab ===== */
     .main-nav {
@@ -1327,6 +1376,17 @@
     </form>
   </section>
 
+  <div id="auto-order-confirm" class="confirm-modal-backdrop" aria-modal="true" role="dialog">
+    <div class="confirm-modal">
+      <h3>Xác nhận đơn tự động</h3>
+      <p id="auto-order-message">Chúng tôi đã nạp giỏ hàng tự động. Bạn có muốn xác nhận đặt hàng ngay bây giờ?</p>
+      <div class="modal-actions">
+        <button type="button" id="auto-order-cancel" class="btn btn-cancel">Hủy</button>
+        <button type="button" id="auto-order-confirm-btn" class="btn">Xác nhận đặt hàng</button>
+      </div>
+    </div>
+  </div>
+
   </div><!-- /tab-page shop -->
 
   <!-- ===== TAB: HƯỚNG DẪN CHƯNG YẾN ===== -->
@@ -1874,6 +1934,212 @@
     if (document.getElementById('payment-method').value === 'transfer') updateQR();
   }
 
+  function getQueryParams() {
+    const params = {};
+    new URLSearchParams(window.location.search).forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
+  }
+
+  function normalizeText(value) {
+    return (value || '').toString().trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]+/g, '');
+  }
+
+  function parseAutoOrderItems(value) {
+    if (!value) return [];
+    return value.split(',').map(part => {
+      const [identifier, qty] = part.split(':').map(s => decodeURIComponent(s.trim()));
+      return { identifier, qty: Math.max(1, Number(qty) || 1) };
+    }).filter(item => item.identifier);
+  }
+
+  function findProductByIdentifier(identifier) {
+    if (!identifier) return null;
+    const raw = identifier.trim();
+    const exact = allProducts.find(p => p.id === raw);
+    if (exact) return exact;
+
+    const normalized = normalizeText(raw);
+    let product = allProducts.find(p => (p.barcode || '') === raw || normalizeText(p.barcode) === normalized);
+    if (product) return product;
+
+    product = allProducts.find(p => (p.slug && normalizeText(p.slug) === normalized));
+    if (product) return product;
+
+    product = allProducts.find(p => normalizeText(p.name) === normalized);
+    if (product) return product;
+
+    return null;
+  }
+
+  function fillOrderFormFromParams(params) {
+    if (params.name) document.getElementById('cus-name').value = decodeURIComponent(params.name);
+    if (params.phone) document.getElementById('cus-phone').value = decodeURIComponent(params.phone);
+    if (params.address) document.getElementById('cus-address').value = decodeURIComponent(params.address);
+    if (params.payment && ['cash', 'transfer'].includes(params.payment)) {
+      document.getElementById('payment-method').value = params.payment;
+      document.getElementById('bank-info').style.display = params.payment === 'transfer' ? 'block' : 'none';
+      if (params.payment === 'transfer') updateQR();
+    }
+  }
+
+  function buildCartFromQueryItems(items) {
+    cart = [];
+    items.forEach(({ identifier, qty }) => {
+      const product = findProductByIdentifier(identifier);
+      if (!product) return;
+      const existing = cart.find(i => i.id === product.id);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.push({ id: product.id, name: product.name, price: product.price, qty });
+      }
+    });
+    if (cart.length) {
+      renderCart();
+      showToast('Đã nạp giỏ hàng tự động từ URL.');
+    }
+  }
+
+  function updateAutoOrderConfirmState() {
+    const orderForm = document.getElementById('order-form');
+    const confirmBtn = document.getElementById('auto-order-confirm-btn');
+    const isValid = orderForm.checkValidity();
+    confirmBtn.disabled = !isValid;
+    return isValid;
+  }
+
+  function openAutoOrderModal() {
+    const modal = document.getElementById('auto-order-confirm');
+    const message = document.getElementById('auto-order-message');
+    const summary = cart.map(i => `${i.name} x${i.qty}`).join(', ');
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    if (updateAutoOrderConfirmState()) {
+      message.textContent = `Đơn hàng tự động đã được tạo với: ${summary}. Tổng: ${formatVND(total)}. Bạn có muốn xác nhận đặt hàng ngay không?`;
+    } else {
+      message.textContent = 'Đơn hàng tự động đã được tạo. Vui lòng hoàn thiện thông tin trước khi xác nhận đặt hàng.';
+    }
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeAutoOrderModal() {
+    const modal = document.getElementById('auto-order-confirm');
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  async function processAutoOrder() {
+    const params = getQueryParams();
+    if (params.autoOrder !== '1') return;
+
+    const items = parseAutoOrderItems(params.items || params.productIds || '');
+    if (!items.length) return;
+
+    buildCartFromQueryItems(items);
+    fillOrderFormFromParams(params);
+
+    if (params.autoConfirm === '1' && cart.length) {
+      openAutoOrderModal();
+    }
+  }
+
+  function validateCartStock() {
+    const issues = cart.filter(item => {
+      const product = allProducts.find(p => p.id === item.id);
+      return product && typeof product.quantity === 'number' && product.quantity < item.qty;
+    });
+    if (!issues.length) return true;
+    const names = issues.map(i => `${i.name} (${i.qty})`).join(', ');
+    showToast(`Không đủ tồn kho: ${names}`, 'error');
+    return false;
+  }
+
+  async function submitOrder({ auto = false } = {}) {
+    if (cart.length === 0) {
+      showToast('Giỏ hàng đang trống!', 'error');
+      return false;
+    }
+
+    const name    = document.getElementById('cus-name').value.trim();
+    const phone   = document.getElementById('cus-phone').value.trim();
+    const address = document.getElementById('cus-address').value.trim();
+    const method  = document.getElementById('payment-method').value;
+
+    if (!name || !phone || !address) {
+      showToast('Vui lòng điền đầy đủ thông tin!', 'error');
+      return false;
+    }
+
+    if (!/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g, ''))) {
+      showToast('Số điện thoại không hợp lệ!', 'error');
+      return false;
+    }
+
+    if (!validateCartStock()) {
+      return false;
+    }
+
+    const btnSubmit = document.getElementById('btn-order');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Đang xử lý...';
+
+    try {
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const orderData = {
+        customerName:    name,
+        customerPhone:   phone,
+        customerAddress: address,
+        paymentMethod:   method,
+        items: cart.map(i => ({ productId: i.id, name: i.name, price: i.price, qty: i.qty })),
+        total: total,
+        status: 'pending',
+        source: auto ? 'auto' : 'website',
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      };
+
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
+
+      await Promise.all(cart.map(async item => {
+        const product = allProducts.find(p => p.id === item.id);
+        if (product && typeof product.quantity === 'number') {
+          const prevQty = product.quantity;
+          await updateDoc(doc(db, 'products', item.id), {
+            quantity: increment(-item.qty),
+            updatedAt: serverTimestamp(),
+          });
+          await addDoc(collection(db, 'stockMovements'), {
+            productId: item.id,
+            productName: item.name,
+            type: 'order',
+            delta: -item.qty,
+            previousQuantity: prevQty,
+            newQuantity: prevQty - item.qty,
+            orderId: orderRef.id,
+            timestamp: serverTimestamp(),
+          });
+        }
+      }));
+
+      showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
+      document.getElementById('order-form').reset();
+      document.getElementById('bank-info').style.display = 'none';
+      cart = [];
+      renderCart();
+      await loadProducts();
+      return true;
+    } catch (err) {
+      console.error('Lỗi đặt hàng:', err);
+      showToast('Đặt hàng thất bại. Vui lòng thử lại!', 'error');
+      return false;
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Đặt hàng ngay';
+    }
+  }
+
   // ==================================================
   // THANH TOÁN: Toggle hiển thị thông tin ngân hàng
   // ==================================================
@@ -1901,68 +2167,28 @@
   // ==================================================
   document.getElementById('order-form').addEventListener('submit', async function (e) {
     e.preventDefault();
+    await submitOrder({ auto: false });
+  });
 
-    // Kiểm tra giỏ hàng không rỗng
-    if (cart.length === 0) {
-      showToast('Giỏ hàng đang trống!', 'error');
+  document.getElementById('auto-order-confirm-btn').addEventListener('click', async () => {
+    if (!updateAutoOrderConfirmState()) {
+      document.getElementById('order-form').reportValidity();
       return;
     }
-
-    const name    = document.getElementById('cus-name').value.trim();
-    const phone   = document.getElementById('cus-phone').value.trim();
-    const address = document.getElementById('cus-address').value.trim();
-    const method  = document.getElementById('payment-method').value;
-
-    // Kiểm tra dữ liệu bắt buộc
-    if (!name || !phone || !address) {
-      showToast('Vui lòng điền đầy đủ thông tin!', 'error');
-      return;
+    closeAutoOrderModal();
+    await submitOrder({ auto: true });
+  });
+  document.getElementById('auto-order-cancel').addEventListener('click', closeAutoOrderModal);
+  document.getElementById('auto-order-confirm').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('auto-order-confirm')) {
+      closeAutoOrderModal();
     }
+  });
 
-    // Kiểm tra sơ bộ định dạng SĐT Việt Nam
-    if (!/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g, ''))) {
-      showToast('Số điện thoại không hợp lệ!', 'error');
-      return;
-    }
-
-    const btnSubmit = document.getElementById('btn-order');
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = 'Đang xử lý...';
-
-    try {
-      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-
-      // Lưu đơn hàng vào Firestore
-      await addDoc(collection(db, 'orders'), {
-        customerName:    name,
-        customerPhone:   phone,
-        customerAddress: address,
-        paymentMethod:   method,
-        items: cart.map(i => ({
-          productId: i.id,
-          name:  i.name,
-          price: i.price,
-          qty:   i.qty
-        })),
-        total:    total,
-        timestamp: serverTimestamp()
-      });
-
-      showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
-
-      // Reset form & giỏ hàng
-      this.reset();
-      document.getElementById('bank-info').style.display = 'none';
-      cart = [];
-      renderCart();
-
-    } catch (err) {
-      console.error('Lỗi đặt hàng:', err);
-      showToast('Đặt hàng thất bại. Vui lòng thử lại!', 'error');
-    } finally {
-      btnSubmit.disabled = false;
-      btnSubmit.textContent = 'Đặt hàng ngay';
-    }
+  const autoFormFields = document.querySelectorAll('#order-form input[required], #order-form select[required]');
+  autoFormFields.forEach(el => {
+    el.addEventListener('input', updateAutoOrderConfirmState);
+    el.addEventListener('change', updateAutoOrderConfirmState);
   });
 
   // ==================================================
@@ -2086,6 +2312,7 @@
   // ==================================================
   (async () => {
     await Promise.all([loadConfig(), loadProducts()]);
+    await processAutoOrder();
   })();
 
   // ==================================================
