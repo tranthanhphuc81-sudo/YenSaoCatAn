@@ -899,6 +899,28 @@
           <button type="submit" class="btn-save" id="btn-save-contact">💾 Lưu Thông Tin Liên Hệ</button>
         </form>
       </div>
+
+      <div class="card">
+        <h2>🔒 Đổi mật khẩu</h2>
+        <form id="password-change-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="current-password">Mật khẩu hiện tại</label>
+              <input type="password" id="current-password" placeholder="••••••••" autocomplete="current-password" required />
+            </div>
+            <div class="form-group">
+              <label for="new-password">Mật khẩu mới</label>
+              <input type="password" id="new-password" placeholder="Mật khẩu mới" autocomplete="new-password" required />
+            </div>
+            <div class="form-group">
+              <label for="confirm-new-password">Xác nhận mật khẩu mới</label>
+              <input type="password" id="confirm-new-password" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+            </div>
+          </div>
+          <button type="submit" class="btn-save" id="btn-change-password">🔁 Đổi mật khẩu</button>
+          <p id="password-change-status" style="margin-top:12px;color:#dc2626"></p>
+        </form>
+      </div>
     </div>
 
     <!-- =========== TAB: SẢN PHẨM =========== -->
@@ -1139,7 +1161,8 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getAuth, signInWithEmailAndPassword,
-    signOut, onAuthStateChanged
+    signOut, onAuthStateChanged,
+    EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
     getFirestore,
@@ -1595,6 +1618,56 @@
     } finally {
       btnSave.disabled    = false;
       btnSave.textContent = '💾 Lưu Thông Tin Liên Hệ';
+    }
+  });
+
+  document.getElementById('password-change-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-new-password').value;
+    const statusEl = document.getElementById('password-change-status');
+    const btnChange = document.getElementById('btn-change-password');
+
+    statusEl.textContent = '';
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      statusEl.textContent = 'Vui lòng điền đầy đủ cả 3 trường.';
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      statusEl.textContent = 'Mật khẩu mới và xác nhận không trùng khớp.';
+      return;
+    }
+    if (newPassword.length < 6) {
+      statusEl.textContent = 'Mật khẩu mới cần ít nhất 6 ký tự.';
+      return;
+    }
+
+    btnChange.disabled = true;
+    statusEl.style.color = '#111827';
+    statusEl.textContent = 'Đang cập nhật mật khẩu...';
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Bạn chưa đăng nhập hoặc phiên đã hết hạn.');
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      statusEl.style.color = '#059669';
+      statusEl.textContent = '✅ Đổi mật khẩu thành công!';
+      document.getElementById('password-change-form').reset();
+    } catch (err) {
+      console.error('Lỗi đổi mật khẩu:', err.code, err.message);
+      statusEl.style.color = '#dc2626';
+      const errorMap = {
+        'auth/wrong-password': 'Mật khẩu hiện tại không đúng.',
+        'auth/weak-password': 'Mật khẩu mới quá yếu. Vui lòng dùng ít nhất 6 ký tự.',
+        'auth/requires-recent-login': 'Phiên đăng nhập cũ. Vui lòng đăng xuất và đăng nhập lại.',
+        'auth/network-request-failed': 'Mất kết nối mạng. Vui lòng thử lại.',
+      };
+      statusEl.textContent = errorMap[err.code] || `Đổi mật khẩu thất bại: ${err.message}`;
+    } finally {
+      btnChange.disabled = false;
     }
   });
 
