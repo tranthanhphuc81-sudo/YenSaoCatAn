@@ -144,10 +144,7 @@ service cloud.firestore {
 
       match /messages/{msgId} {
         allow read, create: if true;
-        allow update: if isAdmin() || (
-          request.resource.data.retracted == true
-          && resource.data.retracted != true
-        );
+        allow update: if true;
         allow delete:       if isAdmin();
       }
     }

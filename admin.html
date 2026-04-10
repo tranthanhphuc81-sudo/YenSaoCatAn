@@ -640,7 +640,7 @@
       </div>
       <div class="form-group">
         <label for="password">Mật khẩu</label>
-        <input type="password" id="password" placeholder="••••••••" required />
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
       </div>
       <button type="submit" class="btn-primary" id="btn-login">Đăng nhập</button>
       <p id="login-error"></p>
@@ -1040,9 +1040,6 @@
     formData.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       formData.append('resource_type', 'video');
-      formData.append('eager', 'c_scale,w_720,q_auto');
-    } else {
-      formData.append('eager', 'c_scale,w_1280,q_auto');
     }
 
     const res = await fetch(url, { method: 'POST', body: formData });

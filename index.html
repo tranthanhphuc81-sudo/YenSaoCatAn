@@ -2227,9 +2227,6 @@
     form.append('fetch_format', 'auto');
     if (resourceType === 'video') {
       form.append('resource_type', 'video');
-      form.append('eager', 'c_scale,w_720,q_auto');
-    } else {
-      form.append('eager', 'c_scale,w_1280,q_auto');
     }
 
     const res = await fetch(url, { method: 'POST', body: form });
