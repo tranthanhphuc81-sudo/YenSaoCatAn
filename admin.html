@@ -1882,7 +1882,10 @@
   }
 
   async function adminSendMedia(file) {
-    if (!file || !activeChatSid) return;
+    if (!file || !activeChatSid) {
+      console.warn('adminSendMedia aborted: no file or no activeChatSid', { file, activeChatSid });
+      return;
+    }
     const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
     if (!type) {
       showToast('Chỉ hỗ trợ ảnh và video.', 'error');
@@ -1897,10 +1900,13 @@
     let text = input.value.trim();
 
     try {
+      console.log('adminSendMedia start', { fileType: file.type, fileName: file.name, fileSize: file.size, type, activeChatSid });
       btn.disabled = true;
       attachBtn.disabled = true;
       const uploadFile = await compressMediaFile(file);
+      console.log('adminSendMedia uploadFile', { uploadFileType: uploadFile.type, uploadFileSize: uploadFile.size });
       const url = await uploadToCloudinary(uploadFile, type);
+      console.log('adminSendMedia uploaded url', url);
       if (!text) text = type === 'image' ? 'Ảnh' : 'Video';
       input.value = '';
       await addDoc(msgCol, {
@@ -1917,7 +1923,7 @@
       }, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi media admin:', err);
-      showToast('Không gửi được ảnh/video. Vui lòng thử lại.', 'error');
+      showToast('Không gửi được ảnh/video. ' + (err.message || err.code || ''), 'error');
     } finally {
       btn.disabled = false;
       attachBtn.disabled = false;
