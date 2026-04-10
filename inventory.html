@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý tồn kho – Yến Sào Cát An</title>
+  <style>
+    :root {
+      --bg: #f4f4f6;
+      --surface: #ffffff;
+      --primary: #1a56a0;
+      --primary-dark: #0d3578;
+      --accent: #e85d04;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --radius: 14px;
+      --shadow: 0 12px 32px rgba(15,23,42,.08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: #eef2ff; color: var(--text); }
+    body::before { content: ''; position: fixed; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(232,244,255,.95)); z-index: 0; }
+    .page { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 28px 20px 40px; }
+    .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+    .header h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
+    .header p { margin: 0; color: var(--muted); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border: none; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; text-decoration: none; }
+    .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; border: 1px solid rgba(203,213,225,.65); }
+    .card h2 { margin: 0 0 18px; font-size: 1.15rem; color: var(--primary-dark); }
+    .form-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+    .form-grid .span-2 { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
+    input[type=text], input[type=number], textarea, select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: .96rem; outline: none; background: #fff; }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { min-height: 120px; resize: vertical; }
+    .field-note { color: var(--muted); font-size: .86rem; margin-top: 6px; }
+    .inventory-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .inventory-actions > * { flex: 1; min-width: 220px; }
+    .inventory-list { width: 100%; border-collapse: collapse; }
+    .inventory-list th, .inventory-list td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    .inventory-list th { background: #f8fafc; color: #334155; font-weight: 700; }
+    .inventory-list td img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .inventory-list .tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(232,93,4,.1); color: var(--accent); font-size: .82rem; }
+    .inventory-list button { cursor: pointer; border: none; border-radius: 10px; padding: 8px 12px; font-size: .85rem; }
+    .btn-edit { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+    .btn-delete { background: #fee2e2; color: #b91c1c; }
+    .preview { display: grid; gap: 10px; margin-top: 8px; }
+    .preview img { width: 160px; height: 160px; object-fit: cover; border-radius: 14px; border: 1px solid #cbd5e1; }
+    .toast { position: fixed; right: 20px; bottom: 20px; padding: 14px 18px; border-radius: 16px; background: rgba(15,23,42,.9); color: #fff; font-size: .94rem; box-shadow: 0 18px 45px rgba(15,23,42,.2); z-index: 10000; display: none; }
+    @media (max-width: 840px) { .form-grid { grid-template-columns: 1fr; } .inventory-actions { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>Quản lý tồn kho</h1>
+        <p>Ghi nhận sản phẩm bằng ảnh và mã vạch / nhập tay.</p>
+      </div>
+      <div>
+        <a href="admin.html" class="btn btn-secondary">← Về Admin</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Thêm sản phẩm mới</h2>
+      <div class="form-grid">
+        <div>
+          <label for="item-barcode">Mã vạch / SKU</label>
+          <input id="item-barcode" type="text" placeholder="Nhập hoặc quét mã vạch" autocomplete="off" />
+          <div class="field-note">Quét mã bằng máy quét tay hoặc nhập bằng bàn phím.</div>
+        </div>
+        <div>
+          <label for="item-name">Tên sản phẩm</label>
+          <input id="item-name" type="text" placeholder="Ví dụ: Yến sào thượng hạng" autocomplete="off" />
+        </div>
+        <div>
+          <label for="item-quantity">Số lượng</label>
+          <input id="item-quantity" type="number" min="0" value="1" />
+        </div>
+        <div>
+          <label for="item-location">Vị trí kho</label>
+          <input id="item-location" type="text" placeholder="Kệ A1, Kho chính..." autocomplete="off" />
+        </div>
+        <div class="span-2">
+          <label for="item-note">Ghi chú</label>
+          <textarea id="item-note" placeholder="Ghi chú thêm nếu cần..."></textarea>
+        </div>
+        <div>
+          <label for="item-photo">Ảnh sản phẩm</label>
+          <input id="item-photo" type="file" accept="image/*" capture="environment" />
+          <div class="field-note">Chụp ảnh trực tiếp từ điện thoại hoặc chọn file ảnh.</div>
+        </div>
+        <div class="preview" id="photo-preview"></div>
+      </div>
+      <div style="margin-top:18px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button id="save-item" class="btn">Lưu tồn kho</button>
+        <button id="clear-form" type="button" class="btn btn-secondary">Xóa form</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="inventory-actions">
+        <div>
+          <label for="search-barcode">Tìm theo mã / tên</label>
+          <input id="search-barcode" type="text" placeholder="Nhập mã vạch hoặc tên" autocomplete="off" />
+        </div>
+        <button id="refresh-list" class="btn btn-secondary">Làm mới danh sách</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="inventory-list" id="inventory-table">
+          <thead>
+            <tr>
+              <th>Ảnh</th>
+              <th>Mã vạch</th>
+              <th>Tên</th>
+              <th>Số lượng</th>
+              <th>Vị trí</th>
+              <th>Ghi chú</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-body">
+            <tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      deleteDoc,
+      updateDoc,
+      doc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA24CUjreKu7He7kB0c9bGGWHGg_6YW7yg",
+      authDomain: "yensaocatan-e3e75.firebaseapp.com",
+      databaseURL: "https://yensaocatan-e3e75-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "yensaocatan-e3e75",
+      storageBucket: "yensaocatan-e3e75.firebasestorage.app",
+      messagingSenderId: "717544202838",
+      appId: "1:717544202838:web:9a88979d3f5084d50f91f7",
+      measurementId: "G-9TCZPV2722"
+    };
+    const CLOUDINARY_CLOUD_NAME = 'dqnzndovz';
+    const CLOUDINARY_IMAGE_UPLOAD_PRESET = 'backgrounds_unsigned';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function showToast(message, type = 'default') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.background = type === 'error' ? '#b91c1c' : type === 'success' ? '#059669' : 'rgba(15,23,42,.9)';
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 3200);
+    }
+
+    function compressImage(file, maxWidth = 1280, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) return resolve(file);
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const scale = Math.min(1, maxWidth / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Nén ảnh thất bại')), 'image/webp', quality);
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    async function uploadToCloudinary(file) {
+      if (!CLOUDINARY_CLOUD_NAME) throw new Error('Thiếu cấu hình Cloudinary.');
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_IMAGE_UPLOAD_PRESET);
+      const res = await fetch(url, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.secure_url) throw new Error(data.error?.message || 'Upload thất bại');
+      return data.secure_url;
+    }
+
+    const itemBarcode = document.getElementById('item-barcode');
+    const itemName = document.getElementById('item-name');
+    const itemQuantity = document.getElementById('item-quantity');
+    const itemLocation = document.getElementById('item-location');
+    const itemNote = document.getElementById('item-note');
+    const itemPhoto = document.getElementById('item-photo');
+    const photoPreview = document.getElementById('photo-preview');
+    const saveItem = document.getElementById('save-item');
+    const clearForm = document.getElementById('clear-form');
+    const inventoryBody = document.getElementById('inventory-body');
+    const searchBarcode = document.getElementById('search-barcode');
+    const refreshList = document.getElementById('refresh-list');
+
+    let currentPhotoFile = null;
+    let inventoryItems = [];
+
+    itemPhoto.addEventListener('change', () => {
+      const file = itemPhoto.files?.[0];
+      currentPhotoFile = file || null;
+      photoPreview.innerHTML = '';
+      if (file) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        photoPreview.appendChild(img);
+      }
+    });
+
+    clearForm.addEventListener('click', () => {
+      itemBarcode.value = '';
+      itemName.value = '';
+      itemQuantity.value = '1';
+      itemLocation.value = '';
+      itemNote.value = '';
+      itemPhoto.value = '';
+      photoPreview.innerHTML = '';
+      currentPhotoFile = null;
+    });
+
+    async function loadInventory() {
+      inventoryBody.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Đang tải dữ liệu...</td></tr>';
+      const q = query(collection(db, 'inventory'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      inventoryItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderInventory();
+    }
+
+    function renderInventory() {
+      const queryText = searchBarcode.value.trim().toLowerCase();
+      const filtered = inventoryItems.filter(item => {
+        if (!queryText) return true;
+        return item.barcode?.toLowerCase().includes(queryText)
+          || item.name?.toLowerCase().includes(queryText)
+          || item.location?.toLowerCase().includes(queryText);
+      });
+      if (!filtered.length) {
+        inventoryBody.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Chưa có sản phẩm phù hợp.</td></tr>';
+        return;
+      }
+      inventoryBody.innerHTML = filtered.map(item => `
+        <tr>
+          <td>${item.imageUrl ? `<img src="${item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
+          <td>${item.barcode || '<span style="color:#94a3b8">Không có</span>'}</td>
+          <td>${item.name || '<em>Chưa đặt tên</em>'}</td>
+          <td>${item.quantity ?? 0}</td>
+          <td>${item.location || '-'}</td>
+          <td>${item.note || '-'}</td>
+          <td style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-edit" type="button" data-id="${item.id}">Sửa</button>
+            <button class="btn-delete" type="button" data-id="${item.id}">Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+      inventoryBody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editItem(btn.dataset.id)));
+      inventoryBody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', () => deleteItem(btn.dataset.id)));
+    }
+
+    async function editItem(id) {
+      const item = inventoryItems.find(i => i.id === id);
+      if (!item) return;
+      itemBarcode.value = item.barcode || '';
+      itemName.value = item.name || '';
+      itemQuantity.value = item.quantity ?? 0;
+      itemLocation.value = item.location || '';
+      itemNote.value = item.note || '';
+      photoPreview.innerHTML = '';
+      if (item.imageUrl) {
+        const img = document.createElement('img');
+        img.src = item.imageUrl;
+        photoPreview.appendChild(img);
+      }
+      saveItem.dataset.editId = id;
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Xóa sản phẩm này khỏi kho?')) return;
+      await deleteDoc(doc(db, 'inventory', id));
+      inventoryItems = inventoryItems.filter(i => i.id !== id);
+      renderInventory();
+      showToast('Đã xóa sản phẩm.', 'success');
+    }
+
+    async function saveInventoryItem() {
+      const barcode = itemBarcode.value.trim();
+      const name = itemName.value.trim();
+      const quantity = Number(itemQuantity.value) || 0;
+      const location = itemLocation.value.trim();
+      const note = itemNote.value.trim();
+      if (!name) { showToast('Tên sản phẩm không được để trống.', 'error'); return; }
+      const data = {
+        barcode,
+        name,
+        quantity,
+        location,
+        note,
+        updatedAt: serverTimestamp(),
+      };
+      try {
+        saveItem.disabled = true;
+        if (currentPhotoFile) {
+          const compressed = await compressImage(currentPhotoFile);
+          const imageUrl = await uploadToCloudinary(compressed);
+          data.imageUrl = imageUrl;
+        }
+        if (saveItem.dataset.editId) {
+          const id = saveItem.dataset.editId;
+          await updateDoc(doc(db, 'inventory', id), data);
+          saveItem.removeAttribute('data-edit-id');
+          showToast('Đã cập nhật sản phẩm.', 'success');
+        } else {
+          data.createdAt = serverTimestamp();
+          await addDoc(collection(db, 'inventory'), data);
+          showToast('Đã thêm sản phẩm vào kho.', 'success');
+        }
+        clearForm.click();
+        await loadInventory();
+      } catch (err) {
+        console.error(err);
+        showToast('Lưu tồn kho thất bại: ' + (err.message || ''), 'error');
+      } finally {
+        saveItem.disabled = false;
+      }
+    }
+
+    saveItem.addEventListener('click', saveInventoryItem);
+    refreshList.addEventListener('click', loadInventory);
+    searchBarcode.addEventListener('input', renderInventory);
+
+    loadInventory();
+  </script>
+</body>
+</html>
