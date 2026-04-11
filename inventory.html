@@ -37,14 +37,25 @@
     .field-note { color: var(--muted); font-size: .86rem; margin-top: 6px; }
     .inventory-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
     .inventory-actions > * { flex: 1; min-width: 220px; }
-    .inventory-list { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .inventory-list th, .inventory-list td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
+    .inventory-list { width: 100%; border-collapse: collapse; table-layout: auto; }
+    .inventory-list th, .inventory-list td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
     .inventory-list th { background: #f8fafc; color: #334155; font-weight: 700; }
     .inventory-list th.image-col, .inventory-list td.image-col { width: 98px; }
     .inventory-list th.barcode-col, .inventory-list td.barcode-col { width: 180px; }
+    .inventory-list th.name-col, .inventory-list td.name-col { width: 180px; }
+    .inventory-list th.location-col, .inventory-list td.location-col { width: 140px; }
     .inventory-list td.image-col img { width: 72px; height: 72px; object-fit: cover; border-radius: 14px; border: 1px solid #e2e8f0; }
-    .inventory-list td.barcode-col { max-width: 180px; white-space: normal; word-break: break-all; color: #334155; }
-    .inventory-list td.barcode-col span { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: normal; }
+    .inventory-list td.barcode-col, .inventory-list td.name-col, .inventory-list td.location-col { max-width: 100%; color: #334155; }
+    .inventory-list td.barcode-col span,
+    .inventory-list td.name-col span,
+    .inventory-list td.location-col span {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
     .inventory-list .tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(232,93,4,.1); color: var(--accent); font-size: .82rem; }
     .inventory-list button { cursor: pointer; border: none; border-radius: 10px; padding: 8px 12px; font-size: .85rem; min-width: 70px; }
     .inventory-list .action-cell { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; min-width: 180px; }
@@ -68,7 +79,20 @@
     .preview { display: grid; gap: 10px; margin-top: 8px; }
     .preview img { width: 160px; height: 160px; object-fit: cover; border-radius: 14px; border: 1px solid #cbd5e1; }
     .toast { position: fixed; right: 20px; bottom: 20px; padding: 14px 18px; border-radius: 16px; background: rgba(15,23,42,.9); color: #fff; font-size: .94rem; box-shadow: 0 18px 45px rgba(15,23,42,.2); z-index: 10000; display: none; }
-    @media (max-width: 840px) { .form-grid { grid-template-columns: 1fr; } .inventory-actions { flex-direction: column; } }
+    @media (max-width: 840px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .inventory-actions { flex-direction: column; }
+      .inventory-list th, .inventory-list td { padding: 10px 8px; font-size: .92rem; }
+      .inventory-list td.image-col img { width: 58px; height: 58px; }
+      .inventory-list .action-cell { justify-content: flex-start; }
+      .inventory-list .action-cell button { min-width: 0; flex: 1 1 140px; }
+      .inventory-list th.image-col, .inventory-list td.image-col { width: 80px; }
+      .inventory-list th.barcode-col, .inventory-list td.barcode-col,
+      .inventory-list th.name-col, .inventory-list td.name-col,
+      .inventory-list th.location-col, .inventory-list td.location-col { width: auto; }
+      .inventory-list td.name-col span,
+      .inventory-list td.location-col span { white-space: normal; }
+    }
   </style>
 </head>
 <body>
@@ -149,11 +173,11 @@
         <table class="inventory-list" id="inventory-table">
           <thead>
             <tr>
-              <th>Ảnh</th>
-              <th>Mã vạch</th>
-              <th>Tên</th>
+              <th class="image-col">Ảnh</th>
+              <th class="barcode-col">Mã vạch</th>
+              <th class="name-col">Tên</th>
               <th>Số lượng</th>
-              <th>Vị trí</th>
+              <th class="location-col">Vị trí</th>
               <th>Ghi chú</th>
               <th>Hành động</th>
             </tr>
@@ -554,9 +578,9 @@
         <tr>
           <td class="image-col">${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
           <td class="barcode-col">${item.barcode ? `<span>${item.barcode}</span>` : '<span style="color:#94a3b8">Không có</span>'}</td>
-          <td>${item.name || '<em>Chưa đặt tên</em>'}</td>
+          <td class="name-col"><span>${item.name || 'Chưa đặt tên'}</span></td>
           <td>${item.quantity ?? 0}</td>
-          <td>${item.location || '-'}</td>
+          <td class="location-col"><span>${item.location || '-'}</span></td>
           <td>${item.note || '-'}</td>
           <td class="action-cell">
             <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
