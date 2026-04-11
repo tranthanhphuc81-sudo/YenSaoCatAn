@@ -53,6 +53,10 @@
     .modal-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; word-break: break-word; }
     .modal-row strong { color: #334155; }
     .modal-row span { color: #475569; }
+    .barcode-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; justify-content: center; }
+    .barcode-card { flex: 1 1 220px; min-width: 220px; max-width: calc(50% - 8px); padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; text-align: center; }
+    .barcode-card img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; }
+    .barcode-card strong { display: block; margin-bottom: 10px; color: #334155; }
     .modal-detail img { width: 100%; height: auto; max-height: 320px; object-fit: contain; border-radius: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
     .preview { display: grid; gap: 10px; margin-top: 8px; }
@@ -189,6 +193,7 @@
       <h3>Chi tiết sản phẩm</h3>
       <div id="inventory-product-detail-content"></div>
       <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="inventory-product-print">In mã</button>
         <button type="button" class="btn btn-secondary" id="inventory-product-close">Đóng</button>
       </div>
     </div>
@@ -423,6 +428,59 @@
       modal.setAttribute('aria-hidden', 'true');
     }
 
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function printInventoryProduct(productId) {
+      const item = inventoryItems.find(i => i.id === productId);
+      if (!item) return;
+      const barcode = item.barcode || '';
+      const hasBarcode = barcode.length > 0;
+      const barcodeUrl = hasBarcode
+        ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
+        : '';
+      const qrUrl = hasBarcode
+        ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`product:${barcode}`)}`
+        : '';
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>In Barcode/QR - ${escapeHtml(item.name)}</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+              h1 { font-size: 1.4rem; margin-bottom: 16px; }
+              .print-row { display: flex; flex-wrap: wrap; gap: 16px; }
+              .print-card { flex: 1 1 260px; min-width: 260px; border: 1px solid #eee; border-radius: 16px; padding: 16px; text-align: center; }
+              .print-card img { width: 100%; height: auto; max-height: 320px; object-fit: contain; }
+              .print-card strong { display: block; margin-bottom: 12px; font-size: 1rem; }
+            </style>
+          </head>
+          <body>
+            <h1>${escapeHtml(item.name)}</h1>
+            <p><strong>Mã vạch:</strong> ${escapeHtml(barcode || 'Chưa có')}</p>
+            ${hasBarcode ? `
+              <div class="print-row">
+                <div class="print-card"><strong>Barcode</strong><img src="${barcodeUrl}" alt="Barcode" /></div>
+                <div class="print-card"><strong>QR Code</strong><img src="${qrUrl}" alt="QR code" /></div>
+              </div>
+            ` : '<p>Không có barcode/QR để in.</p>'}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+
     async function loadHistory() {
       historyBody.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Đang tải lịch sử...</td></tr>';
       const q = query(collection(db, 'stockMovements'), orderBy('timestamp', 'desc'));
@@ -638,6 +696,10 @@
     refreshList.addEventListener('click', loadInventory);
     refreshHistory.addEventListener('click', loadHistory);
     searchBarcode.addEventListener('input', renderInventory);
+    document.getElementById('inventory-product-print').addEventListener('click', () => {
+      const productId = document.getElementById('inventory-product-print').dataset.id;
+      if (productId) printInventoryProduct(productId);
+    });
     document.getElementById('inventory-product-close').addEventListener('click', closeInventoryProductModal);
     document.getElementById('inventory-product-modal').addEventListener('click', (e) => {
       if (e.target === document.getElementById('inventory-product-modal')) {
