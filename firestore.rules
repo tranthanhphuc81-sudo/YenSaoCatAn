@@ -122,7 +122,6 @@ service cloud.firestore {
           && request.resource.data.description == resource.data.description
           && request.resource.data.quantity is number
           && request.resource.data.quantity >= 0
-          && request.resource.data.quantity <= resource.data.quantity
           && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
