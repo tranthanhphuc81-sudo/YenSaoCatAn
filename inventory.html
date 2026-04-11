@@ -43,8 +43,18 @@
     .inventory-list td img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; }
     .inventory-list .tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(232,93,4,.1); color: var(--accent); font-size: .82rem; }
     .inventory-list button { cursor: pointer; border: none; border-radius: 10px; padding: 8px 12px; font-size: .85rem; }
+    .btn-view { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
     .btn-edit { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
     .btn-delete { background: #fee2e2; color: #b91c1c; }
+    .modal-backdrop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,.55); z-index: 1000; }
+    .modal-backdrop.active { display: flex; }
+    .modal-detail { width: min(640px, 100%); max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 24px 60px rgba(15,23,42,.18); }
+    .modal-detail h3 { margin: 0 0 18px; font-size: 1.25rem; color: var(--primary-dark); }
+    .modal-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+    .modal-row strong { color: #334155; }
+    .modal-row span { color: #475569; }
+    .modal-detail img { width: 100%; border-radius: 16px; object-fit: cover; }
+    .modal-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
     .preview { display: grid; gap: 10px; margin-top: 8px; }
     .preview img { width: 160px; height: 160px; object-fit: cover; border-radius: 14px; border: 1px solid #cbd5e1; }
     .toast { position: fixed; right: 20px; bottom: 20px; padding: 14px 18px; border-radius: 16px; background: rgba(15,23,42,.9); color: #fff; font-size: .94rem; box-shadow: 0 18px 45px rgba(15,23,42,.2); z-index: 10000; display: none; }
@@ -170,6 +180,16 @@
             <tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Đang tải lịch sử...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="inventory-product-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-detail">
+      <h3>Chi tiết sản phẩm</h3>
+      <div id="inventory-product-detail-content"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="inventory-product-close">Đóng</button>
       </div>
     </div>
   </div>
@@ -358,6 +378,51 @@
       renderInventory();
     }
 
+    function showInventoryProduct(productId) {
+      const item = inventoryItems.find(i => i.id === productId);
+      if (!item) return;
+      const barcode = item.barcode || '';
+      const hasBarcode = barcode.length > 0;
+      const barcodeUrl = hasBarcode
+        ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
+        : '';
+      const qrUrl = hasBarcode
+        ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`product:${barcode}`)}`
+        : '';
+
+      document.getElementById('inventory-product-detail-content').innerHTML = `
+        <div class="modal-row" style="justify-content:center;">
+          <img src="${item.image || item.imageUrl || 'https://placehold.co/420x280?text=No+Image'}" alt="${item.name}" />
+        </div>
+        <div class="modal-row"><strong>Tên:</strong><span>${item.name || '—'}</span></div>
+        <div class="modal-row"><strong>Mã vạch:</strong><span>${barcode || 'Chưa có'}</span></div>
+        <div class="modal-row"><strong>Số lượng:</strong><span>${item.quantity ?? 0}</span></div>
+        <div class="modal-row"><strong>Vị trí:</strong><span>${item.location || '-'}</span></div>
+        <div class="modal-row"><strong>Ghi chú:</strong><span>${item.note || '-'}</span></div>
+        <div class="modal-row"><strong>Giá:</strong><span>${item.price != null ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price) : '-'}</span></div>
+        ${hasBarcode ? `
+          <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+            <strong>Barcode</strong>
+            <img src="${barcodeUrl}" alt="Barcode" />
+          </div>
+          <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+            <strong>QR Code</strong>
+            <img src="${qrUrl}" alt="QR code" style="width:180px;max-width:100%" />
+          </div>
+        ` : ''}
+      `;
+
+      const modal = document.getElementById('inventory-product-modal');
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeInventoryProductModal() {
+      const modal = document.getElementById('inventory-product-modal');
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
     async function loadHistory() {
       historyBody.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#475569;text-align:center">Đang tải lịch sử...</td></tr>';
       const q = query(collection(db, 'stockMovements'), orderBy('timestamp', 'desc'));
@@ -406,11 +471,14 @@
           <td>${item.location || '-'}</td>
           <td>${item.note || '-'}</td>
           <td style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
             <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
           </td>
         </tr>
       `).join('');
-      inventoryBody.querySelectorAll('.btn-select').forEach(btn => btn.addEventListener('click', () => selectItem(btn.dataset.id)));
+      inventoryBody.querySelectorAll('.btn-select').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); selectItem(btn.dataset.id); })) ;
+      inventoryBody.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showInventoryProduct(btn.dataset.id); }));
+      inventoryBody.querySelectorAll('tr[data-id]').forEach(row => row.addEventListener('click', () => showInventoryProduct(row.dataset.id)));
     }
 
     async function selectItem(id) {
@@ -570,6 +638,12 @@
     refreshList.addEventListener('click', loadInventory);
     refreshHistory.addEventListener('click', loadHistory);
     searchBarcode.addEventListener('input', renderInventory);
+    document.getElementById('inventory-product-close').addEventListener('click', closeInventoryProductModal);
+    document.getElementById('inventory-product-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('inventory-product-modal')) {
+        closeInventoryProductModal();
+      }
+    });
 
     await loadInventory();
     await loadHistory();

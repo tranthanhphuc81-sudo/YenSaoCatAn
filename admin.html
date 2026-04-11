@@ -1210,6 +1210,16 @@
       </div>
     </div>
   </div>
+
+  <div id="product-detail-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-detail">
+      <h3>Chi tiết sản phẩm</h3>
+      <div id="product-detail-content"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" id="product-detail-close">Đóng</button>
+      </div>
+    </div>
+  </div>
   </div><!-- /main-content -->
 </div><!-- /dashboard -->
 
@@ -1465,6 +1475,7 @@
   }
 
   const CAT_LABEL = { yen: 'Yến Sào', sam: 'Sâm', 'us-japan': 'Mỹ / Nhật' };
+  let adminProducts = [];
 
   // ==================================================
   // XÁC THỰC: Theo dõi trạng thái đăng nhập
@@ -1817,7 +1828,8 @@
   async function loadProducts() {
     try {
       const snap = await getDocs(collection(db, 'products'));
-      renderProductTable(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      adminProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderProductTable(adminProducts);
     } catch (err) {
       console.error('Lỗi tải sản phẩm:', err);
       document.getElementById('product-list').innerHTML =
@@ -1837,7 +1849,7 @@
     }
 
     tbody.innerHTML = products.map(p => `
-      <tr>
+      <tr data-id="${p.id}">
         <td>
           <img class="product-thumb"
                src="${p.image || ''}"
@@ -1857,8 +1869,63 @@
 
     // Gắn sự kiện xoá
     tbody.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteProduct(btn.dataset.id);
+      });
     });
+
+    // Gắn sự kiện click hàng để xem chi tiết sản phẩm
+    tbody.querySelectorAll('tr[data-id]').forEach(row => {
+      row.addEventListener('click', () => {
+        showProductDetails(row.dataset.id);
+      });
+    });
+  }
+
+  function showProductDetails(productId) {
+    const product = adminProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    const barcode = product.barcode || '';
+    const hasBarcode = barcode.length > 0;
+    const barcodeUrl = hasBarcode
+      ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
+      : '';
+    const qrUrl = hasBarcode
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`product:${barcode}`)}`
+      : '';
+
+    document.getElementById('product-detail-content').innerHTML = `
+      <div class="modal-row" style="justify-content:center;">
+        <img src="${product.image || 'https://placehold.co/420x280?text=No+Image'}" alt="${product.name}" style="max-width:100%;border-radius:12px;object-fit:cover;" />
+      </div>
+      <div class="modal-row"><strong>Tên:</strong><span>${product.name || '—'}</span></div>
+      <div class="modal-row"><strong>Phân loại:</strong><span>${CAT_LABEL[product.category] || product.category || '—'}</span></div>
+      <div class="modal-row"><strong>Giá:</strong><span>${formatVND(product.price)}</span></div>
+      <div class="modal-row"><strong>Mô tả:</strong><span>${product.description || 'Không có'}</span></div>
+      <div class="modal-row"><strong>Mã vạch:</strong><span>${barcode || 'Chưa có'}</span></div>
+      ${hasBarcode ? `
+        <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+          <strong>Barcode</strong>
+          <img src="${barcodeUrl}" alt="Barcode" style="width:100%;max-width:100%" />
+        </div>
+        <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+          <strong>QR Code</strong>
+          <img src="${qrUrl}" alt="QR code" style="width:160px;max-width:100%" />
+        </div>
+      ` : ''}
+    `;
+
+    const modal = document.getElementById('product-detail-modal');
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeProductDetails() {
+    const modal = document.getElementById('product-detail-modal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
   }
 
   // ==================================================
@@ -2273,6 +2340,12 @@
   document.getElementById('order-detail-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('order-detail-modal')) {
       closeOrderDetails();
+    }
+  });
+  document.getElementById('product-detail-close').addEventListener('click', closeProductDetails);
+  document.getElementById('product-detail-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('product-detail-modal')) {
+      closeProductDetails();
     }
   });
 
