@@ -58,11 +58,25 @@ service cloud.firestore {
 
     // ─── Validate orders ─────────────────────────────────────
     // Đảm bảo client không thể gửi dữ liệu rác / field lạ lên Firestore
+    function validateOrderItems(items) {
+      return items is list
+          && items.size() > 0 && items.size() <= 50
+          && items.every(item =>
+              item is map
+              && item.keys().hasOnly(['productId', 'name', 'price', 'qty'])
+              && item.productId is string && item.productId.size() > 0
+              && item.name is string && item.name.size() > 0
+              && item.price is number && item.price >= 0
+              && item.qty is number && item.qty > 0
+          );
+    }
+
     function validateOrder() {
       let d = request.resource.data;
       let requiredKeys = [
         'customerName', 'customerPhone', 'customerAddress',
-        'paymentMethod', 'items', 'total', 'timestamp'
+        'paymentMethod', 'items', 'total', 'timestamp',
+        'status', 'source', 'createdAt'
       ];
       return d.keys().hasOnly(requiredKeys)
           && d.keys().hasAll(requiredKeys)
@@ -72,12 +86,44 @@ service cloud.firestore {
           && d.customerAddress is string && d.customerAddress.size() > 0 && d.customerAddress.size() <= 300
           // Phương thức thanh toán chỉ nhận 2 giá trị hợp lệ
           && d.paymentMethod in ['cash', 'transfer']
-          // Giỏ hàng phải có ít nhất 1 sản phẩm, tối đa 50 dòng
-          && d.items is list && d.items.size() > 0 && d.items.size() <= 50
-          // Tổng tiền phải dương
+          // Giỏ hàng hợp lệ
+          && validateOrderItems(d.items)
           && d.total is number && d.total > 0
-          // timestamp phải là kiểu timestamp (do serverTimestamp() tạo)
-          && d.timestamp is timestamp;
+          && d.status in ['pending', 'confirmed', 'cancelled']
+          && d.source in ['auto', 'website']
+          && d.timestamp is timestamp
+          && d.createdAt is timestamp;
+    }
+
+    function validateStockMovement() {
+      let d = request.resource.data;
+      let allowed = ['productId', 'productName', 'type', 'delta', 'previousQuantity', 'newQuantity', 'timestamp', 'location', 'note', 'orderId', 'barcode'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(['productId', 'productName', 'type', 'delta', 'previousQuantity', 'newQuantity', 'timestamp'])
+          && d.productId is string && d.productId.size() > 0
+          && d.productName is string && d.productName.size() > 0
+          && d.type is string && d.type in ['order', 'in', 'out']
+          && d.delta is number && d.delta != 0
+          && d.previousQuantity is number && d.previousQuantity >= 0
+          && d.newQuantity is number && d.newQuantity >= 0
+          && d.timestamp is timestamp
+          && (!('orderId' in d) || (d.orderId is string && d.orderId.size() > 0))
+          && (!('location' in d) || d.location is string)
+          && (!('note' in d) || d.note is string)
+          && (!('barcode' in d) || d.barcode is string);
+    }
+
+    function validateProductQuantityUpdate() {
+      return request.resource.data.name == resource.data.name
+          && request.resource.data.price == resource.data.price
+          && request.resource.data.image == resource.data.image
+          && request.resource.data.category == resource.data.category
+          && request.resource.data.barcode == resource.data.barcode
+          && request.resource.data.description == resource.data.description
+          && request.resource.data.quantity is number
+          && request.resource.data.quantity >= 0
+          && request.resource.data.quantity <= resource.data.quantity
+          && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
     // ════════════════════════════════════════════════════════
@@ -114,8 +160,15 @@ service cloud.firestore {
     match /products/{productId} {
       allow get, list:  if true;
       allow create:     if isAdmin() && validateProduct();
-      allow update:     if isAdmin() && validateProduct();
+      allow update:     if (isAdmin() && validateProduct()) || validateProductQuantityUpdate();
       allow delete:     if isAdmin();
+    }
+
+    // ─── stockMovements/{movementId} ───────────────────────────────────────
+    match /stockMovements/{movementId} {
+      allow get, list: if true;
+      allow create:   if validateStockMovement();
+      allow update, delete: if false;
     }
 
     // ─── orders/{orderId} ────────────────────────────────────
