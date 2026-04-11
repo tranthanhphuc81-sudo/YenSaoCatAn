@@ -37,12 +37,18 @@
     .field-note { color: var(--muted); font-size: .86rem; margin-top: 6px; }
     .inventory-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
     .inventory-actions > * { flex: 1; min-width: 220px; }
-    .inventory-list { width: 100%; border-collapse: collapse; }
-    .inventory-list th, .inventory-list td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    .inventory-list { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .inventory-list th, .inventory-list td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
     .inventory-list th { background: #f8fafc; color: #334155; font-weight: 700; }
-    .inventory-list td img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .inventory-list th.image-col, .inventory-list td.image-col { width: 98px; }
+    .inventory-list th.barcode-col, .inventory-list td.barcode-col { width: 180px; }
+    .inventory-list td.image-col img { width: 72px; height: 72px; object-fit: cover; border-radius: 14px; border: 1px solid #e2e8f0; }
+    .inventory-list td.barcode-col { max-width: 180px; white-space: normal; word-break: break-all; color: #334155; }
+    .inventory-list td.barcode-col span { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: normal; }
     .inventory-list .tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(232,93,4,.1); color: var(--accent); font-size: .82rem; }
-    .inventory-list button { cursor: pointer; border: none; border-radius: 10px; padding: 8px 12px; font-size: .85rem; }
+    .inventory-list button { cursor: pointer; border: none; border-radius: 10px; padding: 8px 12px; font-size: .85rem; min-width: 70px; }
+    .inventory-list .action-cell { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; min-width: 180px; }
+    .inventory-list .action-cell button { flex: 1 1 auto; min-width: 80px; }
     .btn-view { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
     .btn-edit { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
     .btn-delete { background: #fee2e2; color: #b91c1c; }
@@ -546,13 +552,13 @@
       }
       inventoryBody.innerHTML = filtered.map(item => `
         <tr>
-          <td>${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
-          <td>${item.barcode || '<span style="color:#94a3b8">Không có</span>'}</td>
+          <td class="image-col">${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
+          <td class="barcode-col">${item.barcode ? `<span>${item.barcode}</span>` : '<span style="color:#94a3b8">Không có</span>'}</td>
           <td>${item.name || '<em>Chưa đặt tên</em>'}</td>
           <td>${item.quantity ?? 0}</td>
           <td>${item.location || '-'}</td>
           <td>${item.note || '-'}</td>
-          <td style="display:flex;gap:8px;flex-wrap:wrap">
+          <td class="action-cell">
             <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
             <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
           </td>
