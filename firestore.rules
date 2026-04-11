@@ -44,14 +44,15 @@ service cloud.firestore {
     // category: phải thuộc danh sách cho phép
     function validateProduct() {
       let d = request.resource.data;
-      let allowed = ['name', 'price', 'image', 'category', 'description'];
+      let allowed = ['name', 'price', 'image', 'category', 'description', 'barcode'];
       return d.keys().hasOnly(allowed)
-          && d.keys().hasAll(['name', 'price', 'image', 'category'])
+          && d.keys().hasAll(['name', 'price', 'image', 'category', 'barcode'])
           && d.name     is string && d.name.size()     > 0 && d.name.size()  <= 200
           && d.price    is number && d.price            >= 0
           && d.image    is string && d.image.size()    > 0
           && d.category is string
           && d.category in ['yen', 'sam', 'us-japan']
+          && d.barcode  is string && d.barcode.size()   > 0 && d.barcode.size() <= 100
           && (!('description' in d) || (d.description is string && d.description.size() <= 1000));
     }
 
