@@ -1928,11 +1928,12 @@
 
     const barcode = product.barcode || '';
     const hasBarcode = barcode.length > 0;
+    const qrText = hasBarcode ? makeProductQrText(product) : '';
     const barcodeUrl = hasBarcode
       ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
       : '';
     const qrUrl = hasBarcode
-      ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`product:${barcode}`)}`
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`
       : '';
 
     document.getElementById('product-detail-content').innerHTML = `
@@ -1978,8 +1979,9 @@
     const barcodeUrl = hasBarcode
       ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
       : '';
+    const qrText = hasBarcode ? makeProductQrText(product) : '';
     const qrUrl = hasBarcode
-      ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`product:${barcode}`)}`
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`
       : '';
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -2046,9 +2048,16 @@
     return barcode;
   }
 
+  function makeProductQrText(product) {
+    return `Tên sản phẩm: ${product.name || ''}\nMã vạch: ${product.barcode || ''}\nGiá: ${product.price != null ? formatVND(product.price) : ''}\nMô tả: ${product.description || 'Không có'}`;
+  }
+
   function updateProductCodePreview() {
     const barcode = generateProductBarcodeValue();
-    const qrText = `product:${barcode}`;
+    const name = document.getElementById('prod-name').value.trim();
+    const price = Number(document.getElementById('prod-price').value) || 0;
+    const description = document.getElementById('prod-description').value.trim();
+    const qrText = makeProductQrText({ name, barcode, price, description });
     barcodePreview.src = `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`;
     qrPreview.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`;
     codePreview.style.display = 'block';
