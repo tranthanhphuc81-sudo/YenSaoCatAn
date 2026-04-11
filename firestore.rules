@@ -114,14 +114,19 @@ service cloud.firestore {
     }
 
     function validateProductQuantityUpdate() {
-      return request.resource.data.name == resource.data.name
-          && request.resource.data.price == resource.data.price
-          && request.resource.data.image == resource.data.image
-          && request.resource.data.category == resource.data.category
-          && request.resource.data.barcode == resource.data.barcode
-          && request.resource.data.description == resource.data.description
-          && request.resource.data.quantity is number
-          && request.resource.data.quantity >= 0;
+      let d = request.resource.data;
+      let old = resource.data;
+      return d.quantity is number
+          && d.quantity >= 0
+          && d.name == old.name
+          && d.price == old.price
+          && d.image == old.image
+          && d.category == old.category
+          && d.barcode == old.barcode
+          && (!('description' in old) || d.description == old.description)
+          && (!('updatedAt' in d) || d.updatedAt is timestamp)
+          && (!('location' in d) || d.location is string)
+          && (!('note' in d) || d.note is string);
     }
 
     // ════════════════════════════════════════════════════════
