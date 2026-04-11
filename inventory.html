@@ -420,6 +420,9 @@
         ` : ''}
       `;
 
+      const printButton = document.getElementById('inventory-product-print');
+      printButton.dataset.id = item.id;
+
       const modal = document.getElementById('inventory-product-modal');
       modal.classList.add('active');
       modal.setAttribute('aria-hidden', 'false');
@@ -429,6 +432,7 @@
       const modal = document.getElementById('inventory-product-modal');
       modal.classList.remove('active');
       modal.setAttribute('aria-hidden', 'true');
+      document.getElementById('inventory-product-print').removeAttribute('data-id');
     }
 
     function escapeHtml(value) {
