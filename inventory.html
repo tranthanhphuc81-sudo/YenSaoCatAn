@@ -462,13 +462,6 @@
               .print-card img { width: 100%; height: auto; max-height: 320px; object-fit: contain; }
               .print-card strong { display: block; margin-bottom: 12px; font-size: 1rem; }
             </style>
-            <script>
-              window.addEventListener('load', function() {
-                window.focus();
-                window.print();
-                window.close();
-              });
-            </script>
           </head>
           <body>
             <h1>${escapeHtml(item.name)}</h1>
@@ -483,7 +476,23 @@
         </html>
       `);
       printWindow.document.close();
-      printWindow.focus();
+      const printDoc = printWindow.document;
+      const images = Array.from(printDoc.images);
+      const imagePromises = images.map(img => {
+        return new Promise(resolve => {
+          if (img.complete && img.naturalWidth !== 0) {
+            resolve();
+          } else {
+            img.addEventListener('load', resolve);
+            img.addEventListener('error', resolve);
+          }
+        });
+      });
+      Promise.all(imagePromises).finally(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      });
     }
 
     async function loadHistory() {
