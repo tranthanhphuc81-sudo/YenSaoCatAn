@@ -629,10 +629,6 @@
       }
     }
 
-    saveItem.addEventListener('click', saveInventoryItem);
-    refreshList.addEventListener('click', loadInventory);
-    searchBarcode.addEventListener('input', renderInventory);
-
     async function ensureBarcodeDetector() {
       if (barcodeDetector !== null) return barcodeDetector !== false;
       if (!('BarcodeDetector' in window)) {
