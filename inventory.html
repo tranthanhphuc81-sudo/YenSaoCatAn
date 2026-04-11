@@ -50,10 +50,10 @@
     .modal-backdrop.active { display: flex; }
     .modal-detail { width: min(640px, 100%); max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 24px 60px rgba(15,23,42,.18); }
     .modal-detail h3 { margin: 0 0 18px; font-size: 1.25rem; color: var(--primary-dark); }
-    .modal-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+    .modal-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; word-break: break-word; }
     .modal-row strong { color: #334155; }
     .modal-row span { color: #475569; }
-    .modal-detail img { width: 100%; border-radius: 16px; object-fit: cover; }
+    .modal-detail img { width: 100%; height: auto; max-height: 320px; object-fit: contain; border-radius: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
     .preview { display: grid; gap: 10px; margin-top: 8px; }
     .preview img { width: 160px; height: 160px; object-fit: cover; border-radius: 14px; border: 1px solid #cbd5e1; }

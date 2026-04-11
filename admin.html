@@ -735,6 +735,8 @@
     .modal-detail {
       width:100%;
       max-width:520px;
+      max-height:90vh;
+      overflow-y:auto;
       background:#fff;
       border-radius:18px;
       box-shadow:0 22px 60px rgba(0,0,0,.2);
@@ -747,11 +749,19 @@
     }
     .modal-row {
       display:flex;
+      flex-wrap:wrap;
       justify-content:space-between;
       gap:12px;
       margin-bottom:12px;
       font-size:.95rem;
       color:#374151;
+      word-break:break-word;
+    }
+    .modal-row img {
+      width:100%;
+      height:auto;
+      max-height:320px;
+      object-fit:contain;
     }
     .modal-row strong { color:#111827; }
     .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
