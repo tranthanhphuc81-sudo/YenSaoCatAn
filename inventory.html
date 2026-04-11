@@ -394,9 +394,6 @@
       const barcodeUrl = hasBarcode
         ? `https://api-bwipjs.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext&textxalign=center`
         : '';
-      const qrText = hasBarcode
-        ? `Tên sản phẩm: ${item.name || ''}\nMã vạch: ${barcode}\nGiá: ${item.price != null ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price) : ''}\nMô tả: ${item.description || 'Không có'}`
-        : '';
       const qrUrl = hasBarcode
         ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrText)}`
         : '';
