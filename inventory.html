@@ -37,13 +37,14 @@
     .field-note { color: var(--muted); font-size: .86rem; margin-top: 6px; }
     .inventory-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
     .inventory-actions > * { flex: 1; min-width: 220px; }
-    .inventory-list { width: 100%; border-collapse: collapse; table-layout: fixed; border-radius: 18px; overflow: hidden; background: #fff; }
-    .inventory-list th, .inventory-list td { padding: 16px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; white-space: normal; word-break: normal; overflow-wrap: break-word; }
+    .inventory-list { width: 100%; border-collapse: collapse; table-layout: auto; border-radius: 18px; overflow: hidden; background: #fff; min-width: 760px; }
+    .inventory-list th, .inventory-list td { padding: 16px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; white-space: nowrap; word-break: normal; overflow: hidden; text-overflow: ellipsis; }
     .inventory-list th { background: #f8fafc; color: #334155; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; font-size: .92rem; }
     .inventory-list th.image-col, .inventory-list td.image-col { width: 90px; }
     .inventory-list th.barcode-col, .inventory-list td.barcode-col { width: 170px; }
     .inventory-list th.name-col, .inventory-list td.name-col { width: 240px; }
     .inventory-list th.location-col, .inventory-list td.location-col { width: 170px; }
+    .inventory-list th.note-col, .inventory-list td.note-col { width: 180px; }
     .inventory-list td.image-col img { width: 72px; height: 72px; object-fit: cover; border-radius: 14px; border: 1px solid #e2e8f0; }
     .inventory-list td.barcode-col, .inventory-list td.name-col, .inventory-list td.location-col { max-width: 100%; color: #334155; }
     .inventory-list td.barcode-col span,
@@ -93,10 +94,10 @@
       .inventory-list .action-cell button { min-width: 0; flex: 1 1 140px; }
       .inventory-list th.image-col, .inventory-list td.image-col { width: 80px; }
       .inventory-list th.barcode-col, .inventory-list td.barcode-col,
-      .inventory-list th.name-col, .inventory-list td.name-col,
-      .inventory-list th.location-col, .inventory-list td.location-col { width: auto; }
-      .inventory-list td.name-col span,
-      .inventory-list td.location-col span { white-space: normal; }
+      .inventory-list th.name-col, .inventory-list td.name-col { width: auto; }
+      .inventory-list th.location-col, .inventory-list td.location-col,
+      .inventory-list th.note-col, .inventory-list td.note-col { display: none; }
+      .inventory-list td.name-col span { white-space: normal; }
     }
   </style>
 </head>
@@ -183,9 +184,9 @@
               <th class="name-col">Tên</th>
               <th>Số lượng</th>
               <th class="location-col">Vị trí</th>
-              <th>Ghi chú</th>
-              <th>Hành động</th>
-            </tr>
+          <th class="note-col">Ghi chú</th>
+          <th>Hành động</th>
+        </tr>
           </thead>
           <tbody id="inventory-body">
             <tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Đang tải dữ liệu...</td></tr>
@@ -586,7 +587,7 @@
           <td class="name-col"><span>${item.name || 'Chưa đặt tên'}</span></td>
           <td>${item.quantity ?? 0}</td>
           <td class="location-col"><span>${item.location || '-'}</span></td>
-          <td>${item.note || '-'}</td>
+          <td class="note-col">${item.note || '-'}</td>
           <td class="action-cell">
             <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
             <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
