@@ -2288,9 +2288,9 @@
   }
 
   // ==================================================
-  // FORM LIÊN HỆ (gửi đơn giản qua toast)
+  // FORM LIÊN HỆ (gửi lưu vào Firestore để admin xem)
   // ==================================================
-  document.getElementById('contact-form').addEventListener('submit', function(e) {
+  document.getElementById('contact-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const name  = document.getElementById('contact-name').value.trim();
     const phone = document.getElementById('contact-phone').value.trim();
@@ -2303,8 +2303,20 @@
       showToast('Số điện thoại không hợp lệ!', 'error');
       return;
     }
-    showToast('✅ Đã nhận tin nhắn! Chúng tôi sẽ liên hệ sớm.', 'success');
-    this.reset();
+    try {
+      await addDoc(collection(db, 'contactMessages'), {
+        name,
+        phone,
+        message: msg,
+        createdAt: serverTimestamp(),
+        status: 'new'
+      });
+      showToast('✅ Đã nhận tin nhắn! Chúng tôi sẽ liên hệ sớm.', 'success');
+      this.reset();
+    } catch (err) {
+      console.error('Lỗi gửi tin nhắn:', err);
+      showToast('Không thể gửi tin nhắn. Vui lòng thử lại sau.', 'error');
+    }
   });
 
   // ==================================================

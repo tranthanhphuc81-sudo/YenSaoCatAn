@@ -886,6 +886,7 @@
     <button data-tab="products"><span class="tab-icon">📦</span><span class="tab-label">Sản phẩm</span></button>
     <button data-tab="posts"><span class="tab-icon">📰</span><span class="tab-label">Tin tức</span></button>
     <button data-tab="chat" id="tab-btn-chat"><span class="tab-icon">💬<span id="chat-unread-badge" style="display:none;background:#e74c3c;color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;vertical-align:top;margin-left:1px;"></span></span><span class="tab-label">Chat</span></button>
+    <button data-tab="contacts"><span class="tab-icon">✉️</span><span class="tab-label">Tin nhắn</span></button>
     <button data-tab="orders"><span class="tab-icon">📋</span><span class="tab-label">Đơn hàng</span></button>
   </div>
 
@@ -1201,6 +1202,29 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========== TAB: TIN NHẮN KHÁCH HÀNG =========== -->
+    <div class="tab-panel" id="tab-contacts">
+      <div class="card">
+        <h2>📩 Tin nhắn khách hàng</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Họ tên</th>
+                <th>SĐT</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="contact-list">
+              <tr><td colspan="5" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1545,6 +1569,7 @@
       loadProducts();
       loadPosts();
       loadOrders();
+      loadContacts();
       listenChatSessions();
     } else {
       // Chưa đăng nhập → hiện login, ẩn dashboard
@@ -2437,6 +2462,46 @@
     const modal = document.getElementById('order-detail-modal');
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
+  }
+
+  let allContacts = [];
+
+  async function loadContacts() {
+    try {
+      const q    = query(collection(db, 'contactMessages'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderContacts();
+    } catch (err) {
+      console.error('Lỗi tải tin nhắn:', err);
+      document.getElementById('contact-list').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Không thể tải tin nhắn.</td></tr>';
+    }
+  }
+
+  function renderContacts() {
+    const tbody = document.getElementById('contact-list');
+    if (!allContacts.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có tin nhắn nào.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = allContacts.map(item => {
+      const createdAt = item.createdAt && item.createdAt.toDate
+        ? formatDate(item.createdAt)
+        : '-';
+      const statusBadge = item.status === 'new'
+        ? '<span class="badge" style="background:#ef4444;color:#fff">Mới</span>'
+        : '<span class="badge" style="background:#94a3b8;color:#111">Đã xem</span>';
+      return `
+        <tr>
+          <td style="white-space:nowrap">${createdAt}</td>
+          <td>${item.name || '—'}</td>
+          <td style="white-space:nowrap">${item.phone || '—'}</td>
+          <td>${item.message || '—'}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function closeOrderDetails() {
