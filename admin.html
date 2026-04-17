@@ -1210,6 +1210,15 @@
     <div class="tab-panel" id="tab-contacts">
       <div class="card">
         <h2>📩 Tin nhắn khách hàng</h2>
+        <div class="table-actions">
+          <label for="contact-filter">Lọc tin nhắn:</label>
+          <select id="contact-filter">
+            <option value="all">Tất cả</option>
+            <option value="new">Mới</option>
+            <option value="read">Đã xem</option>
+          </select>
+          <button type="button" class="btn btn-secondary" id="refresh-contacts">Làm mới</button>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -1219,10 +1228,11 @@
                 <th>SĐT</th>
                 <th>Nội dung</th>
                 <th>Trạng thái</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody id="contact-list">
-              <tr><td colspan="5" class="empty-state">Đang tải...</td></tr>
+              <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1570,6 +1580,7 @@
       loadPosts();
       loadOrders();
       loadContacts();
+      listenContactMessages();
       listenChatSessions();
     } else {
       // Chưa đăng nhập → hiện login, ẩn dashboard
@@ -1678,6 +1689,8 @@
     try {
       clearInterval(_presenceInterval);
       _presenceInterval = null;
+      if (contactUnsub) contactUnsub();
+      contactUnsub = null;
       await setAdminOnline(false);
       await signOut(auth);
     } catch (err) {
@@ -2465,6 +2478,8 @@
   }
 
   let allContacts = [];
+  let contactFilter = 'all';
+  let contactUnsub = null;
 
   async function loadContacts() {
     try {
@@ -2475,23 +2490,55 @@
     } catch (err) {
       console.error('Lỗi tải tin nhắn:', err);
       document.getElementById('contact-list').innerHTML =
-        '<tr><td colspan="5" class="empty-state">Không thể tải tin nhắn.</td></tr>';
+        '<tr><td colspan="6" class="empty-state">Không thể tải tin nhắn.</td></tr>';
+    }
+  }
+
+  function listenContactMessages() {
+    if (contactUnsub) contactUnsub();
+    const q = query(collection(db, 'contactMessages'), orderBy('createdAt', 'desc'));
+    contactUnsub = onSnapshot(q, snap => {
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderContacts();
+    }, err => {
+      console.error('Lỗi realtime tin nhắn:', err);
+    });
+  }
+
+  async function updateContactStatus(contactId, status) {
+    try {
+      await updateDoc(doc(db, 'contactMessages', contactId), {
+        status,
+        updatedAt: serverTimestamp()
+      });
+      showToast('Đã cập nhật trạng thái tin nhắn.', 'success');
+      loadContacts();
+    } catch (err) {
+      console.error('Lỗi cập nhật tin nhắn:', err);
+      showToast('Không thể cập nhật trạng thái.', 'error');
     }
   }
 
   function renderContacts() {
     const tbody = document.getElementById('contact-list');
-    if (!allContacts.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có tin nhắn nào.</td></tr>';
+    const filtered = allContacts.filter(item => {
+      if (contactFilter === 'all') return true;
+      return item.status === contactFilter;
+    });
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Chưa có tin nhắn nào.</td></tr>';
       return;
     }
-    tbody.innerHTML = allContacts.map(item => {
+    tbody.innerHTML = filtered.map(item => {
       const createdAt = item.createdAt && item.createdAt.toDate
         ? formatDate(item.createdAt)
         : '-';
       const statusBadge = item.status === 'new'
         ? '<span class="badge" style="background:#ef4444;color:#fff">Mới</span>'
         : '<span class="badge" style="background:#94a3b8;color:#111">Đã xem</span>';
+      const actionButton = item.status === 'new'
+        ? `<button type="button" class="btn btn-small btn-mark-read" data-id="${item.id}">Đánh dấu đã xem</button>`
+        : '<span style="color:#64748b; font-size:.88rem">Đã xem</span>';
       return `
         <tr>
           <td style="white-space:nowrap">${createdAt}</td>
@@ -2499,9 +2546,13 @@
           <td style="white-space:nowrap">${item.phone || '—'}</td>
           <td>${item.message || '—'}</td>
           <td>${statusBadge}</td>
+          <td>${actionButton}</td>
         </tr>
       `;
     }).join('');
+    tbody.querySelectorAll('.btn-mark-read').forEach(btn => {
+      btn.addEventListener('click', () => updateContactStatus(btn.dataset.id, 'read'));
+    });
   }
 
   function closeOrderDetails() {
@@ -2530,6 +2581,15 @@
   document.getElementById('order-filter').addEventListener('change', function () {
     orderFilter = this.value;
     renderOrders();
+  });
+
+  document.getElementById('contact-filter').addEventListener('change', function () {
+    contactFilter = this.value;
+    renderContacts();
+  });
+
+  document.getElementById('refresh-contacts').addEventListener('click', function () {
+    loadContacts();
   });
 
   // ==================================================
