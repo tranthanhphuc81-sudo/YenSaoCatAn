@@ -1342,6 +1342,9 @@
           <div><strong id="loyalty-count">0</strong> khách hàng thân thiết</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button type="button" id="copy-loyalty-phones" class="btn btn-small" style="padding:10px 18px;">Sao chép danh sách SĐT</button>
+            <button type="button" id="send-selected-loyalty-zalo" class="btn btn-small" style="padding:10px 18px;">Gửi Zalo đã chọn</button>
+            <button type="button" id="edit-selected-loyalty-offer" class="btn btn-small" style="padding:10px 18px;">Sửa ưu đãi đã chọn</button>
+            <button type="button" id="delete-selected-loyalty" class="btn btn-small btn-danger" style="padding:10px 18px;">Xóa đã chọn</button>
             <button type="button" id="send-loyalty-zalo-bulk" class="btn btn-small" style="padding:10px 18px;">Gửi Zalo hàng loạt</button>
             <button type="button" id="refresh-loyalty" class="btn-save" style="padding:10px 18px;">Làm mới</button>
           </div>
@@ -1350,6 +1353,7 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width:40px;text-align:center"><input type="checkbox" id="select-all-loyalty" /></th>
                 <th>Họ tên</th>
                 <th>SĐT</th>
                 <th>Ưu đãi</th>
@@ -1358,7 +1362,7 @@
               </tr>
             </thead>
             <tbody id="loyalty-list">
-              <tr><td colspan="5" class="empty-state">Đang tải...</td></tr>
+              <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
             </tbody>
           </table>
         </div>
@@ -2623,6 +2627,7 @@
   }
 
   let allLoyaltyCustomers = [];
+  let bulkLoyaltyCustomerIds = [];
 
   async function loadLoyaltyCustomers() {
     try {
@@ -2633,7 +2638,7 @@
     } catch (err) {
       console.error('Lỗi tải khách hàng thân thiết:', err);
       document.getElementById('loyalty-list').innerHTML =
-        '<tr><td colspan="5" class="empty-state">Không thể tải dữ liệu khách thân thiết.</td></tr>';
+        '<tr><td colspan="6" class="empty-state">Không thể tải dữ liệu khách thân thiết.</td></tr>';
     }
   }
 
@@ -2646,6 +2651,8 @@
       return;
     }
     count.textContent = allLoyaltyCustomers.length;
+    const selectAllHeader = document.getElementById('select-all-loyalty');
+    if (selectAllHeader) selectAllHeader.checked = false;
     tbody.innerHTML = allLoyaltyCustomers.map(c => {
       const registeredAt = c.registeredAt && c.registeredAt.toDate
         ? formatDate(c.registeredAt)
@@ -2653,6 +2660,9 @@
       const offerText = c.offer ? escapeHtml(c.offer).slice(0, 70) + (c.offer.length > 70 ? '…' : '') : '—';
       return `
         <tr>
+          <td style="text-align:center">
+            <input type="checkbox" class="loyalty-select-checkbox" value="${escapeHtml(c.id)}" onchange="syncSelectAllLoyalty()" />
+          </td>
           <td>${escapeHtml(c.name || '—')}</td>
           <td style="white-space:nowrap">${escapeHtml(c.displayPhone || c.phone || '—')}</td>
           <td title="${escapeHtml(c.offer || '')}">${offerText}</td>
@@ -2715,6 +2725,115 @@
         </tr>
       `;
     }).join('');
+  }
+
+  function getSelectedLoyaltyTemplate() {
+    const select = document.getElementById('loyalty-template-select');
+    if (!select || !select.value) return null;
+    return allLoyaltyTemplates.find(t => t.id === select.value) || null;
+  }
+
+  function getSelectedLoyaltyCustomerIds() {
+    return Array.from(document.querySelectorAll('.loyalty-select-checkbox:checked')).map(cb => cb.value);
+  }
+
+  function getSelectedLoyaltyCustomers() {
+    const ids = getSelectedLoyaltyCustomerIds();
+    return ids.length ? allLoyaltyCustomers.filter(c => ids.includes(c.id)) : [];
+  }
+
+  function toggleSelectAllLoyalty(isChecked) {
+    document.querySelectorAll('.loyalty-select-checkbox').forEach(cb => { cb.checked = isChecked; });
+  }
+
+  function syncSelectAllLoyalty() {
+    const boxes = Array.from(document.querySelectorAll('.loyalty-select-checkbox'));
+    const header = document.getElementById('select-all-loyalty');
+    if (!header || !boxes.length) return;
+    header.checked = boxes.every(cb => cb.checked);
+  }
+
+  function openBulkLoyaltyOfferModal() {
+    const ids = getSelectedLoyaltyCustomerIds();
+    if (!ids.length) {
+      showToast('Vui lòng chọn ít nhất một khách hàng để sửa ưu đãi.', 'error');
+      return;
+    }
+    bulkLoyaltyCustomerIds = ids;
+    activeLoyaltyCustomerId = null;
+    const modal = document.getElementById('loyalty-offer-modal');
+    modal.querySelector('h3').textContent = `Sửa ưu đãi cho ${ids.length} khách hàng`;
+    document.getElementById('loyalty-offer-text').value = '';
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  async function deleteSelectedLoyaltyCustomers() {
+    const ids = getSelectedLoyaltyCustomerIds();
+    if (!ids.length) {
+      showToast('Vui lòng chọn khách hàng để xóa.', 'error');
+      return;
+    }
+    if (!confirm(`Xác nhận xóa ${ids.length} khách hàng thân thiết đã chọn?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteDoc(doc(db, 'loyaltyCustomers', id))));
+      showToast('✅ Đã xóa khách hàng thân thiết đã chọn.');
+      await loadLoyaltyCustomers();
+    } catch (err) {
+      console.error('Lỗi xóa khách hàng thân thiết đã chọn:', err);
+      showToast('Không thể xóa khách hàng đã chọn. Vui lòng thử lại.', 'error');
+    }
+  }
+
+  async function sendSelectedLoyaltyZalo() {
+    const selected = getSelectedLoyaltyCustomers();
+    if (!selected.length) {
+      showToast('Vui lòng chọn ít nhất một khách hàng để gửi Zalo.', 'error');
+      return;
+    }
+    const template = getSelectedLoyaltyTemplate();
+    const content = template ? template.content : '';
+    if (!content) {
+      showToast('Vui lòng chọn mẫu tin nhắn trước khi gửi Zalo.', 'error');
+      return;
+    }
+    const numbers = selected
+      .map(c => c.phone || c.displayPhone || '')
+      .map(s => s.replace(/\D/g, ''))
+      .filter(Boolean);
+    if (!numbers.length) {
+      showToast('Không có số điện thoại hợp lệ trong danh sách đã chọn.', 'error');
+      return;
+    }
+    const message = `${content}\n\nGửi từ Yến Sào Cát An`;
+    try {
+      await navigator.clipboard.writeText(`SĐT:\n${numbers.join('\n')}\n\nNội dung:\n${message}`);
+      showToast('Đã sao chép danh sách SĐT và nội dung. Dán vào Zalo để gửi cho khách đã chọn.', 'success');
+    } catch (err) {
+      console.warn('Không thể sao chép nội dung:', err);
+      showToast('Không thể sao chép danh sách. Vui lòng thử lại.', 'error');
+    }
+  }
+
+  async function copyLoyaltyPhoneList() {
+    const selected = getSelectedLoyaltyCustomers();
+    const source = selected.length ? selected : allLoyaltyCustomers;
+    const numbers = source
+      .map(c => c.displayPhone || c.phone || '')
+      .filter(Boolean)
+      .map(s => s.replace(/\D/g, ''))
+      .filter(Boolean);
+    if (!numbers.length) {
+      showToast('Không có số điện thoại khách thân thiết để sao chép.', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(numbers.join('\n'));
+      showToast('✅ Đã sao chép danh sách số điện thoại khách thân thiết.');
+    } catch (err) {
+      console.error('Lỗi sao chép phone list:', err);
+      showToast('Không thể sao chép. Vui lòng thử lại.', 'error');
+    }
   }
 
   function getSelectedLoyaltyTemplate() {
@@ -2822,18 +2941,23 @@
       showToast('Vui lòng chọn mẫu tin nhắn trước khi gửi Zalo hàng loạt.', 'error');
       return;
     }
-    const numbers = allLoyaltyCustomers
+    const selected = getSelectedLoyaltyCustomers();
+    if (!selected.length) {
+      showToast('Vui lòng chọn ít nhất một khách hàng thân thiết để gửi Zalo hàng loạt.', 'error');
+      return;
+    }
+    const numbers = selected
       .map(c => c.phone || c.displayPhone || '')
       .map(s => s.replace(/\D/g, ''))
       .filter(Boolean);
     if (!numbers.length) {
-      showToast('Không có số điện thoại khách hàng thân thiết để gửi.', 'error');
+      showToast('Không có số điện thoại hợp lệ trong khách hàng đã chọn.', 'error');
       return;
     }
     const message = `${content}\n\nGửi từ Yến Sào Cát An`;
     try {
       await navigator.clipboard.writeText(`SĐT:\n${numbers.join('\n')}\n\nNội dung:\n${message}`);
-      showToast('Đã sao chép danh sách SĐT và nội dung. Dán vào Zalo để gửi hàng loạt.', 'success');
+      showToast(`Đã sao chép ${selected.length} số đã chọn. Dán vào Zalo để gửi hàng loạt.`, 'success');
     } catch (err) {
       console.warn('Không thể sao chép nội dung:', err);
       showToast('Không thể sao chép danh sách. Vui lòng thử lại.', 'error');
@@ -2880,17 +3004,33 @@
     modal.classList.remove('active');
     modal.setAttribute('aria-hidden', 'true');
     activeLoyaltyCustomerId = null;
+    bulkLoyaltyCustomerIds = [];
+    modal.querySelector('h3').textContent = 'Sửa ưu đãi khách thân thiết';
   }
 
   async function saveLoyaltyOffer() {
-    if (!activeLoyaltyCustomerId) return;
     const offerText = document.getElementById('loyalty-offer-text').value.trim();
+    if (!offerText) {
+      showToast('Vui lòng nhập nội dung ưu đãi.', 'error');
+      return;
+    }
     try {
-      await updateDoc(doc(db, 'loyaltyCustomers', activeLoyaltyCustomerId), {
-        offer: offerText || null,
-        updatedAt: serverTimestamp(),
-      });
-      showToast('✅ Đã lưu ưu đãi khách thân thiết.');
+      if (bulkLoyaltyCustomerIds.length) {
+        await Promise.all(bulkLoyaltyCustomerIds.map(id => updateDoc(doc(db, 'loyaltyCustomers', id), {
+          offer: offerText,
+          updatedAt: serverTimestamp(),
+        })));
+        showToast(`✅ Đã cập nhật ưu đãi cho ${bulkLoyaltyCustomerIds.length} khách hàng.`);
+      } else if (activeLoyaltyCustomerId) {
+        await updateDoc(doc(db, 'loyaltyCustomers', activeLoyaltyCustomerId), {
+          offer: offerText || null,
+          updatedAt: serverTimestamp(),
+        });
+        showToast('✅ Đã lưu ưu đãi khách thân thiết.');
+      } else {
+        showToast('Không có khách hàng nào để cập nhật.', 'error');
+        return;
+      }
       closeLoyaltyOfferModal();
       await loadLoyaltyCustomers();
     } catch (err) {
@@ -3186,7 +3326,17 @@
     loadLoyaltyCustomers();
   });
 
+  const selectAllLoyalty = document.getElementById('select-all-loyalty');
+  if (selectAllLoyalty) {
+    selectAllLoyalty.addEventListener('change', function () {
+      toggleSelectAllLoyalty(this.checked);
+    });
+  }
+
   document.getElementById('copy-loyalty-phones').addEventListener('click', copyLoyaltyPhoneList);
+  document.getElementById('send-selected-loyalty-zalo').addEventListener('click', sendSelectedLoyaltyZalo);
+  document.getElementById('edit-selected-loyalty-offer').addEventListener('click', openBulkLoyaltyOfferModal);
+  document.getElementById('delete-selected-loyalty').addEventListener('click', deleteSelectedLoyaltyCustomers);
   document.getElementById('send-loyalty-zalo-bulk').addEventListener('click', sendLoyaltyZaloBulk);
   document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
@@ -3220,6 +3370,8 @@
   window.sendLoyaltyZalo = sendLoyaltyZalo;
   window.callLoyaltyCustomer = callLoyaltyCustomer;
   window.deleteLoyaltyCustomer = deleteLoyaltyCustomer;
+  window.syncSelectAllLoyalty = syncSelectAllLoyalty;
+  window.toggleSelectAllLoyalty = toggleSelectAllLoyalty;
 
   // ==================================================
   // CHAT: Lắng nghe danh sách session
