@@ -837,11 +837,6 @@
       .product-card img { height: 175px; }
       .filter-bar button { width: 100%; justify-content: center; }
     }
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
 
     .confirm-modal .btn-cancel {
       background: #f3f4f6;
@@ -2809,28 +2804,13 @@
         orderData.loyaltyOffer = customer.offer || loyaltyMessageTemplate;
       }
 
-      const orderRef = await addDoc(collection(db, 'orders'), orderData);
-
-      await Promise.all(cart.map(async item => {
-        const product = allProducts.find(p => p.id === item.id);
-        if (product && typeof product.quantity === 'number') {
-          const prevQty = product.quantity;
-          await updateDoc(doc(db, 'products', item.id), {
-            quantity: increment(-item.qty),
-            updatedAt: serverTimestamp(),
-          });
-          await addDoc(collection(db, 'stockMovements'), {
-            productId: item.id,
-            productName: item.name,
-            type: 'order',
-            delta: -item.qty,
-            previousQuantity: prevQty,
-            newQuantity: prevQty - item.qty,
-            orderId: orderRef.id,
-            timestamp: serverTimestamp(),
-          });
-        }
-      }));
+      try {
+        await addDoc(collection(db, 'orders'), orderData);
+      } catch (err) {
+        console.error('Order create failed:', err);
+        showToast(`Lỗi tạo đơn hàng: ${err.message}`, 'error');
+        return false;
+      }
 
       showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
       document.getElementById('order-form').reset();
