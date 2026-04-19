@@ -2841,7 +2841,8 @@
       return true;
     } catch (err) {
       console.error('Lỗi đặt hàng:', err);
-      showToast('Đặt hàng thất bại. Vui lòng thử lại!', 'error');
+      const message = err && err.message ? err.message : 'Đặt hàng thất bại. Vui lòng thử lại!';
+      showToast(`Đặt hàng thất bại: ${message}`, 'error');
       return false;
     } finally {
       btnSubmit.disabled = false;
