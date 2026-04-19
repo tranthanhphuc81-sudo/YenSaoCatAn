@@ -2884,7 +2884,7 @@
       try {
         await Promise.all((order.items || []).map(async item => {
           const productId = item.productId || item.id;
-          const product = allProducts.find(p => p.id === productId);
+          const product = adminProducts.find(p => p.id === productId);
           const qty = Number(item.qty);
           if (!product || typeof product.quantity !== 'number' || Number.isNaN(qty) || qty <= 0) return;
           const prevQty = product.quantity;
