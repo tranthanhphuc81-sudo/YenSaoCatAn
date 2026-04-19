@@ -60,15 +60,7 @@ service cloud.firestore {
     // Đảm bảo client không thể gửi dữ liệu rác / field lạ lên Firestore
     function validateOrderItems(items) {
       return items is list
-          && items.size() > 0 && items.size() <= 50
-          && items.every(item,
-              item is map
-              && item.keys().hasOnly(['productId', 'name', 'price', 'qty'])
-              && item.productId is string && item.productId.size() > 0
-              && item.name is string && item.name.size() > 0
-              && item.price is number && item.price >= 0
-              && item.qty is number && item.qty > 0
-          );
+          && items.size() > 0 && items.size() <= 50;
     }
 
     function validateOrder() {
