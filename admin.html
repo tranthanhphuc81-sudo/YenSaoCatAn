@@ -1337,7 +1337,7 @@
     <div class="tab-panel" id="tab-loyalty">
       <div class="card">
         <h2>⭐ Khách hàng thân thiết</h2>
-        <p>Danh sách khách hàng đã đăng ký thân thiết. Admin có thể mở Zalo bằng số điện thoại để gửi ưu đãi.</p>
+        <p>Danh sách khách hàng đã đăng ký thân thiết. Admin có thể quản lý ưu đãi và liên hệ khách trực tiếp.</p>
         <div class="table-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div><strong id="loyalty-count">0</strong> khách hàng thân thiết</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1379,8 +1379,26 @@
             <label for="new-template-title">Tiêu đề mẫu</label>
             <input type="text" id="new-template-title" placeholder="Tiêu đề mẫu" />
           </div>
-          <div class="form-group span-2">
+          <div class="form-group span-2" style="position:relative;">
             <label for="new-template-content">Nội dung mẫu</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px;">
+              <button type="button" id="loyalty-template-bold" class="btn btn-small" style="min-width:36px;">B</button>
+              <button type="button" id="loyalty-template-italic" class="btn btn-small" style="min-width:36px;">I</button>
+              <button type="button" id="loyalty-template-underline" class="btn btn-small" style="min-width:36px;">U</button>
+              <button type="button" id="loyalty-template-bullet" class="btn btn-small" style="min-width:36px;">•</button>
+              <button type="button" id="loyalty-template-emoji-toggle" class="btn btn-small" style="min-width:36px;">😊</button>
+            </div>
+            <div id="loyalty-template-emoji-panel" class="emoji-panel" style="display:none;left:0;right:auto;max-width:320px;">
+              <button type="button" data-em="🔥">🔥</button>
+              <button type="button" data-em="🎉">🎉</button>
+              <button type="button" data-em="💥">💥</button>
+              <button type="button" data-em="⭐">⭐</button>
+              <button type="button" data-em="🛍️">🛍️</button>
+              <button type="button" data-em="✨">✨</button>
+              <button type="button" data-em="💯">💯</button>
+              <button type="button" data-em="📢">📢</button>
+              <button type="button" data-em="❤️">❤️</button>
+            </div>
             <textarea id="new-template-content" rows="4" placeholder="Nhập nội dung tin nhắn..." style="resize:vertical"></textarea>
           </div>
         </div>
@@ -2669,7 +2687,6 @@
           <td>
             <button type="button" class="btn btn-small" onclick="openLoyaltyOfferModal('${c.id}')">Sửa ưu đãi</button>
             <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="callLoyaltyCustomer('${c.id}')">Gọi</button>
-            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="openLoyaltyZalo('${c.id}')">Zalo</button>
             <button type="button" class="btn btn-small btn-danger" style="margin-left:6px;" onclick="deleteLoyaltyCustomer('${c.id}')">Xóa</button>
             <button type="button" class="btn btn-small btn-secondary" style="margin-left:6px;" onclick="openLoyaltyPasswordResetModal('${c.id}')">Reset mật khẩu</button>
           </td>
@@ -2833,6 +2850,60 @@
     const select = document.getElementById('loyalty-template-select');
     if (!select || !select.value) return null;
     return allLoyaltyTemplates.find(t => t.id === select.value) || null;
+  }
+
+  function getLoyaltyTemplateTextarea() {
+    return document.getElementById('new-template-content');
+  }
+
+  function insertTextAtLoyaltyTemplateCursor(text) {
+    const textarea = getLoyaltyTemplateTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+    textarea.setSelectionRange(start + text.length, start + text.length);
+    textarea.focus();
+  }
+
+  function wrapLoyaltyTemplateSelection(prefix, suffix) {
+    const textarea = getLoyaltyTemplateTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    const selected = textarea.value.slice(start, end);
+    const wrapped = selected ? `${prefix}${selected}${suffix}` : `${prefix}${suffix}`;
+    textarea.value = textarea.value.slice(0, start) + wrapped + textarea.value.slice(end);
+    const cursorPos = selected ? start + wrapped.length : start + prefix.length;
+    textarea.setSelectionRange(cursorPos, cursorPos);
+    textarea.focus();
+  }
+
+  function insertLoyaltyTemplateBullet() {
+    const textarea = getLoyaltyTemplateTextarea();
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? start;
+    const before = textarea.value.slice(0, start);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const line = textarea.value.slice(lineStart, end);
+    const bulletText = line.trim().length ? `• ${line}` : '• ';
+    textarea.value = textarea.value.slice(0, lineStart) + bulletText + textarea.value.slice(end);
+    const cursorPos = lineStart + bulletText.length;
+    textarea.setSelectionRange(cursorPos, cursorPos);
+    textarea.focus();
+  }
+
+  function toggleLoyaltyTemplateEmojiPanel() {
+    const btn = document.getElementById('loyalty-template-emoji-toggle');
+    const panel = document.getElementById('loyalty-template-emoji-panel');
+    if (!panel || !btn) return;
+    panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  function insertLoyaltyTemplateEmoji(emoji) {
+    if (!emoji) return;
+    insertTextAtLoyaltyTemplateCursor(emoji);
   }
 
   async function addLoyaltyTemplate() {
@@ -3313,6 +3384,31 @@
   document.getElementById('delete-selected-loyalty').addEventListener('click', deleteSelectedLoyaltyCustomers);
   document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
+  document.getElementById('loyalty-template-bold').addEventListener('click', () => wrapLoyaltyTemplateSelection('*', '*'));
+  document.getElementById('loyalty-template-italic').addEventListener('click', () => wrapLoyaltyTemplateSelection('_', '_'));
+  document.getElementById('loyalty-template-underline').addEventListener('click', () => wrapLoyaltyTemplateSelection('__', '__'));
+  document.getElementById('loyalty-template-bullet').addEventListener('click', insertLoyaltyTemplateBullet);
+  document.getElementById('loyalty-template-emoji-toggle').addEventListener('click', e => {
+    e.stopPropagation();
+    toggleLoyaltyTemplateEmojiPanel();
+  });
+  const templateEmojiPanel = document.getElementById('loyalty-template-emoji-panel');
+  if (templateEmojiPanel) {
+    templateEmojiPanel.addEventListener('click', e => {
+      const emojiButton = e.target.closest('[data-em]');
+      if (!emojiButton) return;
+      insertLoyaltyTemplateEmoji(emojiButton.dataset.em);
+      templateEmojiPanel.style.display = 'none';
+    });
+  }
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('loyalty-template-emoji-panel');
+    const btn = document.getElementById('loyalty-template-emoji-toggle');
+    if (!panel || !btn) return;
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.style.display = 'none';
+    }
+  });
   document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
   document.getElementById('loyalty-offer-save').addEventListener('click', saveLoyaltyOffer);
   document.getElementById('loyalty-reset-cancel').addEventListener('click', closeLoyaltyPasswordResetModal);
