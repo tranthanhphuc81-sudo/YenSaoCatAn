@@ -78,7 +78,8 @@ service cloud.firestore {
         'paymentMethod', 'items', 'total', 'timestamp',
         'status', 'source', 'createdAt'
       ];
-      return d.keys().hasOnly(requiredKeys)
+      let optionalKeys = ['loyaltyCustomer', 'loyaltyPhone', 'loyaltyOffer'];
+      return d.keys().hasOnly(requiredKeys.concat(optionalKeys))
           && d.keys().hasAll(requiredKeys)
           // Thông tin khách hàng
           && d.customerName    is string && d.customerName.size()    > 0 && d.customerName.size()    <= 100
@@ -92,7 +93,35 @@ service cloud.firestore {
           && d.status in ['pending', 'confirmed', 'cancelled']
           && d.source in ['auto', 'website']
           && d.timestamp is timestamp
-          && d.createdAt is timestamp;
+          && d.createdAt is timestamp
+          && (!('loyaltyCustomer' in d) || d.loyaltyCustomer is bool)
+          && (!('loyaltyPhone' in d) || (d.loyaltyPhone is string && d.loyaltyPhone.size() > 0 && d.loyaltyPhone.size() <= 20))
+          && (!('loyaltyOffer' in d) || (d.loyaltyOffer is string && d.loyaltyOffer.size() <= 2000));
+    }
+
+    function validateLoyaltyCustomer() {
+      let d = request.resource.data;
+      let allowed = ['name', 'phone', 'displayPhone', 'passwordHash', 'registeredAt', 'offer', 'updatedAt'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(['name', 'phone', 'passwordHash', 'registeredAt'])
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+          && d.phone is string && d.phone.size() > 0 && d.phone.size() <= 20
+          && (!('displayPhone' in d) || (d.displayPhone is string && d.displayPhone.size() <= 30))
+          && d.passwordHash is string && d.passwordHash.size() > 0
+          && d.registeredAt is timestamp
+          && (!('offer' in d) || (d.offer is string && d.offer.size() <= 2000))
+          && (!('updatedAt' in d) || d.updatedAt is timestamp);
+    }
+
+    function validateLoyaltyTemplate() {
+      let d = request.resource.data;
+      let allowed = ['title', 'content', 'createdAt', 'updatedAt'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(['title', 'content', 'createdAt', 'updatedAt'])
+          && d.title is string && d.title.size() > 0 && d.title.size() <= 100
+          && d.content is string && d.content.size() > 0 && d.content.size() <= 5000
+          && d.createdAt is timestamp
+          && d.updatedAt is timestamp;
     }
 
     function validateContactMessage() {
@@ -194,6 +223,21 @@ service cloud.firestore {
       allow create:        if validateOrder();
       allow get, list,
             delete:        if isAdmin();
+    }
+
+    match /loyaltyCustomers/{customerId} {
+      allow get:    if true;
+      allow list:   if isAdmin();
+      allow create: if validateLoyaltyCustomer() && !exists(/databases/$(database)/documents/loyaltyCustomers/$(customerId));
+      allow update: if isAdmin() && validateLoyaltyCustomer();
+      allow delete: if isAdmin();
+    }
+
+    match /loyaltyTemplates/{templateId} {
+      allow get, list: if isAdmin();
+      allow create:    if isAdmin() && validateLoyaltyTemplate();
+      allow update:    if isAdmin() && validateLoyaltyTemplate();
+      allow delete:    if isAdmin();
     }
 
     // ─── contactMessages/{messageId} ─────────────────────────

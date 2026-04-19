@@ -911,6 +911,7 @@
     <button data-tab="chat" id="tab-btn-chat"><span class="tab-icon">💬<span id="chat-unread-badge" style="display:none;background:#e74c3c;color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;vertical-align:top;margin-left:1px;"></span></span><span class="tab-label">Chat</span></button>
     <button data-tab="contacts"><span class="tab-icon">✉️</span><span class="tab-label">Tin nhắn</span></button>
     <button data-tab="orders"><span class="tab-icon">📋</span><span class="tab-label">Đơn hàng</span></button>
+    <button data-tab="loyalty"><span class="tab-icon">⭐</span><span class="tab-label">Khách thân thiết</span></button>
   </div>
 
   <!-- Nội dung chính -->
@@ -976,6 +977,11 @@
                 <option value="970431">Eximbank</option>
                 <option value="970428">NamABank</option>
               </select>
+            </div>
+            <div class="form-group span-2">
+              <label for="cfg-loyalty-message">Mẫu tin nhắn ưu đãi khách thân thiết</label>
+              <textarea id="cfg-loyalty-message" placeholder="Nhập nội dung tin nhắn mẫu..." rows="4" style="resize:vertical"></textarea>
+              <small style="color:#475569">Dùng khi admin gửi thông báo hoặc hiển thị cho khách hàng thân thiết.</small>
             </div>
           </div>
           <button type="submit" class="btn-save" id="btn-save-config">💾 Lưu Cấu Hình</button>
@@ -1296,12 +1302,91 @@
       </div>
     </div>
 
+    <div class="tab-panel" id="tab-loyalty">
+      <div class="card">
+        <h2>⭐ Khách hàng thân thiết</h2>
+        <p>Danh sách khách hàng đã đăng ký thân thiết. Admin có thể mở Zalo bằng số điện thoại để gửi ưu đãi.</p>
+        <div class="table-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div><strong id="loyalty-count">0</strong> khách hàng thân thiết</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="button" id="copy-loyalty-phones" class="btn btn-small" style="padding:10px 18px;">Sao chép danh sách SĐT</button>
+            <button type="button" id="refresh-loyalty" class="btn-save" style="padding:10px 18px;">Làm mới</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;">
+          <label for="loyalty-template-select" style="font-weight:700;margin-right:8px;white-space:nowrap">Mẫu gửi Zalo:</label>
+          <select id="loyalty-template-select" style="flex:1;min-width:240px;padding:10px;border-radius:10px;border:1px solid #d1d5db;background:#fff"></select>
+          <button type="button" id="preview-loyalty-template" class="btn btn-small" style="padding:10px 18px;">Xem nội dung</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>SĐT</th>
+                <th>Ưu đãi</th>
+                <th>Ngày đăng ký</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="loyalty-list">
+              <tr><td colspan="5" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Mẫu tin nhắn ưu đãi</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="new-template-title">Tiêu đề mẫu</label>
+          <input type="text" id="new-template-title" placeholder="Tiêu đề mẫu" />
+        </div>
+        <div class="form-group span-2">
+          <label for="new-template-content">Nội dung mẫu</label>
+          <textarea id="new-template-content" rows="4" placeholder="Nhập nội dung tin nhắn..." style="resize:vertical"></textarea>
+        </div>
+      </div>
+      <button type="button" class="btn-save" id="btn-add-loyalty-template" style="margin-top:6px;">Thêm mẫu mới</button>
+      <div class="table-wrap" style="margin-top:22px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tiêu đề</th>
+              <th>Nội dung mẫu</th>
+              <th>Ngày tạo</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="loyalty-template-list">
+            <tr><td colspan="4" class="empty-state">Đang tải...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   <div id="order-detail-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-detail">
       <h3>Chi tiết đơn hàng</h3>
       <div id="order-detail-content"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-cancel" id="order-detail-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loyalty-offer-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-detail">
+      <h3>Sửa ưu đãi khách thân thiết</h3>
+      <div class="form-group">
+        <label for="loyalty-offer-text">Nội dung ưu đãi</label>
+        <textarea id="loyalty-offer-text" rows="5" style="width:100%;resize:vertical;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-family:inherit"></textarea>
+      </div>
+      <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn btn-cancel" id="loyalty-offer-close">Hủy</button>
+        <button type="button" class="btn btn-save" id="loyalty-offer-save">Lưu ưu đãi</button>
       </div>
     </div>
   </div>
@@ -1603,6 +1688,8 @@
       loadPosts();
       loadOrders();
       loadContacts();
+      loadLoyaltyCustomers();
+      loadLoyaltyTemplates();
       listenContactMessages();
       listenChatSessions();
     } else {
@@ -1729,7 +1816,11 @@
       document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       this.classList.add('active');
-      document.getElementById(`tab-${this.dataset.tab}`).classList.add('active');
+      const targetPanel = document.getElementById(`tab-${this.dataset.tab}`);
+      if (targetPanel) targetPanel.classList.add('active');
+      if (this.dataset.tab === 'loyalty') {
+        loadLoyaltyCustomers();
+      }
     });
   });
 
@@ -1758,6 +1849,9 @@
         const sel = document.getElementById('cfg-bank-bin');
         if (sel) sel.value = cfg.bank_bin;
       }
+      if (cfg.loyalty_message_template) {
+        document.getElementById('cfg-loyalty-message').value = cfg.loyalty_message_template;
+      }
       // Thông tin liên hệ
       if (cfg.contact_phone)   document.getElementById('cfg-phone').value   = cfg.contact_phone;
       if (cfg.contact_email)   document.getElementById('cfg-email').value   = cfg.contact_email;
@@ -1782,6 +1876,7 @@
     const bankStk   = document.getElementById('cfg-stk').value.trim();
     const bankOwner = document.getElementById('cfg-owner').value.trim();
     const bankBin  = document.getElementById('cfg-bank-bin').value;
+    const loyaltyTemplate = document.getElementById('cfg-loyalty-message').value.trim();
 
     const btnSave = document.getElementById('btn-save-config');
     btnSave.disabled    = true;
@@ -1796,6 +1891,7 @@
       if (bankStk)   configData.bank_stk       = bankStk;
       if (bankOwner) configData.bank_owner     = bankOwner;
       if (bankBin)   configData.bank_bin       = bankBin;
+      if (loyaltyTemplate) configData.loyalty_message_template = loyaltyTemplate;
 
       await setDoc(doc(db, 'config', 'settings'), configData, { merge: true });
 
@@ -2472,6 +2568,251 @@
     }).join('');
   }
 
+  let allLoyaltyCustomers = [];
+
+  async function loadLoyaltyCustomers() {
+    try {
+      const q    = query(collection(db, 'loyaltyCustomers'), orderBy('registeredAt', 'desc'));
+      const snap = await getDocs(q);
+      allLoyaltyCustomers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderLoyaltyCustomers();
+    } catch (err) {
+      console.error('Lỗi tải khách hàng thân thiết:', err);
+      document.getElementById('loyalty-list').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Không thể tải dữ liệu khách thân thiết.</td></tr>';
+    }
+  }
+
+  function renderLoyaltyCustomers() {
+    const tbody = document.getElementById('loyalty-list');
+    const count = document.getElementById('loyalty-count');
+    if (!allLoyaltyCustomers.length) {
+      count.textContent = '0';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có khách hàng thân thiết.</td></tr>';
+      return;
+    }
+    count.textContent = allLoyaltyCustomers.length;
+    tbody.innerHTML = allLoyaltyCustomers.map(c => {
+      const registeredAt = c.registeredAt && c.registeredAt.toDate
+        ? formatDate(c.registeredAt)
+        : '-';
+      const offerText = c.offer ? escapeHtml(c.offer).slice(0, 70) + (c.offer.length > 70 ? '…' : '') : '—';
+      return `
+        <tr>
+          <td>${escapeHtml(c.name || '—')}</td>
+          <td style="white-space:nowrap">${escapeHtml(c.displayPhone || c.phone || '—')}</td>
+          <td title="${escapeHtml(c.offer || '')}">${offerText}</td>
+          <td style="white-space:nowrap">${registeredAt}</td>
+          <td>
+            <button type="button" class="btn btn-small" onclick="openLoyaltyOfferModal('${c.id}')">Sửa ưu đãi</button>
+            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="sendLoyaltyZalo('${c.id}')">Gửi Zalo ngay</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  let allLoyaltyTemplates = [];
+
+  async function loadLoyaltyTemplates() {
+    try {
+      const q = query(collection(db, 'loyaltyTemplates'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allLoyaltyTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderLoyaltyTemplateOptions();
+      renderLoyaltyTemplates();
+    } catch (err) {
+      console.error('Lỗi tải mẫu tin nhắn:', err);
+      document.getElementById('loyalty-template-list').innerHTML =
+        '<tr><td colspan="4" class="empty-state">Không thể tải danh sách mẫu.</td></tr>';
+      renderLoyaltyTemplateOptions();
+    }
+  }
+
+  function renderLoyaltyTemplateOptions() {
+    const select = document.getElementById('loyalty-template-select');
+    if (!select) return;
+    select.innerHTML = allLoyaltyTemplates.length
+      ? allLoyaltyTemplates.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.title || 'Không có tiêu đề')}</option>`).join('')
+      : '<option value="">Chưa có mẫu tin nhắn</option>';
+  }
+
+  function renderLoyaltyTemplates() {
+    const tbody = document.getElementById('loyalty-template-list');
+    if (!allLoyaltyTemplates.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có mẫu tin nhắn nào.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = allLoyaltyTemplates.map(t => {
+      const createdAt = t.createdAt && t.createdAt.toDate ? formatDate(t.createdAt) : '-';
+      const shortContent = t.content ? escapeHtml(t.content).slice(0, 80) + (t.content.length > 80 ? '…' : '') : '—';
+      return `
+        <tr>
+          <td>${escapeHtml(t.title || '—')}</td>
+          <td title="${escapeHtml(t.content || '')}">${shortContent}</td>
+          <td style="white-space:nowrap">${createdAt}</td>
+          <td>
+            <button type="button" class="btn btn-small" onclick="editLoyaltyTemplate('${t.id}')">Sửa</button>
+            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="deleteLoyaltyTemplate('${t.id}')">Xóa</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function getSelectedLoyaltyTemplate() {
+    const select = document.getElementById('loyalty-template-select');
+    if (!select || !select.value) return null;
+    return allLoyaltyTemplates.find(t => t.id === select.value) || null;
+  }
+
+  async function addLoyaltyTemplate() {
+    const title = document.getElementById('new-template-title').value.trim();
+    const content = document.getElementById('new-template-content').value.trim();
+    if (!title || !content) {
+      showToast('Vui lòng nhập tiêu đề và nội dung mẫu tin nhắn.', 'error');
+      return;
+    }
+    const templateButton = document.getElementById('btn-add-loyalty-template');
+    const editingId = templateButton.dataset.editing;
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, 'loyaltyTemplates', editingId), {
+          title,
+          content,
+          updatedAt: serverTimestamp(),
+        });
+        templateButton.textContent = 'Thêm mẫu mới';
+        delete templateButton.dataset.editing;
+        showToast('✅ Đã cập nhật mẫu tin nhắn.');
+      } else {
+        await addDoc(collection(db, 'loyaltyTemplates'), {
+          title,
+          content,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        showToast('✅ Đã thêm mẫu tin nhắn mới.');
+      }
+      document.getElementById('new-template-title').value = '';
+      document.getElementById('new-template-content').value = '';
+      await loadLoyaltyTemplates();
+    } catch (err) {
+      console.error('Lỗi thêm mẫu tin nhắn:', err);
+      showToast('Không thể thêm mẫu tin nhắn.', 'error');
+    }
+  }
+
+  function editLoyaltyTemplate(templateId) {
+    const template = allLoyaltyTemplates.find(t => t.id === templateId);
+    if (!template) return;
+    document.getElementById('new-template-title').value = template.title || '';
+    document.getElementById('new-template-content').value = template.content || '';
+    document.getElementById('btn-add-loyalty-template').textContent = 'Cập nhật mẫu';
+    document.getElementById('btn-add-loyalty-template').dataset.editing = templateId;
+  }
+
+  async function deleteLoyaltyTemplate(templateId) {
+    if (!confirm('Xác nhận xóa mẫu tin nhắn này?')) return;
+    try {
+      await deleteDoc(doc(db, 'loyaltyTemplates', templateId));
+      showToast('✅ Đã xóa mẫu tin nhắn.');
+      await loadLoyaltyTemplates();
+    } catch (err) {
+      console.error('Lỗi xóa mẫu tin nhắn:', err);
+      showToast('Không thể xóa mẫu tin nhắn.', 'error');
+    }
+  }
+
+  async function previewLoyaltyTemplate() {
+    const template = getSelectedLoyaltyTemplate();
+    if (!template) {
+      showToast('Chưa chọn mẫu tin nhắn để xem.', 'error');
+      return;
+    }
+    alert(`Tiêu đề: ${template.title}\n\nNội dung:\n${template.content}`);
+  }
+
+  async function sendLoyaltyZalo(customerId) {
+    const customer = allLoyaltyCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    const template = getSelectedLoyaltyTemplate();
+    const content = template ? template.content : '';
+    if (!content) {
+      showToast('Vui lòng chọn mẫu tin nhắn trước khi gửi Zalo.', 'error');
+      return;
+    }
+    const phone = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+    if (!phone) {
+      showToast('Không tìm thấy số điện thoại khách hàng.', 'error');
+      return;
+    }
+    const label = customer.offer ? `Ưu đãi riêng: ${customer.offer}\n\n` : '';
+    const message = `${content}${label}`;
+    try {
+      await navigator.clipboard.writeText(message);
+      showToast('Nội dung tin nhắn đã được sao chép. Mở Zalo để gửi.', 'success');
+    } catch (err) {
+      console.warn('Không thể sao chép nội dung:', err);
+    }
+    window.open(`https://zalo.me/${phone}`, '_blank');
+  }
+
+  let activeLoyaltyCustomerId = null;
+
+  function openLoyaltyOfferModal(customerId) {
+    const customer = allLoyaltyCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    activeLoyaltyCustomerId = customerId;
+    document.getElementById('loyalty-offer-text').value = customer.offer || '';
+    const modal = document.getElementById('loyalty-offer-modal');
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLoyaltyOfferModal() {
+    const modal = document.getElementById('loyalty-offer-modal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    activeLoyaltyCustomerId = null;
+  }
+
+  async function saveLoyaltyOffer() {
+    if (!activeLoyaltyCustomerId) return;
+    const offerText = document.getElementById('loyalty-offer-text').value.trim();
+    try {
+      await updateDoc(doc(db, 'loyaltyCustomers', activeLoyaltyCustomerId), {
+        offer: offerText || null,
+        updatedAt: serverTimestamp(),
+      });
+      showToast('✅ Đã lưu ưu đãi khách thân thiết.');
+      closeLoyaltyOfferModal();
+      await loadLoyaltyCustomers();
+    } catch (err) {
+      console.error('Lỗi lưu ưu đãi khách thân thiết:', err);
+      showToast('Không thể lưu ưu đãi. Vui lòng thử lại.', 'error');
+    }
+  }
+
+  async function copyLoyaltyPhoneList() {
+    const numbers = allLoyaltyCustomers
+      .map(c => c.displayPhone || c.phone || '')
+      .filter(Boolean)
+      .map(s => s.replace(/\D/g, ''))
+      .filter(Boolean);
+    if (!numbers.length) {
+      showToast('Không có số điện thoại khách thân thiết để sao chép.', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(numbers.join('\n'));
+      showToast('✅ Đã sao chép danh sách số điện thoại khách thân thiết.');
+    } catch (err) {
+      console.error('Lỗi sao chép phone list:', err);
+      showToast('Không thể sao chép. Vui lòng thử lại.', 'error');
+    }
+  }
+
   function showOrderDetails(orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
@@ -2483,11 +2824,16 @@
     const sourceLabel = order.source === 'auto' ? 'Tự động' : 'Thủ công';
     const methodLabel = order.paymentMethod === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt';
     const status = order.status || 'pending';
+    const loyaltyLabel = order.loyaltyCustomer
+      ? '<span style="color:#047857;font-weight:700">Khách thân thiết</span>'
+      : '—';
 
     document.getElementById('order-detail-content').innerHTML = `
       <div class="modal-row"><strong>Khách hàng:</strong><span>${order.customerName || '—'}</span></div>
       <div class="modal-row"><strong>SĐT:</strong><span>${order.customerPhone || '—'}</span></div>
       <div class="modal-row"><strong>Địa chỉ:</strong><span>${order.customerAddress || '—'}</span></div>
+      <div class="modal-row"><strong>Khách thân thiết:</strong><span>${loyaltyLabel}</span></div>
+      <div class="modal-row"><strong>Ưu đãi:</strong><span>${order.loyaltyOffer ? escapeHtml(order.loyaltyOffer) : '—'}</span></div>
       <div class="modal-row"><strong>Trạng thái:</strong><span>${status === 'completed' ? 'Hoàn thành' : status === 'processing' ? 'Đang xử lý' : 'Chờ xử lý'}</span></div>
       <div class="modal-row"><strong>Thanh toán:</strong><span>${methodLabel}</span></div>
       <div class="modal-row"><strong>Nguồn:</strong><span>${sourceLabel}</span></div>
@@ -2618,6 +2964,21 @@
   document.getElementById('order-filter').addEventListener('change', function () {
     orderFilter = this.value;
     renderOrders();
+  });
+
+  document.getElementById('refresh-loyalty').addEventListener('click', function () {
+    loadLoyaltyCustomers();
+  });
+
+  document.getElementById('copy-loyalty-phones').addEventListener('click', copyLoyaltyPhoneList);
+  document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
+  document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
+  document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
+  document.getElementById('loyalty-offer-save').addEventListener('click', saveLoyaltyOffer);
+  document.getElementById('loyalty-offer-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('loyalty-offer-modal')) {
+      closeLoyaltyOfferModal();
+    }
   });
 
   document.getElementById('contact-filter').addEventListener('change', function () {

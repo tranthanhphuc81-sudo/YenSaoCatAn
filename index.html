@@ -565,6 +565,26 @@
       line-height: 1.6;
     }
 
+    .loyalty-card {
+      margin-top: 24px;
+      background: rgba(255,255,255,.95);
+      border: 1px solid rgba(15,23,42,.12);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: 0 18px 30px rgba(15,23,42,.08);
+    }
+
+    .loyalty-card h3 {
+      margin-bottom: 12px;
+      color: var(--accent-dark);
+      font-size: 1.2rem;
+    }
+
+    .loyalty-card p {
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
     .info-card,
     #cart-section,
     #checkout-section {
@@ -1752,6 +1772,11 @@
         <input type="tel" id="cus-phone" placeholder="0901 234 567" required />
       </div>
       <div class="form-group">
+        <label for="loyalty-password-order">Mật khẩu khách hàng thân thiết (nếu có)</label>
+        <input type="password" id="loyalty-password-order" placeholder="Mật khẩu khách hàng thân thiết" />
+        <p id="loyalty-order-note" class="form-note">Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.</p>
+      </div>
+      <div class="form-group">
         <label for="cus-address">Địa chỉ giao hàng *</label>
         <input type="text" id="cus-address" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP" required />
       </div>
@@ -1789,6 +1814,29 @@
 
       <button type="submit" class="btn-submit" id="btn-order">Đặt hàng ngay</button>
     </form>
+
+    <div class="loyalty-card">
+      <h3>🎁 Đăng ký khách hàng thân thiết</h3>
+      <p>Đăng ký để nhận thông báo ưu đãi qua Zalo và dùng mật khẩu thân thiết khi đặt hàng.</p>
+      <div class="form-group">
+        <label for="loyalty-name">Họ và tên *</label>
+        <input type="text" id="loyalty-name" placeholder="Nguyễn Văn A" />
+      </div>
+      <div class="form-group">
+        <label for="loyalty-phone">Số điện thoại (*)</label>
+        <input type="tel" id="loyalty-phone" placeholder="0901 234 567" />
+      </div>
+      <div class="form-group">
+        <label for="loyalty-password">Mật khẩu thân thiết *</label>
+        <input type="password" id="loyalty-password" placeholder="Tạo mật khẩu để nhận ưu đãi" />
+      </div>
+      <div class="form-group">
+        <label for="loyalty-password-confirm">Xác nhận mật khẩu *</label>
+        <input type="password" id="loyalty-password-confirm" placeholder="Nhập lại mật khẩu" />
+      </div>
+      <button type="button" class="btn-submit" id="btn-loyalty-register">Đăng ký khách thân thiết</button>
+      <p id="loyalty-register-status" class="form-note"></p>
+    </div>
   </section>
   </div>
 
@@ -2072,6 +2120,7 @@
   let allNews = [];       // Toàn bộ tin tức từ Firestore
   let cart = [];          // Giỏ hàng: [{ id, name, price, qty }]
   let currentFilter = 'all'; // Bộ lọc đang chọn
+  let loyaltyMessageTemplate = ''; // Mẫu tin nhắn ưu đãi khách thân thiết từ cấu hình
 
   // ==================================================
   // TIỆN ÍCH: Định dạng tiền VNĐ
@@ -2087,6 +2136,115 @@
     t.textContent = msg;
     t.className = `show ${type}`;
     setTimeout(() => { t.className = ''; }, 3000);
+  }
+
+  function normalizePhone(value) {
+    if (!value) return '';
+    let digits = value.toString().replace(/\D/g, '');
+    if (digits.startsWith('84') && digits.length > 2) {
+      digits = '0' + digits.slice(2);
+    }
+    if (!digits.startsWith('0') && digits.length >= 9) {
+      digits = '0' + digits;
+    }
+    return digits;
+  }
+
+  async function hashText(value) {
+    const data = new TextEncoder().encode(value || '');
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function loadLoyaltyCustomerByPhone(phone) {
+    const normalized = normalizePhone(phone);
+    if (!normalized) return null;
+    try {
+      const snap = await getDoc(doc(db, 'loyaltyCustomers', normalized));
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    } catch (err) {
+      console.error('Lỗi kiểm tra khách thân thiết:', err);
+      return null;
+    }
+  }
+
+  async function updateLoyaltyOrderNote() {
+    const phone = document.getElementById('cus-phone').value.trim();
+    const note  = document.getElementById('loyalty-order-note');
+    if (!phone) {
+      note.textContent = 'Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.';
+      return;
+    }
+    const customer = await loadLoyaltyCustomerByPhone(phone);
+    if (customer) {
+      const offerLabel = customer.offer || loyaltyMessageTemplate;
+      note.textContent = offerLabel
+        ? `Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi: ${offerLabel}`
+        : 'Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi khi đặt hàng.';
+    } else {
+      note.textContent = 'Số điện thoại này chưa đăng ký khách hàng thân thiết. Bạn có thể đăng ký bên dưới trước khi đặt hàng.';
+    }
+  }
+
+  async function registerLoyaltyCustomer() {
+    const name     = document.getElementById('loyalty-name').value.trim();
+    const phone    = document.getElementById('loyalty-phone').value.trim();
+    const password = document.getElementById('loyalty-password').value.trim();
+    const confirm  = document.getElementById('loyalty-password-confirm').value.trim();
+    const statusEl = document.getElementById('loyalty-register-status');
+
+    statusEl.textContent = '';
+    if (!name || !phone || !password || !confirm) {
+      statusEl.textContent = 'Vui lòng điền đầy đủ thông tin đăng ký.';
+      statusEl.style.color = '#dc2626';
+      return;
+    }
+    if (password !== confirm) {
+      statusEl.textContent = 'Mật khẩu và xác nhận mật khẩu không khớp.';
+      statusEl.style.color = '#dc2626';
+      return;
+    }
+    if (password.length < 4) {
+      statusEl.textContent = 'Mật khẩu cần ít nhất 4 ký tự.';
+      statusEl.style.color = '#dc2626';
+      return;
+    }
+
+    const normalized = normalizePhone(phone);
+    if (!normalized) {
+      statusEl.textContent = 'Số điện thoại không hợp lệ.';
+      statusEl.style.color = '#dc2626';
+      return;
+    }
+
+    try {
+      const customerRef = doc(db, 'loyaltyCustomers', normalized);
+      const existing = await getDoc(customerRef);
+      if (existing.exists()) {
+        statusEl.textContent = 'Số điện thoại này đã đăng ký khách thân thiết.';
+        statusEl.style.color = '#dc2626';
+        return;
+      }
+      const passwordHash = await hashText(password);
+      await setDoc(customerRef, {
+        name,
+        phone: normalized,
+        displayPhone: phone,
+        passwordHash,
+        registeredAt: serverTimestamp(),
+      });
+      statusEl.textContent = 'Đăng ký khách hàng thân thiết thành công! Bạn có thể nhập mật khẩu khi đặt hàng.';
+      statusEl.style.color = '#1f7a5b';
+      document.getElementById('loyalty-name').value = '';
+      document.getElementById('loyalty-phone').value = '';
+      document.getElementById('loyalty-password').value = '';
+      document.getElementById('loyalty-password-confirm').value = '';
+      updateLoyaltyOrderNote();
+    } catch (err) {
+      console.error('Lỗi đăng ký khách thân thiết:', err);
+      statusEl.textContent = 'Không thể đăng ký. Vui lòng thử lại sau.';
+      statusEl.style.color = '#dc2626';
+    }
   }
 
   // ==================================================
@@ -2145,6 +2303,9 @@
         const zaloVal = cfg.contact_zalo;
         zaloBtn.href = zaloVal.startsWith('http') ? zaloVal : `https://zalo.me/${zaloVal.replace(/\s/g,'')}`;
         zaloBtn.style.display = 'inline-flex';
+      }
+      if (cfg.loyalty_message_template) {
+        loyaltyMessageTemplate = cfg.loyalty_message_template;
       }
     } catch (err) {
       console.error('Lỗi tải cấu hình:', err);
@@ -2587,10 +2748,11 @@
       return false;
     }
 
-    const name    = document.getElementById('cus-name').value.trim();
-    const phone   = document.getElementById('cus-phone').value.trim();
-    const address = document.getElementById('cus-address').value.trim();
-    const method  = document.getElementById('payment-method').value;
+    const name            = document.getElementById('cus-name').value.trim();
+    const phone           = document.getElementById('cus-phone').value.trim();
+    const address         = document.getElementById('cus-address').value.trim();
+    const method          = document.getElementById('payment-method').value;
+    const loyaltyPassword = document.getElementById('loyalty-password-order').value.trim();
 
     if (!name || !phone || !address) {
       showToast('Vui lòng điền đầy đủ thông tin!', 'error');
@@ -2606,6 +2768,25 @@
       return false;
     }
 
+    const normalizedPhone = normalizePhone(phone);
+    let loyaltyVerified = false;
+    const customer = await loadLoyaltyCustomerByPhone(phone);
+
+    if (loyaltyPassword) {
+      if (!customer) {
+        showToast('Số điện thoại chưa đăng ký khách thân thiết.', 'error');
+        return false;
+      }
+      const passwordHash = await hashText(loyaltyPassword);
+      if (passwordHash !== customer.passwordHash) {
+        showToast('Mật khẩu khách thân thiết không đúng!', 'error');
+        return false;
+      }
+      loyaltyVerified = true;
+    } else if (customer) {
+      showToast('Số điện thoại đã đăng ký khách thân thiết. Nhập mật khẩu để nhận ưu đãi.', 'success');
+    }
+
     const btnSubmit = document.getElementById('btn-order');
     btnSubmit.disabled = true;
     btnSubmit.textContent = 'Đang xử lý...';
@@ -2617,6 +2798,9 @@
         customerPhone:   phone,
         customerAddress: address,
         paymentMethod:   method,
+        loyaltyCustomer: loyaltyVerified,
+        loyaltyPhone:    normalizedPhone,
+        loyaltyOffer:    loyaltyVerified ? (customer.offer || loyaltyMessageTemplate || null) : null,
         items: cart.map(i => ({ productId: i.id, name: i.name, price: i.price, qty: i.qty })),
         total: total,
         status: 'pending',
@@ -2734,6 +2918,12 @@
   document.getElementById('order-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     await submitOrder({ auto: false });
+  });
+
+  document.getElementById('btn-loyalty-register').addEventListener('click', registerLoyaltyCustomer);
+  document.getElementById('cus-phone').addEventListener('blur', updateLoyaltyOrderNote);
+  document.getElementById('cus-phone').addEventListener('input', () => {
+    document.getElementById('loyalty-order-note').textContent = 'Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.';
   });
 
   document.getElementById('auto-order-confirm-btn').addEventListener('click', async () => {
