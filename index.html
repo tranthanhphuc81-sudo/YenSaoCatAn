@@ -1497,8 +1497,7 @@
     }
     #prechat-start:hover { background: #c94e00; }
     #product-modal,
-    #news-modal,
-    #forgot-loyalty-password-modal {
+    #news-modal {
       display: none;
       position: fixed; inset: 0;
       z-index: 10000;
@@ -1509,16 +1508,14 @@
 
     @media (min-width: 520px) {
       #product-modal,
-      #news-modal,
-      #forgot-loyalty-password-modal {
+      #news-modal {
         align-items: center;
         padding: 16px;
       }
     }
 
     #product-modal.open,
-    #news-modal.open,
-    #forgot-loyalty-password-modal.open { display: flex; }
+    #news-modal.open { display: flex; }
 
     .modal-backdrop {
       position: absolute; inset: 0;
@@ -1778,7 +1775,7 @@
         <label for="loyalty-password-order">Mật khẩu khách hàng thân thiết (nếu có)</label>
         <input type="password" id="loyalty-password-order" placeholder="Mật khẩu khách hàng thân thiết" />
         <p id="loyalty-order-note" class="form-note">Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.</p>
-        <button type="button" id="btn-forgot-loyalty-password" class="btn-small" style="margin-top:8px;">Quên mật khẩu thân thiết?</button>
+        <button type="button" id="btn-forgot-loyalty-password" class="btn-small" style="margin-top:8px;">Quên mật khẩu? Nhờ admin reset qua Zalo/điện thoại</button>
       </div>
       <div class="form-group">
         <label for="cus-address">Địa chỉ giao hàng *</label>
@@ -1842,39 +1839,6 @@
       <p id="loyalty-register-status" class="form-note"></p>
     </div>
   </section>
-  </div>
-
-  <div id="forgot-loyalty-password-modal" role="dialog" aria-modal="true" aria-labelledby="forgot-loyalty-title">
-    <div class="modal-backdrop"></div>
-    <div class="modal-box">
-      <div class="modal-drag-bar"></div>
-      <div class="modal-body">
-        <div class="modal-header-row" style="align-items:flex-start;gap:12px;">
-          <div>
-            <h2 id="forgot-loyalty-title">Quên mật khẩu thân thiết</h2>
-            <p class="form-note">Nhập số điện thoại đã đăng ký và mật khẩu mới để cập nhật.</p>
-          </div>
-          <button class="modal-close" id="forgot-loyalty-close" aria-label="Đóng">✕</button>
-        </div>
-        <div class="form-group">
-          <label for="forgot-loyalty-phone">Số điện thoại đã đăng ký</label>
-          <input type="tel" id="forgot-loyalty-phone" placeholder="0901 234 567" />
-        </div>
-        <div class="form-group">
-          <label for="forgot-loyalty-new-password">Mật khẩu mới</label>
-          <input type="password" id="forgot-loyalty-new-password" placeholder="Mật khẩu mới" />
-        </div>
-        <div class="form-group">
-          <label for="forgot-loyalty-confirm-password">Xác nhận mật khẩu mới</label>
-          <input type="password" id="forgot-loyalty-confirm-password" placeholder="Nhập lại mật khẩu mới" />
-        </div>
-        <p id="forgot-loyalty-error" class="form-note" style="color:#dc2626; min-height:1.5em;"></p>
-        <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
-          <button type="button" class="btn btn-cancel" id="forgot-loyalty-cancel">Hủy</button>
-          <button type="button" class="btn btn-save" id="forgot-loyalty-save">Cập nhật mật khẩu</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div id="auto-order-confirm" class="confirm-modal-backdrop" aria-modal="true" role="dialog">
@@ -2284,73 +2248,6 @@
     renderCart();
   }
 
-  function openForgotLoyaltyPasswordModal() {
-    const modal = document.getElementById('forgot-loyalty-password-modal');
-    const phone = document.getElementById('cus-phone').value.trim();
-    document.getElementById('forgot-loyalty-phone').value = phone;
-    document.getElementById('forgot-loyalty-new-password').value = '';
-    document.getElementById('forgot-loyalty-confirm-password').value = '';
-    document.getElementById('forgot-loyalty-error').textContent = '';
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeForgotLoyaltyPasswordModal() {
-    const modal = document.getElementById('forgot-loyalty-password-modal');
-    modal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  async function submitForgotLoyaltyPasswordReset() {
-    const phoneInput = document.getElementById('forgot-loyalty-phone');
-    const newPassword = document.getElementById('forgot-loyalty-new-password').value.trim();
-    const confirmPassword = document.getElementById('forgot-loyalty-confirm-password').value.trim();
-    const errorEl = document.getElementById('forgot-loyalty-error');
-    errorEl.textContent = '';
-
-    const normalizedPhone = normalizePhone(phoneInput.value.trim());
-    if (!normalizedPhone) {
-      errorEl.textContent = 'Vui lòng nhập số điện thoại đã đăng ký.';
-      return;
-    }
-    if (!newPassword || !confirmPassword) {
-      errorEl.textContent = 'Vui lòng nhập mật khẩu mới và xác nhận.';
-      return;
-    }
-    if (newPassword.length < 4) {
-      errorEl.textContent = 'Mật khẩu cần ít nhất 4 ký tự.';
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      errorEl.textContent = 'Mật khẩu mới và xác nhận không khớp.';
-      return;
-    }
-
-    const customer = await loadLoyaltyCustomerByPhone(normalizedPhone);
-    if (!customer) {
-      errorEl.textContent = 'Số điện thoại này chưa đăng ký khách hàng thân thiết.';
-      return;
-    }
-
-    try {
-      const passwordHash = await hashText(newPassword);
-      await setDoc(doc(db, 'loyaltyCustomers', normalizedPhone), {
-        passwordHash,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-
-      showToast('Mật khẩu thân thiết đã được cập nhật. Bạn có thể dùng mật khẩu mới để nhận ưu đãi.', 'success');
-      closeForgotLoyaltyPasswordModal();
-      document.getElementById('loyalty-password-order').value = newPassword;
-      currentLoyaltyCustomer = customer;
-      currentLoyaltyCustomer.passwordHash = passwordHash;
-      await refreshLoyaltyDiscountState();
-    } catch (err) {
-      console.error('Lỗi cập nhật mật khẩu thân thiết:', err);
-      errorEl.textContent = 'Không thể cập nhật mật khẩu. Vui lòng thử lại sau.';
-    }
-  }
-
   async function registerLoyaltyCustomer() {
     const name     = document.getElementById('loyalty-name').value.trim();
     const phone    = document.getElementById('loyalty-phone').value.trim();
@@ -2607,13 +2504,11 @@
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('click', () => {
     closeProductModal();
     closeNewsModal();
-    closeForgotLoyaltyPasswordModal();
   }));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeProductModal();
       closeNewsModal();
-      closeForgotLoyaltyPasswordModal();
     }
   });
   document.getElementById('modal-add-btn').addEventListener('click', () => {
@@ -3061,10 +2956,11 @@
   });
 
   document.getElementById('btn-loyalty-register').addEventListener('click', registerLoyaltyCustomer);
-  document.getElementById('btn-forgot-loyalty-password').addEventListener('click', openForgotLoyaltyPasswordModal);
-  document.getElementById('forgot-loyalty-close').addEventListener('click', closeForgotLoyaltyPasswordModal);
-  document.getElementById('forgot-loyalty-cancel').addEventListener('click', closeForgotLoyaltyPasswordModal);
-  document.getElementById('forgot-loyalty-save').addEventListener('click', submitForgotLoyaltyPasswordReset);
+  document.getElementById('btn-forgot-loyalty-password').addEventListener('click', () => {
+    showToast('Quên mật khẩu thân thiết? Vui lòng liên hệ admin qua Zalo/điện thoại để họ xác thực và reset cho bạn.', 'info');
+    const contactTab = document.querySelector('.main-nav button[data-tab="contact"]');
+    if (contactTab) contactTab.click();
+  });
   document.getElementById('cus-phone').addEventListener('blur', updateLoyaltyOrderNote);
   document.getElementById('cus-phone').addEventListener('input', () => {
     document.getElementById('loyalty-order-note').textContent = 'Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.';
