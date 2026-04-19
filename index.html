@@ -369,6 +369,19 @@
       place-items: center;
       border: 1px solid rgba(26,86,160,.12);
       overflow: hidden;
+      cursor: pointer;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    #bank-info .qr-shell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(26,86,160,.18);
+      border-color: rgba(26,86,160,.24);
+    }
+
+    #bank-info .qr-shell:focus-visible {
+      outline: 3px solid rgba(26,86,160,.35);
+      outline-offset: 4px;
     }
 
     #bank-info .qr-shell::before {
@@ -419,6 +432,14 @@
       color: var(--text-muted);
       text-align: center;
       margin: 0;
+    }
+
+    .qr-copy-tip {
+      margin-top: 10px;
+      font-size: .85rem;
+      color: var(--accent-dark);
+      text-align: center;
+      opacity: .88;
     }
 
     #checkout-section .btn-submit {
@@ -1642,12 +1663,12 @@
             <p class="bank-info-note">Quét mã QR để thanh toán nhanh, hoặc nhập số tài khoản khi chuyển khoản.</p>
           </div>
           <div class="bank-info-qr">
-            <div class="qr-shell">
+            <div id="qr-shell" class="qr-shell" role="button" tabindex="0" aria-label="Sao chép số tài khoản">
               <img id="bi-qr" src="" alt="VietQR" />
               <div id="qr-placeholder" class="qr-placeholder">
                 <span class="qr-icon">📱</span>
                 <strong>QR chưa có</strong>
-                <p>Chọn chuyển khoản và thêm sản phẩm để tạo QR</p>
+                <p>Chọn chuyển khoản hoặc thêm sản phẩm để tạo QR</p>
               </div>
             </div>
             <p id="bi-qr-note" class="qr-note">QR cập nhật theo tổng tiền giỏ hàng</p>
@@ -2461,6 +2482,31 @@
     document.getElementById('bank-info').style.display = show ? 'block' : 'none';
     if (show) updateQR();
   });
+
+  const qrShell = document.getElementById('qr-shell');
+  if (qrShell) {
+    qrShell.addEventListener('click', async () => {
+      const account = window._bankStk || document.getElementById('bi-stk').textContent.trim();
+      if (!account) {
+        showToast('Chưa có thông tin tài khoản để sao chép.', 'error');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(account);
+        showToast('Đã sao chép số tài khoản: ' + account, 'success');
+      } catch (err) {
+        console.error('Lỗi sao chép số tài khoản:', err);
+        showToast('Không thể sao chép số tài khoản. Vui lòng thử lại.', 'error');
+      }
+    });
+    qrShell.addEventListener('keypress', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        qrShell.click();
+      }
+    });
+  }
 
   // ==================================================
   // THANH TOÁN: Submit đơn hàng lên Firestore
