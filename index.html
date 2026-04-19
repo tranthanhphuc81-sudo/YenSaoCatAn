@@ -2570,47 +2570,6 @@
       });
     });
 
-    // Gắn sự kiện tăng/giảm số lượng
-    listEl.querySelectorAll('.qty-decrease').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const item = cart.find(i => i.id === id);
-        if (!item) return;
-        updateCartQty(id, item.qty - 1);
-      });
-    });
-
-    listEl.querySelectorAll('.qty-increase').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const item = cart.find(i => i.id === id);
-        if (!item) return;
-        updateCartQty(id, item.qty + 1);
-      });
-    });
-
-    listEl.querySelectorAll('.cart-qty-input').forEach(input => {
-      input.addEventListener('change', () => {
-        const id = input.dataset.id;
-        let qty = Number(input.value);
-        if (!qty || qty < 1) qty = 1;
-        updateCartQty(id, qty);
-      });
-      input.addEventListener('keydown', event => {
-        if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          const id = input.dataset.id;
-          updateCartQty(id, Number(input.value) + 1);
-        }
-        if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          const id = input.dataset.id;
-          const qty = Math.max(1, Number(input.value) - 1);
-          updateCartQty(id, qty);
-        }
-      });
-    });
-
     // Cập nhật QR nếu đang chọn chuyển khoản
     if (document.getElementById('payment-method').value === 'transfer') updateQR();
   }
