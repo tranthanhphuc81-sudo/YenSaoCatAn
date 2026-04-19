@@ -1362,43 +1362,42 @@
           </table>
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <h2>📝 Mẫu tin nhắn ưu đãi</h2>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;">
-        <label for="loyalty-template-select" style="font-weight:700;margin-right:8px;white-space:nowrap">Mẫu gửi Zalo:</label>
-        <select id="loyalty-template-select" style="flex:1;min-width:240px;padding:10px;border-radius:10px;border:1px solid #d1d5db;background:#fff"></select>
-        <button type="button" id="preview-loyalty-template" class="btn btn-small" style="padding:10px 18px;">Xem nội dung</button>
-      </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="new-template-title">Tiêu đề mẫu</label>
-          <input type="text" id="new-template-title" placeholder="Tiêu đề mẫu" />
+      <div class="card">
+        <h2>📝 Mẫu tin nhắn ưu đãi</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;">
+          <label for="loyalty-template-select" style="font-weight:700;margin-right:8px;white-space:nowrap">Mẫu gửi Zalo:</label>
+          <select id="loyalty-template-select" style="flex:1;min-width:240px;padding:10px;border-radius:10px;border:1px solid #d1d5db;background:#fff"></select>
+          <button type="button" id="preview-loyalty-template" class="btn btn-small" style="padding:10px 18px;">Xem nội dung</button>
         </div>
-        <div class="form-group span-2">
-          <label for="new-template-content">Nội dung mẫu</label>
-          <textarea id="new-template-content" rows="4" placeholder="Nhập nội dung tin nhắn..." style="resize:vertical"></textarea>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="new-template-title">Tiêu đề mẫu</label>
+            <input type="text" id="new-template-title" placeholder="Tiêu đề mẫu" />
+          </div>
+          <div class="form-group span-2">
+            <label for="new-template-content">Nội dung mẫu</label>
+            <textarea id="new-template-content" rows="4" placeholder="Nhập nội dung tin nhắn..." style="resize:vertical"></textarea>
+          </div>
         </div>
-      </div>
-      <button type="button" class="btn-save" id="btn-add-loyalty-template" style="margin-top:6px;">Thêm mẫu mới</button>
-      <div class="table-wrap" style="margin-top:22px;">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Tiêu đề</th>
-              <th>Nội dung mẫu</th>
-              <th>Ngày tạo</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="loyalty-template-list">
-            <tr><td colspan="4" class="empty-state">Đang tải...</td></tr>
-          </tbody>
-        </table>
+        <button type="button" class="btn-save" id="btn-add-loyalty-template" style="margin-top:6px;">Thêm mẫu mới</button>
+        <div class="table-wrap" style="margin-top:22px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Nội dung mẫu</th>
+                <th>Ngày tạo</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="loyalty-template-list">
+              <tr><td colspan="4" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
   <div id="order-detail-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-detail">
