@@ -1381,27 +1381,9 @@
           </div>
           <div class="form-group span-2" style="position:relative;">
             <label for="new-template-content">Nội dung mẫu</label>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px;">
-              <button type="button" id="loyalty-template-bold" class="btn btn-small" style="min-width:36px;">B</button>
-              <button type="button" id="loyalty-template-italic" class="btn btn-small" style="min-width:36px;">I</button>
-              <button type="button" id="loyalty-template-underline" class="btn btn-small" style="min-width:36px;">U</button>
-              <button type="button" id="loyalty-template-strike" class="btn btn-small" style="min-width:36px;">S</button>
-              <button type="button" id="loyalty-template-link" class="btn btn-small" style="min-width:36px;">🔗</button>
-              <button type="button" id="loyalty-template-bullet" class="btn btn-small" style="min-width:36px;">•</button>
-              <button type="button" id="loyalty-template-emoji-toggle" class="btn btn-small" style="min-width:36px;">😊</button>
-            </div>
-            <div id="loyalty-template-emoji-panel" class="emoji-panel" style="display:none;left:0;right:auto;max-width:320px;">
-              <button type="button" data-em="🔥">🔥</button>
-              <button type="button" data-em="🎉">🎉</button>
-              <button type="button" data-em="💥">💥</button>
-              <button type="button" data-em="⭐">⭐</button>
-              <button type="button" data-em="🛍️">🛍️</button>
-              <button type="button" data-em="✨">✨</button>
-              <button type="button" data-em="💯">💯</button>
-              <button type="button" data-em="📢">📢</button>
-              <button type="button" data-em="❤️">❤️</button>
-            </div>
-            <textarea id="new-template-content" rows="4" placeholder="Nhập nội dung tin nhắn..." style="resize:vertical"></textarea>
+            <div id="loyalty-template-toolbar"></div>
+            <div id="quill-loyalty-template" style="min-height:180px;background:#fff;border:1px solid #d1d5db;border-radius:10px;"></div>
+            <textarea id="new-template-content" hidden></textarea>
           </div>
         </div>
         <button type="button" class="btn-save" id="btn-add-loyalty-template" style="margin-top:6px;">Thêm mẫu mới</button>
@@ -1439,25 +1421,9 @@
       <h3>Sửa ưu đãi khách thân thiết</h3>
       <div class="form-group">
         <label for="loyalty-offer-text">Nội dung ưu đãi</label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px;">
-          <button type="button" id="loyalty-offer-bold" class="btn btn-small" style="min-width:36px;">B</button>
-          <button type="button" id="loyalty-offer-italic" class="btn btn-small" style="min-width:36px;">I</button>
-          <button type="button" id="loyalty-offer-underline" class="btn btn-small" style="min-width:36px;">U</button>
-          <button type="button" id="loyalty-offer-bullet" class="btn btn-small" style="min-width:36px;">•</button>
-          <button type="button" id="loyalty-offer-emoji-toggle" class="btn btn-small" style="min-width:36px;">😊</button>
-        </div>
-        <div id="loyalty-offer-emoji-panel" class="emoji-panel" style="display:none;left:0;right:auto;max-width:320px;">
-          <button type="button" data-em="🔥">🔥</button>
-          <button type="button" data-em="🎉">🎉</button>
-          <button type="button" data-em="💥">💥</button>
-          <button type="button" data-em="⭐">⭐</button>
-          <button type="button" data-em="🛍️">🛍️</button>
-          <button type="button" data-em="✨">✨</button>
-          <button type="button" data-em="💯">💯</button>
-          <button type="button" data-em="📢">📢</button>
-          <button type="button" data-em="❤️">❤️</button>
-        </div>
-        <textarea id="loyalty-offer-text" rows="5" style="width:100%;resize:vertical;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-family:inherit"></textarea>
+        <div id="loyalty-offer-toolbar"></div>
+        <div id="quill-loyalty-offer" style="min-height:160px;background:#fff;border:1px solid #d1d5db;border-radius:10px;"></div>
+        <textarea id="loyalty-offer-text" hidden></textarea>
       </div>
       <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
         <button type="button" class="btn btn-cancel" id="loyalty-offer-close">Hủy</button>
@@ -2468,6 +2434,26 @@
     document.getElementById('post-content-count').textContent = `${len} / 5000`;
   });
 
+  const loyaltyTemplateToolbarOptions = [
+    [{ header: [1, 2, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ];
+
+  const loyaltyTemplateQuill = new Quill('#quill-loyalty-template', {
+    theme: 'snow',
+    modules: { toolbar: loyaltyTemplateToolbarOptions },
+    placeholder: 'Nhập nội dung mẫu tin nhắn...',
+  });
+
+  const loyaltyOfferQuill = new Quill('#quill-loyalty-offer', {
+    theme: 'snow',
+    modules: { toolbar: loyaltyTemplateToolbarOptions },
+    placeholder: 'Nhập nội dung ưu đãi...',
+  });
+
   // Emoji picker
   const _emojiBtn   = document.getElementById('btn-emoji-open');
   const _emojiPanel = document.getElementById('emoji-panel');
@@ -2793,7 +2779,7 @@
     activeLoyaltyCustomerId = null;
     const modal = document.getElementById('loyalty-offer-modal');
     modal.querySelector('h3').textContent = `Sửa ưu đãi cho ${ids.length} khách hàng`;
-    document.getElementById('loyalty-offer-text').value = '';
+    setLoyaltyOfferContent('');
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
   }
@@ -2872,145 +2858,31 @@
     return allLoyaltyTemplates.find(t => t.id === select.value) || null;
   }
 
-  function getLoyaltyTemplateTextarea() {
-    return document.getElementById('new-template-content');
+  function getLoyaltyTemplateContent() {
+    return loyaltyTemplateQuill ? loyaltyTemplateQuill.getText().trim() : '';
   }
 
-  function insertTextAtLoyaltyTemplateCursor(text) {
-    const textarea = getLoyaltyTemplateTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? start;
-    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-    textarea.setSelectionRange(start + text.length, start + text.length);
-    textarea.focus();
+  function setLoyaltyTemplateContent(value) {
+    if (!loyaltyTemplateQuill) return;
+    loyaltyTemplateQuill.setText(value || '');
+    const textarea = document.getElementById('new-template-content');
+    if (textarea) textarea.value = value || '';
   }
 
-  function wrapLoyaltyTemplateSelection(prefix, suffix) {
-    const textarea = getLoyaltyTemplateTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? 0;
-    const end = textarea.selectionEnd ?? 0;
-    const selected = textarea.value.slice(start, end);
-    const wrapped = selected ? `${prefix}${selected}${suffix}` : `${prefix}${suffix}`;
-    textarea.value = textarea.value.slice(0, start) + wrapped + textarea.value.slice(end);
-    const cursorPos = selected ? start + wrapped.length : start + prefix.length;
-    textarea.setSelectionRange(cursorPos, cursorPos);
-    textarea.focus();
+  function getLoyaltyOfferContent() {
+    return loyaltyOfferQuill ? loyaltyOfferQuill.getText().trim() : '';
   }
 
-  function insertLoyaltyTemplateBullet() {
-    const textarea = getLoyaltyTemplateTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? start;
-    const before = textarea.value.slice(0, start);
-    const lineStart = before.lastIndexOf('\n') + 1;
-    const line = textarea.value.slice(lineStart, end);
-    const bulletText = line.trim().length ? `• ${line}` : '• ';
-    textarea.value = textarea.value.slice(0, lineStart) + bulletText + textarea.value.slice(end);
-    const cursorPos = lineStart + bulletText.length;
-    textarea.setSelectionRange(cursorPos, cursorPos);
-    textarea.focus();
-  }
-
-  function insertLoyaltyTemplateLink() {
-    const textarea = getLoyaltyTemplateTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? 0;
-    const end = textarea.selectionEnd ?? 0;
-    const selected = textarea.value.slice(start, end) || 'đây';
-    const url = prompt('Nhập đường dẫn liên kết (URL):', 'https://');
-    if (!url) return;
-    const linkText = `[${selected}](${url})`;
-    textarea.value = textarea.value.slice(0, start) + linkText + textarea.value.slice(end);
-    textarea.setSelectionRange(start + linkText.length, start + linkText.length);
-    textarea.focus();
-  }
-
-  function toggleLoyaltyTemplateEmojiPanel() {
-    const btn = document.getElementById('loyalty-template-emoji-toggle');
-    const panel = document.getElementById('loyalty-template-emoji-panel');
-    if (!panel || !btn) return;
-    panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
-  }
-
-  function insertLoyaltyTemplateEmoji(emoji) {
-    if (!emoji) return;
-    insertTextAtLoyaltyTemplateCursor(emoji);
-  }
-
-  function getLoyaltyOfferTextarea() {
-    return document.getElementById('loyalty-offer-text');
-  }
-
-  function insertTextAtLoyaltyOfferCursor(text) {
-    const textarea = getLoyaltyOfferTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? start;
-    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-    textarea.setSelectionRange(start + text.length, start + text.length);
-    textarea.focus();
-  }
-
-  function wrapLoyaltyOfferSelection(prefix, suffix) {
-    const textarea = getLoyaltyOfferTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? 0;
-    const end = textarea.selectionEnd ?? 0;
-    const selected = textarea.value.slice(start, end);
-    const wrapped = selected ? `${prefix}${selected}${suffix}` : `${prefix}${suffix}`;
-    textarea.value = textarea.value.slice(0, start) + wrapped + textarea.value.slice(end);
-    const cursorPos = selected ? start + wrapped.length : start + prefix.length;
-    textarea.setSelectionRange(cursorPos, cursorPos);
-    textarea.focus();
-  }
-
-  function insertLoyaltyOfferBullet() {
-    const textarea = getLoyaltyOfferTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? start;
-    const before = textarea.value.slice(0, start);
-    const lineStart = before.lastIndexOf('\n') + 1;
-    const line = textarea.value.slice(lineStart, end);
-    const bulletText = line.trim().length ? `• ${line}` : '• ';
-    textarea.value = textarea.value.slice(0, lineStart) + bulletText + textarea.value.slice(end);
-    const cursorPos = lineStart + bulletText.length;
-    textarea.setSelectionRange(cursorPos, cursorPos);
-    textarea.focus();
-  }
-
-  function insertLoyaltyOfferLink() {
-    const textarea = getLoyaltyOfferTextarea();
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? 0;
-    const end = textarea.selectionEnd ?? 0;
-    const selected = textarea.value.slice(start, end) || 'đây';
-    const url = prompt('Nhập đường dẫn liên kết (URL):', 'https://');
-    if (!url) return;
-    const linkText = `[${selected}](${url})`;
-    textarea.value = textarea.value.slice(0, start) + linkText + textarea.value.slice(end);
-    textarea.setSelectionRange(start + linkText.length, start + linkText.length);
-    textarea.focus();
-  }
-
-  function toggleLoyaltyOfferEmojiPanel() {
-    const btn = document.getElementById('loyalty-offer-emoji-toggle');
-    const panel = document.getElementById('loyalty-offer-emoji-panel');
-    if (!panel || !btn) return;
-    panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
-  }
-
-  function insertLoyaltyOfferEmoji(emoji) {
-    if (!emoji) return;
-    insertTextAtLoyaltyOfferCursor(emoji);
+  function setLoyaltyOfferContent(value) {
+    if (!loyaltyOfferQuill) return;
+    loyaltyOfferQuill.setText(value || '');
+    const textarea = document.getElementById('loyalty-offer-text');
+    if (textarea) textarea.value = value || '';
   }
 
   async function addLoyaltyTemplate() {
     const title = document.getElementById('new-template-title').value.trim();
-    const content = document.getElementById('new-template-content').value.trim();
+    const content = getLoyaltyTemplateContent();
     if (!title || !content) {
       showToast('Vui lòng nhập tiêu đề và nội dung mẫu tin nhắn.', 'error');
       return;
@@ -3037,7 +2909,7 @@
         showToast('✅ Đã thêm mẫu tin nhắn mới.');
       }
       document.getElementById('new-template-title').value = '';
-      document.getElementById('new-template-content').value = '';
+      setLoyaltyTemplateContent('');
       await loadLoyaltyTemplates();
     } catch (err) {
       console.error('Lỗi thêm mẫu tin nhắn:', err);
@@ -3049,7 +2921,7 @@
     const template = allLoyaltyTemplates.find(t => t.id === templateId);
     if (!template) return;
     document.getElementById('new-template-title').value = template.title || '';
-    document.getElementById('new-template-content').value = template.content || '';
+    setLoyaltyTemplateContent(template.content || '');
     document.getElementById('btn-add-loyalty-template').textContent = 'Cập nhật mẫu';
     document.getElementById('btn-add-loyalty-template').dataset.editing = templateId;
   }
@@ -3159,7 +3031,7 @@
     const customer = allLoyaltyCustomers.find(c => c.id === customerId);
     if (!customer) return;
     activeLoyaltyCustomerId = customerId;
-    document.getElementById('loyalty-offer-text').value = customer.offer || '';
+    setLoyaltyOfferContent(customer.offer || '');
     const modal = document.getElementById('loyalty-offer-modal');
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
@@ -3175,7 +3047,7 @@
   }
 
   async function saveLoyaltyOffer() {
-    const offerText = document.getElementById('loyalty-offer-text').value.trim();
+    const offerText = getLoyaltyOfferContent();
     if (!offerText) {
       showToast('Vui lòng nhập nội dung ưu đãi.', 'error');
       return;
@@ -3486,56 +3358,6 @@
   document.getElementById('delete-selected-loyalty').addEventListener('click', deleteSelectedLoyaltyCustomers);
   document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
-  document.getElementById('loyalty-template-bold').addEventListener('click', () => wrapLoyaltyTemplateSelection('*', '*'));
-  document.getElementById('loyalty-template-italic').addEventListener('click', () => wrapLoyaltyTemplateSelection('_', '_'));
-  document.getElementById('loyalty-template-underline').addEventListener('click', () => wrapLoyaltyTemplateSelection('__', '__'));
-  document.getElementById('loyalty-template-strike').addEventListener('click', () => wrapLoyaltyTemplateSelection('~~', '~~'));
-  document.getElementById('loyalty-template-link').addEventListener('click', insertLoyaltyTemplateLink);
-  document.getElementById('loyalty-template-bullet').addEventListener('click', insertLoyaltyTemplateBullet);
-  document.getElementById('loyalty-template-emoji-toggle').addEventListener('click', e => {
-    e.stopPropagation();
-    toggleLoyaltyTemplateEmojiPanel();
-  });
-  const templateEmojiPanel = document.getElementById('loyalty-template-emoji-panel');
-  if (templateEmojiPanel) {
-    templateEmojiPanel.addEventListener('click', e => {
-      const emojiButton = e.target.closest('[data-em]');
-      if (!emojiButton) return;
-      insertLoyaltyTemplateEmoji(emojiButton.dataset.em);
-      templateEmojiPanel.style.display = 'none';
-    });
-  }
-  document.getElementById('loyalty-offer-bold').addEventListener('click', () => wrapLoyaltyOfferSelection('*', '*'));
-  document.getElementById('loyalty-offer-italic').addEventListener('click', () => wrapLoyaltyOfferSelection('_', '_'));
-  document.getElementById('loyalty-offer-underline').addEventListener('click', () => wrapLoyaltyOfferSelection('__', '__'));
-  document.getElementById('loyalty-offer-strike').addEventListener('click', () => wrapLoyaltyOfferSelection('~~', '~~'));
-  document.getElementById('loyalty-offer-link').addEventListener('click', insertLoyaltyOfferLink);
-  document.getElementById('loyalty-offer-bullet').addEventListener('click', insertLoyaltyOfferBullet);
-  document.getElementById('loyalty-offer-emoji-toggle').addEventListener('click', e => {
-    e.stopPropagation();
-    toggleLoyaltyOfferEmojiPanel();
-  });
-  const offerEmojiPanel = document.getElementById('loyalty-offer-emoji-panel');
-  if (offerEmojiPanel) {
-    offerEmojiPanel.addEventListener('click', e => {
-      const emojiButton = e.target.closest('[data-em]');
-      if (!emojiButton) return;
-      insertLoyaltyOfferEmoji(emojiButton.dataset.em);
-      offerEmojiPanel.style.display = 'none';
-    });
-  }
-  document.addEventListener('click', e => {
-    const offerPanel = document.getElementById('loyalty-offer-emoji-panel');
-    const offerBtn = document.getElementById('loyalty-offer-emoji-toggle');
-    const templatePanel = document.getElementById('loyalty-template-emoji-panel');
-    const templateBtn = document.getElementById('loyalty-template-emoji-toggle');
-    if (offerPanel && offerBtn && !offerPanel.contains(e.target) && e.target !== offerBtn) {
-      offerPanel.style.display = 'none';
-    }
-    if (templatePanel && templateBtn && !templatePanel.contains(e.target) && e.target !== templateBtn) {
-      templatePanel.style.display = 'none';
-    }
-  });
   document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
   document.getElementById('loyalty-offer-save').addEventListener('click', saveLoyaltyOffer);
   document.getElementById('loyalty-reset-cancel').addEventListener('click', closeLoyaltyPasswordResetModal);
