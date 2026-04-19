@@ -70,7 +70,7 @@ service cloud.firestore {
         'paymentMethod', 'items', 'total', 'timestamp',
         'status', 'source', 'createdAt'
       ];
-      let optionalKeys = ['loyaltyCustomer', 'loyaltyPhone', 'loyaltyOffer', 'stockReduced'];
+      let optionalKeys = ['loyaltyCustomer', 'loyaltyPhone', 'loyaltyOffer', 'stockReduced', 'updatedAt'];
       return d.keys().hasOnly(requiredKeys.concat(optionalKeys))
           && d.keys().hasAll(requiredKeys)
           // Thông tin khách hàng
