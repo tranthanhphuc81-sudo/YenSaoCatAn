@@ -1381,7 +1381,24 @@
           </div>
           <div class="form-group span-2" style="position:relative;">
             <label for="new-template-content">Nội dung mẫu</label>
-            <div id="loyalty-template-toolbar"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
+              <div id="loyalty-template-toolbar"></div>
+              <button type="button" id="loyalty-template-emoji-toggle" class="btn btn-small" style="padding:6px 10px;white-space:nowrap;">😊 Chèn emoji</button>
+            </div>
+            <div class="emoji-panel" id="loyalty-template-emoji-panel" style="display:none;left:0;right:auto;max-width:320px;">
+              <button type="button" data-em="🎉">🎉</button>
+              <button type="button" data-em="🎁">🎁</button>
+              <button type="button" data-em="✨">✨</button>
+              <button type="button" data-em="💖">💖</button>
+              <button type="button" data-em="😍">😍</button>
+              <button type="button" data-em="🎊">🎊</button>
+              <button type="button" data-em="🚚">🚚</button>
+              <button type="button" data-em="🏷️">🏷️</button>
+              <button type="button" data-em="💸">💸</button>
+              <button type="button" data-em="💯">💯</button>
+              <button type="button" data-em="📢">📢</button>
+              <button type="button" data-em="✨">✨</button>
+            </div>
             <div id="quill-loyalty-template" style="min-height:180px;background:#fff;border:1px solid #d1d5db;border-radius:10px;"></div>
             <textarea id="new-template-content" hidden></textarea>
           </div>
@@ -1419,9 +1436,26 @@
   <div id="loyalty-offer-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-detail">
       <h3>Sửa ưu đãi khách thân thiết</h3>
-      <div class="form-group">
+      <div class="form-group" style="position:relative;">
         <label for="loyalty-offer-text">Nội dung ưu đãi</label>
-        <div id="loyalty-offer-toolbar"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
+          <div id="loyalty-offer-toolbar"></div>
+          <button type="button" id="loyalty-offer-emoji-toggle" class="btn btn-small" style="padding:6px 10px;white-space:nowrap;">😊 Chèn emoji</button>
+        </div>
+        <div class="emoji-panel" id="loyalty-offer-emoji-panel" style="display:none;left:0;right:auto;max-width:320px;">
+          <button type="button" data-em="🎉">🎉</button>
+          <button type="button" data-em="🎁">🎁</button>
+          <button type="button" data-em="✨">✨</button>
+          <button type="button" data-em="🔥">🔥</button>
+          <button type="button" data-em="🛍️">🛍️</button>
+          <button type="button" data-em="💰">💰</button>
+          <button type="button" data-em="💸">💸</button>
+          <button type="button" data-em="🏷️">🏷️</button>
+          <button type="button" data-em="⭐">⭐</button>
+          <button type="button" data-em="📢">📢</button>
+          <button type="button" data-em="💯">💯</button>
+          <button type="button" data-em="🎊">🎊</button>
+        </div>
         <div id="quill-loyalty-offer" style="min-height:160px;background:#fff;border:1px solid #d1d5db;border-radius:10px;"></div>
         <textarea id="loyalty-offer-text" hidden></textarea>
       </div>
@@ -2472,6 +2506,45 @@
   document.addEventListener('click', e => {
     if (!_emojiPanel.contains(e.target) && e.target !== _emojiBtn) {
       _emojiPanel.style.display = 'none';
+    }
+  });
+
+  const loyaltyOfferEmojiToggle = document.getElementById('loyalty-offer-emoji-toggle');
+  const loyaltyOfferEmojiPanel = document.getElementById('loyalty-offer-emoji-panel');
+  if (loyaltyOfferEmojiToggle && loyaltyOfferEmojiPanel) {
+    loyaltyOfferEmojiToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      loyaltyOfferEmojiPanel.style.display = loyaltyOfferEmojiPanel.style.display === 'flex' ? 'none' : 'flex';
+    });
+    loyaltyOfferEmojiPanel.addEventListener('click', e => {
+      const em = e.target.closest('[data-em]')?.dataset.em;
+      if (!em) return;
+      const range = loyaltyOfferQuill.getSelection(true);
+      loyaltyOfferQuill.insertText(range.index, em);
+      loyaltyOfferQuill.setSelection(range.index + [...em].length);
+      loyaltyOfferEmojiPanel.style.display = 'none';
+    });
+  }
+
+  const loyaltyTemplateEmojiToggle = document.getElementById('loyalty-template-emoji-toggle');
+  const loyaltyTemplateEmojiPanel = document.getElementById('loyalty-template-emoji-panel');
+  if (loyaltyTemplateEmojiToggle && loyaltyTemplateEmojiPanel) {
+    loyaltyTemplateEmojiToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      loyaltyTemplateEmojiPanel.style.display = loyaltyTemplateEmojiPanel.style.display === 'flex' ? 'none' : 'flex';
+    });
+    loyaltyTemplateEmojiPanel.addEventListener('click', e => {
+      const em = e.target.closest('[data-em]')?.dataset.em;
+      if (!em) return;
+      const range = loyaltyTemplateQuill.getSelection(true);
+      loyaltyTemplateQuill.insertText(range.index, em);
+      loyaltyTemplateQuill.setSelection(range.index + [...em].length);
+      loyaltyTemplateEmojiPanel.style.display = 'none';
+    });
+  }
+  document.addEventListener('click', e => {
+    if (loyaltyOfferEmojiPanel && loyaltyOfferEmojiToggle && !loyaltyOfferEmojiPanel.contains(e.target) && e.target !== loyaltyOfferEmojiToggle) {
+      loyaltyOfferEmojiPanel.style.display = 'none';
     }
   });
 
