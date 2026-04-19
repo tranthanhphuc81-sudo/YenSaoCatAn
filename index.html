@@ -2007,6 +2007,11 @@
       if (cfg.bank_stk)  window._bankStk    = cfg.bank_stk;
       if (cfg.bank_owner) window._bankOwner = cfg.bank_owner;
 
+      if (document.getElementById('payment-method').value === 'transfer') {
+        document.getElementById('bank-info').style.display = 'block';
+        updateQR();
+      }
+
       // Điền thông tin liên hệ vào tab Liên hệ
       if (cfg.contact_phone) {
         const cleanPhone = cfg.contact_phone.replace(/\s/g, '');
