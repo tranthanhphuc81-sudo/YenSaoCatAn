@@ -1158,8 +1158,19 @@
               </select>
             </div>
             <div class="form-group span-2">
-              <label for="prod-description">Mô tả sản phẩm</label>
-              <textarea id="prod-description" placeholder="Nhập mô tả chi tiết về sản phẩm (tối đa 1000 ký tự)..." rows="4" maxlength="1000" style="resize:vertical"></textarea>
+              <label for="quill-prod-description">Mô tả sản phẩm</label>
+              <div class="rich-editor-wrapper" style="position:relative;">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+                  <div id="quill-prod-toolbar" style="flex:1; min-width:220px;"></div>
+                  <button type="button" id="prod-description-emoji-toggle" class="btn-small" style="padding:6px 10px;white-space:nowrap;">😊 Chèn emoji</button>
+                </div>
+                <div class="emoji-panel" id="prod-description-emoji-panel" style="display:none;position:absolute;left:0;right:auto;max-width:320px;margin-top:4px;">
+                  <button type='button' data-em='😊'>😊</button><button type='button' data-em='😂'>😂</button><button type='button' data-em='🥰'>🥰</button><button type='button' data-em='😍'>😍</button><button type='button' data-em='🤩'>🤩</button><button type='button' data-em='😄'>😄</button><button type='button' data-em='👋'>👋</button><button type='button' data-em='🙏'>🙏</button><button type='button' data-em='👍'>👍</button><button type='button' data-em='👏'>👏</button><button type='button' data-em='💪'>💪</button><button type='button' data-em='❤️'>❤️</button><button type='button' data-em='💕'>💕</button><button type='button' data-em='💖'>💖</button><button type='button' data-em='💯'>💯</button><button type='button' data-em='✅'>✅</button><button type='button' data-em='❌'>❌</button><button type='button' data-em='⭐'>⭐</button><button type='button' data-em='🌟'>🌟</button><button type='button' data-em='✨'>✨</button><button type='button' data-em='🔥'>🔥</button><button type='button' data-em='🎉'>🎉</button><button type='button' data-em='🎊'>🎊</button><button type='button' data-em='🎁'>🎁</button><button type='button' data-em='🎀'>🎀</button><button type='button' data-em='🎯'>🎯</button><button type='button' data-em='💎'>💎</button><button type='button' data-em='👑'>👑</button><button type='button' data-em='🏆'>🏆</button><button type='button' data-em='📣'>📣</button><button type='button' data-em='🔔'>🔔</button><button type='button' data-em='💡'>💡</button><button type='button' data-em='⚠️'>⚠️</button><button type='button' data-em='📌'>📌</button><button type='button' data-em='🔖'>🔖</button><button type='button' data-em='📢'>📢</button><button type='button' data-em='🍯'>🍯</button><button type='button' data-em='🥚'>🥚</button><button type='button' data-em='🍵'>🍵</button><button type='button' data-em='🌿'>🌿</button><button type='button' data-em='🌱'>🌱</button><button type='button' data-em='🍃'>🍃</button><button type='button' data-em='🌺'>🌺</button><button type='button' data-em='🌸'>🌸</button><button type='button' data-em='🌷'>🌷</button><button type='button' data-em='🌻'>🌻</button><button type='button' data-em='🌹'>🌹</button><button type='button' data-em='🌈'>🌈</button><button type='button' data-em='☀️'>☀️</button><button type='button' data-em='🌙'>🌙</button><button type='button' data-em='🦋'>🦋</button><button type='button' data-em='📦'>📦</button><button type='button' data-em='🚚'>🚚</button><button type='button' data-em='💰'>💰</button><button type='button' data-em='💳'>💳</button><button type='button' data-em='🏪'>🏪</button><button type='button' data-em='📞'>📞</button><button type='button' data-em='📱'>📱</button><button type='button' data-em='💬'>💬</button><button type='button' data-em='📧'>📧</button><button type='button' data-em='📍'>📍</button><button type='button' data-em='🕐'>🕐</button><button type='button' data-em='🗓️'>🗓️</button>
+                </div>
+                <div id="quill-prod-description" style="min-height:180px;background:#fff;border:1px solid #d1d5db;border-radius:10px;"></div>
+                <div style="text-align:right;margin-top:6px"><small id="prod-description-count" style="color:#aaa">0 / 1000</small></div>
+                <textarea id="prod-description" name="prod-description" hidden></textarea>
+              </div>
             </div>
           </div>
           <button type="submit" class="btn-save" id="btn-add-product">+ Thêm sản phẩm</button>
@@ -2399,7 +2410,9 @@
     const price       = parseFloat(document.getElementById('prod-price').value);
     const image       = document.getElementById('prod-image').value.trim();
     const category    = document.getElementById('prod-category').value;
-    const description = document.getElementById('prod-description').value.trim();
+    const description = productDescriptionQuill.root.innerText.trim().length
+      ? productDescriptionQuill.root.innerHTML.trim()
+      : '';
 
     if (!name || isNaN(price) || price < 0 || !image) {
       showToast('Vui lòng điền đầy đủ thông tin sản phẩm!', 'error');
@@ -2421,6 +2434,8 @@
       await addDoc(collection(db, 'products'), productData);
       showToast('✅ Thêm sản phẩm thành công!');
       document.getElementById('product-form').reset();
+      productDescriptionQuill.setContents([{ insert: '\n' }]);
+      updateProdDescriptionCount();
       codePreview.style.display = 'none';
       btnPrintLabel.disabled = true;
       await loadProducts(); // Làm mới bảng danh sách
@@ -2502,6 +2517,19 @@
     ['clean'],
   ];
 
+  const productDescriptionQuill = new Quill('#quill-prod-description', {
+    theme: 'snow',
+    modules: { toolbar: '#quill-prod-toolbar' },
+    placeholder: 'Nhập mô tả chi tiết về sản phẩm...',
+  });
+  const prodDescriptionCount = document.getElementById('prod-description-count');
+  const updateProdDescriptionCount = () => {
+    const len = productDescriptionQuill.getText().trim().length;
+    if (prodDescriptionCount) prodDescriptionCount.textContent = `${len} / 1000`;
+  };
+  productDescriptionQuill.on('text-change', updateProdDescriptionCount);
+  updateProdDescriptionCount();
+
   const loyaltyTemplateQuill = new Quill('#quill-loyalty-template', {
     theme: 'snow',
     modules: { toolbar: loyaltyTemplateToolbarOptions },
@@ -2513,6 +2541,23 @@
     modules: { toolbar: loyaltyTemplateToolbarOptions },
     placeholder: 'Nhập nội dung ưu đãi...',
   });
+
+  const productEmojiToggle = document.getElementById('prod-description-emoji-toggle');
+  const productEmojiPanel = document.getElementById('prod-description-emoji-panel');
+  if (productEmojiToggle && productEmojiPanel) {
+    productEmojiToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      productEmojiPanel.style.display = productEmojiPanel.style.display === 'flex' ? 'none' : 'flex';
+    });
+    productEmojiPanel.addEventListener('click', e => {
+      const em = e.target.closest('[data-em]')?.dataset.em;
+      if (!em) return;
+      const range = productDescriptionQuill.getSelection(true);
+      productDescriptionQuill.insertText(range.index, em);
+      productDescriptionQuill.setSelection(range.index + [...em].length);
+      productEmojiPanel.style.display = 'none';
+    });
+  }
 
   // Emoji picker
   const _emojiBtn   = document.getElementById('btn-emoji-open');
@@ -2571,6 +2616,12 @@
   document.addEventListener('click', e => {
     if (loyaltyOfferEmojiPanel && loyaltyOfferEmojiToggle && !loyaltyOfferEmojiPanel.contains(e.target) && e.target !== loyaltyOfferEmojiToggle) {
       loyaltyOfferEmojiPanel.style.display = 'none';
+    }
+    if (loyaltyTemplateEmojiPanel && loyaltyTemplateEmojiToggle && !loyaltyTemplateEmojiPanel.contains(e.target) && e.target !== loyaltyTemplateEmojiToggle) {
+      loyaltyTemplateEmojiPanel.style.display = 'none';
+    }
+    if (productEmojiPanel && productEmojiToggle && !productEmojiPanel.contains(e.target) && e.target !== productEmojiToggle) {
+      productEmojiPanel.style.display = 'none';
     }
   });
 
