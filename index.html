@@ -1753,6 +1753,11 @@
         <span class="cart-total-equals">=</span>
         <span id="total-price">0 ₫</span>
       </div>
+      <div id="cart-discount" style="display:none; margin-top:8px; color:#047857;">
+        <span class="cart-total-label">Ưu đãi thân thiết</span>
+        <span class="cart-total-equals">-</span>
+        <span id="discount-price">0 ₫</span>
+      </div>
     </section>
 
     <section id="checkout-section">
@@ -2116,12 +2121,68 @@
   let cart = [];          // Giỏ hàng: [{ id, name, price, qty }]
   let currentFilter = 'all'; // Bộ lọc đang chọn
   let loyaltyMessageTemplate = ''; // Mẫu tin nhắn ưu đãi khách thân thiết từ cấu hình
+  let currentLoyaltyCustomer = null;
+  let currentLoyaltyOfferText = '';
+  let currentLoyaltyDiscountAmount = 0;
+  let currentLoyaltyVerified = false;
 
   // ==================================================
   // TIỆN ÍCH: Định dạng tiền VNĐ
   // ==================================================
   const formatVND = (n) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  function parseLoyaltyOffer(offerText) {
+    if (!offerText) return null;
+    const text = offerText.toString().toLowerCase();
+    const percentMatch = text.match(/(-?[0-9]+(?:[.,][0-9]+)?)\s*%/);
+    if (percentMatch) {
+      const value = Math.abs(parseFloat(percentMatch[1].replace(',', '.')) || 0);
+      return { type: 'percent', value };
+    }
+    const amountMatch = text.match(/(-?[0-9]+(?:[.,][0-9]+)?)(?:\s*(k|₫|vnd|dong|đ|d))?/);
+    if (amountMatch && /giảm|giam|discount|voucher|ưu đãi|uu dai|\-|k|₫|đ|vnd|dong|d/.test(text)) {
+      let value = parseFloat(amountMatch[1].replace(',', '.')) || 0;
+      const unit = amountMatch[2] || '';
+      if (unit.includes('k')) value *= 1000;
+      return { type: 'amount', value: Math.abs(value) };
+    }
+    return null;
+  }
+
+  function calculateLoyaltyDiscount(offerText, subtotal) {
+    const parsed = parseLoyaltyOffer(offerText);
+    if (!parsed || !subtotal) return 0;
+    if (parsed.type === 'percent') {
+      return Math.round(subtotal * parsed.value / 100);
+    }
+    if (parsed.type === 'amount') {
+      return Math.round(parsed.value);
+    }
+    return 0;
+  }
+
+  async function refreshLoyaltyDiscountState() {
+    currentLoyaltyDiscountAmount = 0;
+    currentLoyaltyVerified = false;
+    if (!currentLoyaltyCustomer) {
+      renderCart();
+      return;
+    }
+    const password = document.getElementById('loyalty-password-order').value.trim();
+    if (!password) {
+      renderCart();
+      return;
+    }
+    const passwordHash = await hashText(password);
+    if (passwordHash === currentLoyaltyCustomer.passwordHash) {
+      currentLoyaltyVerified = true;
+      currentLoyaltyOfferText = currentLoyaltyCustomer.offer || loyaltyMessageTemplate;
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      currentLoyaltyDiscountAmount = calculateLoyaltyDiscount(currentLoyaltyOfferText, subtotal);
+    }
+    renderCart();
+  }
 
   // ==================================================
   // TIỆN ÍCH: Hiện toast thông báo
@@ -2171,14 +2232,19 @@
       return;
     }
     const customer = await loadLoyaltyCustomerByPhone(phone);
+    currentLoyaltyCustomer = customer;
+    currentLoyaltyOfferText = customer ? (customer.offer || loyaltyMessageTemplate) : '';
+    currentLoyaltyVerified = false;
+    currentLoyaltyDiscountAmount = 0;
     if (customer) {
-      const offerLabel = customer.offer || loyaltyMessageTemplate;
+      const offerLabel = currentLoyaltyOfferText;
       note.textContent = offerLabel
         ? `Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi: ${offerLabel}`
         : 'Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi khi đặt hàng.';
     } else {
       note.textContent = 'Số điện thoại này chưa đăng ký khách hàng thân thiết. Bạn có thể đăng ký bên dưới trước khi đặt hàng.';
     }
+    renderCart();
   }
 
   async function registerLoyaltyCustomer() {
@@ -2499,7 +2565,9 @@
       return;
     }
 
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const discount = currentLoyaltyDiscountAmount || 0;
+    const finalTotal = Math.max(0, subtotal - discount);
     listEl.innerHTML = cart.map(i => `
       <li>
         <div class="cart-item-content">
@@ -2522,7 +2590,16 @@
     `).join('');
 
     totalEl.style.display = 'block';
-    totalPriceEl.textContent = formatVND(total);
+    totalPriceEl.textContent = formatVND(finalTotal);
+
+    const discountEl = document.getElementById('cart-discount');
+    const discountPriceEl = document.getElementById('discount-price');
+    if (discount > 0) {
+      discountEl.style.display = 'flex';
+      discountPriceEl.textContent = `-${formatVND(discount)}`;
+    } else {
+      discountEl.style.display = 'none';
+    }
 
     // Gắn sự kiện xoá
     listEl.querySelectorAll('.btn-remove').forEach(btn => {
@@ -2744,7 +2821,17 @@
     btnSubmit.textContent = 'Đang xử lý...';
 
     try {
-      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const totalBefore = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      let total = totalBefore;
+      let appliedLoyaltyOffer = '';
+      let discountAmount = 0;
+
+      if (loyaltyVerified) {
+        appliedLoyaltyOffer = customer.offer || loyaltyMessageTemplate;
+        discountAmount = calculateLoyaltyDiscount(appliedLoyaltyOffer, totalBefore);
+        total = Math.max(0, totalBefore - discountAmount);
+      }
+
       const orderData = {
         customerName:    name,
         customerPhone:   normalizedPhone,
@@ -2760,7 +2847,7 @@
       if (loyaltyVerified) {
         orderData.loyaltyCustomer = true;
         orderData.loyaltyPhone = normalizedPhone;
-        orderData.loyaltyOffer = customer.offer || loyaltyMessageTemplate;
+        orderData.loyaltyOffer = appliedLoyaltyOffer;
       }
 
       try {
@@ -2864,6 +2951,16 @@
   document.getElementById('cus-phone').addEventListener('blur', updateLoyaltyOrderNote);
   document.getElementById('cus-phone').addEventListener('input', () => {
     document.getElementById('loyalty-order-note').textContent = 'Nếu bạn đã đăng ký khách hàng thân thiết, hãy nhập mật khẩu để xác thực ưu đãi.';
+    currentLoyaltyCustomer = null;
+    currentLoyaltyOfferText = '';
+    currentLoyaltyVerified = false;
+    currentLoyaltyDiscountAmount = 0;
+    renderCart();
+  });
+  document.getElementById('loyalty-password-order').addEventListener('blur', refreshLoyaltyDiscountState);
+  document.getElementById('loyalty-password-order').addEventListener('input', () => {
+    currentLoyaltyVerified = false;
+    currentLoyaltyDiscountAmount = 0;
   });
 
   document.getElementById('auto-order-confirm-btn').addEventListener('click', async () => {
