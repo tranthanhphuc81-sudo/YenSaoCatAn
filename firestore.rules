@@ -108,6 +108,24 @@ service cloud.firestore {
           && (!('resetRequestedAt' in d) || d.resetRequestedAt is timestamp);
     }
 
+    function validateLoyaltyCustomerPasswordReset() {
+      let d = request.resource.data;
+      let old = resource.data;
+      let allowed = ['name', 'phone', 'displayPhone', 'passwordHash', 'registeredAt', 'offer', 'updatedAt', 'passwordResetRequired', 'resetRequestedAt'];
+      return request.auth == null
+          && old.passwordResetRequired == true
+          && d.keys().hasOnly(allowed)
+          && d.name == old.name
+          && d.phone == old.phone
+          && d.registeredAt == old.registeredAt
+          && (!('displayPhone' in d) || d.displayPhone == old.displayPhone)
+          && (!('offer' in d) || d.offer == old.offer)
+          && d.passwordHash is string && d.passwordHash.size() > 0
+          && d.passwordResetRequired == false
+          && d.updatedAt is timestamp
+          && (!('resetRequestedAt' in d) || d.resetRequestedAt == old.resetRequestedAt);
+    }
+
     function validateLoyaltyTemplate() {
       let d = request.resource.data;
       let allowed = ['title', 'content', 'createdAt', 'updatedAt'];
@@ -225,7 +243,7 @@ service cloud.firestore {
       allow get:    if true;
       allow list:   if isAdmin();
       allow create: if validateLoyaltyCustomer() && !exists(/databases/$(database)/documents/loyaltyCustomers/$(customerId));
-      allow update: if isAdmin() && validateLoyaltyCustomer();
+      allow update: if (isAdmin() && validateLoyaltyCustomer()) || validateLoyaltyCustomerPasswordReset();
       allow delete: if isAdmin();
     }
 
