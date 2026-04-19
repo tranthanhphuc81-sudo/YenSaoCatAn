@@ -2878,6 +2878,9 @@
             : `<span class="badge" style="background:#64748b;color:#fff">${escapeHtml(status)}</span>`;
 
       const createdAt = r.createdAt && r.createdAt.toDate ? formatDate(r.createdAt) : '-';
+      const actionButton = status !== 'fulfilled'
+        ? `<button type="button" class="btn btn-small btn-save" style="margin-top:6px;" onclick="markRestockFulfilled('${r.id}')">Đã nhập hàng</button>`
+        : '';
       return `
         <tr>
           <td style="white-space:nowrap">${createdAt}</td>
@@ -2886,10 +2889,28 @@
           <td style="white-space:nowrap">${Number(r.availableQty || 0)}</td>
           <td style="white-space:nowrap">${Number(r.shortageQty || 0)}</td>
           <td>${escapeHtml(r.customerName || '—')}<br/><small style="color:#888">${escapeHtml(r.customerPhone || '—')}</small></td>
-          <td>${statusBadge}</td>
+          <td>
+            ${statusBadge}
+            ${actionButton}
+          </td>
         </tr>
       `;
     }).join('');
+  }
+
+  async function markRestockFulfilled(requestId) {
+    if (!confirm('Xác nhận đã nhập hàng cho yêu cầu này?')) return;
+    try {
+      await updateDoc(doc(db, 'restockRequests', requestId), {
+        status: 'fulfilled',
+        updatedAt: serverTimestamp(),
+      });
+      showToast('Đã cập nhật trạng thái Đã nhập hàng.');
+      await loadRestockRequests();
+    } catch (err) {
+      console.error('Lỗi cập nhật yêu cầu nhập hàng:', err);
+      showToast('Không thể cập nhật trạng thái. Vui lòng thử lại.', 'error');
+    }
   }
 
   function renderLoyaltyCustomers() {
