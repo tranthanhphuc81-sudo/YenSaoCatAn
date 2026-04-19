@@ -366,6 +366,29 @@
 
     .data-table tr:hover td { background: #fafafa; }
 
+    .contact-phone-links {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .contact-phone,
+    .contact-zalo {
+      color: var(--red-dk);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-phone:hover,
+    .contact-zalo:hover {
+      text-decoration: underline;
+    }
+
+    .contact-zalo {
+      color: #0f7a60;
+    }
+
     .product-thumb {
       width: 52px; height: 52px;
       object-fit: cover;
@@ -2519,6 +2542,20 @@
     }
   }
 
+  function renderContactPhoneLinks(phone) {
+    if (!phone) return '—';
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return phone;
+    const telHref = `tel:${digits}`;
+    const zaloHref = `https://zalo.me/${digits}`;
+    return `
+      <div class="contact-phone-links">
+        <a href="${telHref}" class="contact-phone">${phone}</a>
+        <a href="${zaloHref}" target="_blank" rel="noreferrer" class="contact-zalo" title="Mở Zalo">Zalo</a>
+      </div>
+    `;
+  }
+
   function renderContacts() {
     const tbody = document.getElementById('contact-list');
     const filtered = allContacts.filter(item => {
@@ -2543,7 +2580,7 @@
         <tr>
           <td style="white-space:nowrap">${createdAt}</td>
           <td>${item.name || '—'}</td>
-          <td style="white-space:nowrap">${item.phone || '—'}</td>
+          <td style="white-space:nowrap">${renderContactPhoneLinks(item.phone)}</td>
           <td>${item.message || '—'}</td>
           <td>${statusBadge}</td>
           <td>${actionButton}</td>
