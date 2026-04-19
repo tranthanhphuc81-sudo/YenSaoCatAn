@@ -2154,6 +2154,7 @@
     try {
       const snap = await getDocs(collection(db, 'products'));
       adminProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      adminProducts = adminProducts.filter(p => p.active !== false);
       renderProductTable(adminProducts);
     } catch (err) {
       console.error('Lỗi tải sản phẩm:', err);
@@ -2428,7 +2429,7 @@
     btnAdd.textContent = 'Đang thêm...';
 
     try {
-      const productData = { name, price, image, category, barcode };
+      const productData = { name, price, image, category, barcode, active: true };
       if (description) productData.description = description;
       await addDoc(collection(db, 'products'), productData);
       showToast('✅ Thêm sản phẩm thành công!');
@@ -2453,8 +2454,8 @@
   async function deleteProduct(id) {
     if (!confirm('Bạn chắc chắn muốn xoá sản phẩm này?')) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
-      showToast('🗑 Đã xoá sản phẩm!');
+      await updateDoc(doc(db, 'products', id), { active: false, deletedAt: serverTimestamp() });
+      showToast('🗑 Đã ẩn sản phẩm!');
       await loadProducts();
     } catch (err) {
       console.error('Lỗi xoá sản phẩm:', err);
