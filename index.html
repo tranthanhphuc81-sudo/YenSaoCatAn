@@ -2290,11 +2290,6 @@
       if (existing.exists()) {
         const existingData = existing.data();
         if (existingData.passwordResetRequired) {
-          if (existingData.name !== name) {
-            statusEl.textContent = 'Tên không trùng với hồ sơ khách thân thiết. Vui lòng kiểm tra lại.';
-            statusEl.style.color = '#dc2626';
-            return;
-          }
           const passwordHash = await hashText(password);
           await updateDoc(customerRef, {
             passwordHash,
