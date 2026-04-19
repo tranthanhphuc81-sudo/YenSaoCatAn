@@ -2727,12 +2727,6 @@
     }).join('');
   }
 
-  function getSelectedLoyaltyTemplate() {
-    const select = document.getElementById('loyalty-template-select');
-    if (!select || !select.value) return null;
-    return allLoyaltyTemplates.find(t => t.id === select.value) || null;
-  }
-
   function getSelectedLoyaltyCustomerIds() {
     return Array.from(document.querySelectorAll('.loyalty-select-checkbox:checked')).map(cb => cb.value);
   }
@@ -3080,25 +3074,6 @@
     } catch (err) {
       console.error('Lỗi reset mật khẩu khách thân thiết:', err);
       errorEl.textContent = 'Không thể reset mật khẩu. Vui lòng thử lại.';
-    }
-  }
-
-  async function copyLoyaltyPhoneList() {
-    const numbers = allLoyaltyCustomers
-      .map(c => c.displayPhone || c.phone || '')
-      .filter(Boolean)
-      .map(s => s.replace(/\D/g, ''))
-      .filter(Boolean);
-    if (!numbers.length) {
-      showToast('Không có số điện thoại khách thân thiết để sao chép.', 'error');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(numbers.join('\n'));
-      showToast('✅ Đã sao chép danh sách số điện thoại khách thân thiết.');
-    } catch (err) {
-      console.error('Lỗi sao chép phone list:', err);
-      showToast('Không thể sao chép. Vui lòng thử lại.', 'error');
     }
   }
 
