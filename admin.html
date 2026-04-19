@@ -1342,6 +1342,7 @@
           <div><strong id="loyalty-count">0</strong> khách hàng thân thiết</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button type="button" id="copy-loyalty-phones" class="btn btn-small" style="padding:10px 18px;">Sao chép danh sách SĐT</button>
+            <button type="button" id="send-loyalty-zalo-bulk" class="btn btn-small" style="padding:10px 18px;">Gửi Zalo hàng loạt</button>
             <button type="button" id="refresh-loyalty" class="btn-save" style="padding:10px 18px;">Làm mới</button>
           </div>
         </div>
@@ -2660,6 +2661,7 @@
             <button type="button" class="btn btn-small" onclick="openLoyaltyOfferModal('${c.id}')">Sửa ưu đãi</button>
             <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="callLoyaltyCustomer('${c.id}')">Gọi</button>
             <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="openLoyaltyZalo('${c.id}')">Zalo</button>
+            <button type="button" class="btn btn-small btn-danger" style="margin-left:6px;" onclick="deleteLoyaltyCustomer('${c.id}')">Xóa</button>
             <button type="button" class="btn btn-small btn-secondary" style="margin-left:6px;" onclick="openLoyaltyPasswordResetModal('${c.id}')">Reset mật khẩu</button>
           </td>
         </tr>
@@ -2811,6 +2813,43 @@
       console.warn('Không thể sao chép nội dung:', err);
     }
     window.open(`https://zalo.me/${phone}`, '_blank');
+  }
+
+  async function sendLoyaltyZaloBulk() {
+    const template = getSelectedLoyaltyTemplate();
+    const content = template ? template.content : '';
+    if (!content) {
+      showToast('Vui lòng chọn mẫu tin nhắn trước khi gửi Zalo hàng loạt.', 'error');
+      return;
+    }
+    const numbers = allLoyaltyCustomers
+      .map(c => c.phone || c.displayPhone || '')
+      .map(s => s.replace(/\D/g, ''))
+      .filter(Boolean);
+    if (!numbers.length) {
+      showToast('Không có số điện thoại khách hàng thân thiết để gửi.', 'error');
+      return;
+    }
+    const message = `${content}\n\nGửi từ Yến Sào Cát An`;
+    try {
+      await navigator.clipboard.writeText(`SĐT:\n${numbers.join('\n')}\n\nNội dung:\n${message}`);
+      showToast('Đã sao chép danh sách SĐT và nội dung. Dán vào Zalo để gửi hàng loạt.', 'success');
+    } catch (err) {
+      console.warn('Không thể sao chép nội dung:', err);
+      showToast('Không thể sao chép danh sách. Vui lòng thử lại.', 'error');
+    }
+  }
+
+  async function deleteLoyaltyCustomer(customerId) {
+    if (!confirm('Xác nhận xóa khách hàng thân thiết này?')) return;
+    try {
+      await deleteDoc(doc(db, 'loyaltyCustomers', customerId));
+      showToast('✅ Đã xóa khách hàng thân thiết.');
+      await loadLoyaltyCustomers();
+    } catch (err) {
+      console.error('Lỗi xóa khách hàng thân thiết:', err);
+      showToast('Không thể xóa khách hàng. Vui lòng thử lại.', 'error');
+    }
   }
 
   function callLoyaltyCustomer(customerId) {
@@ -3148,6 +3187,7 @@
   });
 
   document.getElementById('copy-loyalty-phones').addEventListener('click', copyLoyaltyPhoneList);
+  document.getElementById('send-loyalty-zalo-bulk').addEventListener('click', sendLoyaltyZaloBulk);
   document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
   document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
@@ -3178,9 +3218,8 @@
   window.openLoyaltyOfferModal = openLoyaltyOfferModal;
   window.openLoyaltyPasswordResetModal = openLoyaltyPasswordResetModal;
   window.sendLoyaltyZalo = sendLoyaltyZalo;
-  window.editLoyaltyTemplate = editLoyaltyTemplate;
-  window.deleteLoyaltyTemplate = deleteLoyaltyTemplate;
-  window.setOrderStatus = setOrderStatus;
+  window.callLoyaltyCustomer = callLoyaltyCustomer;
+  window.deleteLoyaltyCustomer = deleteLoyaltyCustomer;
 
   // ==================================================
   // CHAT: Lắng nghe danh sách session
