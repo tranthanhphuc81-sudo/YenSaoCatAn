@@ -1424,6 +1424,30 @@
     </div>
   </div>
 
+  <div id="loyalty-reset-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-detail">
+      <h3>Reset mật khẩu khách thân thiết</h3>
+      <p class="form-note">Xác thực khách hàng qua Zalo/điện thoại trước khi reset mật khẩu.</p>
+      <div class="form-group">
+        <label>Khách hàng</label>
+        <div id="loyalty-reset-customer" style="font-weight:700;line-height:1.5;"></div>
+      </div>
+      <div class="form-group">
+        <label for="loyalty-reset-new-password">Mật khẩu mới</label>
+        <input type="password" id="loyalty-reset-new-password" placeholder="Mật khẩu mới" />
+      </div>
+      <div class="form-group">
+        <label for="loyalty-reset-confirm-password">Xác nhận mật khẩu mới</label>
+        <input type="password" id="loyalty-reset-confirm-password" placeholder="Nhập lại mật khẩu mới" />
+      </div>
+      <p id="loyalty-reset-error" class="form-note" style="color:#dc2626;min-height:1.5em"></p>
+      <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn btn-cancel" id="loyalty-reset-cancel">Hủy</button>
+        <button type="button" class="btn btn-save" id="loyalty-reset-save">Reset mật khẩu</button>
+      </div>
+    </div>
+  </div>
+
   <div id="product-detail-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-detail">
       <h3>Chi tiết sản phẩm</h3>
@@ -1686,6 +1710,12 @@
     if (!ts) return '—';
     const d = ts.toDate();
     return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function hashText(value) {
+    const data = new TextEncoder().encode(value || '');
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   const CAT_LABEL = { yen: 'Yến Sào', sam: 'Sâm', 'us-japan': 'Mỹ / Nhật' };
@@ -2636,6 +2666,7 @@
           <td>
             <button type="button" class="btn btn-small" onclick="openLoyaltyOfferModal('${c.id}')">Sửa ưu đãi</button>
             <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="sendLoyaltyZalo('${c.id}')">Gửi Zalo ngay</button>
+            <button type="button" class="btn btn-small btn-secondary" style="margin-left:6px;" onclick="openLoyaltyPasswordResetModal('${c.id}')">Reset mật khẩu</button>
           </td>
         </tr>
       `;
@@ -2821,6 +2852,62 @@
     } catch (err) {
       console.error('Lỗi lưu ưu đãi khách thân thiết:', err);
       showToast('Không thể lưu ưu đãi. Vui lòng thử lại.', 'error');
+    }
+  }
+
+  let activeLoyaltyResetCustomerId = null;
+
+  function openLoyaltyPasswordResetModal(customerId) {
+    const customer = allLoyaltyCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    activeLoyaltyResetCustomerId = customerId;
+    document.getElementById('loyalty-reset-customer').textContent = `${customer.name || 'Khách'} — ${customer.displayPhone || customer.phone || 'SĐT chưa có'}`;
+    document.getElementById('loyalty-reset-new-password').value = '';
+    document.getElementById('loyalty-reset-confirm-password').value = '';
+    document.getElementById('loyalty-reset-error').textContent = '';
+    const modal = document.getElementById('loyalty-reset-modal');
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLoyaltyPasswordResetModal() {
+    const modal = document.getElementById('loyalty-reset-modal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    activeLoyaltyResetCustomerId = null;
+  }
+
+  async function submitLoyaltyPasswordReset() {
+    const newPassword = document.getElementById('loyalty-reset-new-password').value.trim();
+    const confirmPassword = document.getElementById('loyalty-reset-confirm-password').value.trim();
+    const errorEl = document.getElementById('loyalty-reset-error');
+    errorEl.textContent = '';
+    if (!activeLoyaltyResetCustomerId) return;
+    if (!newPassword || !confirmPassword) {
+      errorEl.textContent = 'Vui lòng nhập mật khẩu mới và xác nhận.';
+      return;
+    }
+    if (newPassword.length < 4) {
+      errorEl.textContent = 'Mật khẩu cần ít nhất 4 ký tự.';
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      errorEl.textContent = 'Mật khẩu mới và xác nhận không khớp.';
+      return;
+    }
+
+    try {
+      const passwordHash = await hashText(newPassword);
+      await updateDoc(doc(db, 'loyaltyCustomers', activeLoyaltyResetCustomerId), {
+        passwordHash,
+        updatedAt: serverTimestamp(),
+      });
+      showToast('✅ Đã reset mật khẩu khách thân thiết.');
+      closeLoyaltyPasswordResetModal();
+      await loadLoyaltyCustomers();
+    } catch (err) {
+      console.error('Lỗi reset mật khẩu khách thân thiết:', err);
+      errorEl.textContent = 'Không thể reset mật khẩu. Vui lòng thử lại.';
     }
   }
 
@@ -3072,9 +3159,16 @@
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
   document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
   document.getElementById('loyalty-offer-save').addEventListener('click', saveLoyaltyOffer);
+  document.getElementById('loyalty-reset-cancel').addEventListener('click', closeLoyaltyPasswordResetModal);
+  document.getElementById('loyalty-reset-save').addEventListener('click', submitLoyaltyPasswordReset);
   document.getElementById('loyalty-offer-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('loyalty-offer-modal')) {
       closeLoyaltyOfferModal();
+    }
+  });
+  document.getElementById('loyalty-reset-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('loyalty-reset-modal')) {
+      closeLoyaltyPasswordResetModal();
     }
   });
 
@@ -3089,6 +3183,7 @@
 
   window.showOrderDetails = showOrderDetails;
   window.openLoyaltyOfferModal = openLoyaltyOfferModal;
+  window.openLoyaltyPasswordResetModal = openLoyaltyPasswordResetModal;
   window.sendLoyaltyZalo = sendLoyaltyZalo;
   window.editLoyaltyTemplate = editLoyaltyTemplate;
   window.deleteLoyaltyTemplate = deleteLoyaltyTemplate;
