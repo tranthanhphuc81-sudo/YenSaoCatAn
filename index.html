@@ -295,20 +295,93 @@
     }
 
     #bank-info {
-      margin-top: 12px;
-      border-radius: 20px;
-      padding: 22px;
-      background: rgba(255,255,255,.96);
+      margin-top: 16px;
+      border-radius: 24px;
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(250,248,238,.95));
+      border: 1px solid rgba(216,182,105,.35);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.45);
     }
 
     #bank-info h3 {
-      font-size: 1.05rem;
-      margin-bottom: 14px;
+      font-size: 1.12rem;
+      margin-bottom: 18px;
+      color: var(--accent-dark);
     }
 
     #bank-info p {
-      margin: 6px 0;
+      margin: 8px 0;
       color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    #bank-info .bank-info-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    @media (max-width: 680px) {
+      #bank-info .bank-info-grid { grid-template-columns: 1fr; }
+    }
+
+    #bank-info .bank-info-details {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #bank-info .bank-info-details p strong {
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    #bank-info .bank-info-note {
+      margin-top: 10px;
+      font-size: .94rem;
+      color: var(--text);
+      opacity: .85;
+    }
+
+    #bank-info .bank-info-qr {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 14px 30px rgba(15,23,42,.08);
+      border: 1px solid rgba(26,86,160,.12);
+    }
+
+    #bank-info .qr-shell {
+      width: 100%;
+      max-width: 200px;
+      aspect-ratio: 1 / 1;
+      padding: 16px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,240,221,.95));
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(26,86,160,.12);
+    }
+
+    #bank-info .qr-shell img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 18px;
+      display: block;
+    }
+
+    #bank-info .qr-note {
+      font-size: .85rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 0;
     }
 
     #checkout-section .btn-submit {
@@ -1524,11 +1597,20 @@
       <!-- Khối thông tin chuyển khoản (ẩn mặc định) -->
       <div id="bank-info">
         <h3>💳 Thông tin chuyển khoản</h3>
-        <p>Ngân hàng: <strong id="bi-bank-name">—</strong></p>
-        <p>Số tài khoản: <strong id="bi-stk">—</strong></p>
-        <p>Chủ tài khoản: <strong id="bi-owner">—</strong></p>
-        <img id="bi-qr" src="" alt="VietQR" style="display:none;max-width:220px;border-radius:8px" />
-        <p id="bi-qr-note" style="font-size:.8rem;color:#888;margin-top:4px;display:none">QR cập nhật theo tổng tiền giỏ hàng</p>
+        <div class="bank-info-grid">
+          <div class="bank-info-details">
+            <p>Ngân hàng: <strong id="bi-bank-name">—</strong></p>
+            <p>Số tài khoản: <strong id="bi-stk">—</strong></p>
+            <p>Chủ tài khoản: <strong id="bi-owner">—</strong></p>
+            <p class="bank-info-note">Quét mã QR để thanh toán nhanh, hoặc nhập số tài khoản khi chuyển khoản.</p>
+          </div>
+          <div class="bank-info-qr">
+            <div class="qr-shell">
+              <img id="bi-qr" src="" alt="VietQR" />
+            </div>
+            <p id="bi-qr-note" class="qr-note">QR cập nhật theo tổng tiền giỏ hàng</p>
+          </div>
+        </div>
       </div>
 
       <button type="submit" class="btn-submit" id="btn-order">Đặt hàng ngay</button>
