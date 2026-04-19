@@ -1160,8 +1160,7 @@
             <div class="form-group span-2">
               <label for="quill-prod-description">Mô tả sản phẩm</label>
               <div class="rich-editor-wrapper" style="position:relative;">
-                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
-                  <div id="quill-prod-toolbar" style="flex:1; min-width:220px;"></div>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:6px">
                   <button type="button" id="prod-description-emoji-toggle" class="btn-small" style="padding:6px 10px;white-space:nowrap;">😊 Chèn emoji</button>
                 </div>
                 <div class="emoji-panel" id="prod-description-emoji-panel" style="display:none;position:absolute;left:0;right:auto;max-width:320px;margin-top:4px;">
@@ -2519,7 +2518,7 @@
 
   const productDescriptionQuill = new Quill('#quill-prod-description', {
     theme: 'snow',
-    modules: { toolbar: '#quill-prod-toolbar' },
+    modules: { toolbar: loyaltyTemplateToolbarOptions },
     placeholder: 'Nhập mô tả chi tiết về sản phẩm...',
   });
   const prodDescriptionCount = document.getElementById('prod-description-count');
