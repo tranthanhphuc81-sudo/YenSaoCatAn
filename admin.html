@@ -442,7 +442,38 @@
     #toast.error     { background: #0d3578; }
 
     /* ===== RESPONSIVE BẢNG ===== */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .data-table {
+      min-width: 860px;
+    }
+    .data-table th,
+    .data-table td {
+      white-space: nowrap;
+    }
+    .data-table th:last-child,
+    .data-table td:last-child {
+      text-align: right;
+    }
+
+    @media (max-width: 900px) {
+      .table-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .table-actions label,
+      .table-actions select,
+      .table-actions button {
+        width: 100%;
+        max-width: none;
+      }
+      .status-legend {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
 
     /* ===== UPLOAD ẢNH NỀN ===== */
     .upload-row {
