@@ -2838,8 +2838,8 @@
           <td title="${escapeHtml(t.content || '')}">${shortContent}</td>
           <td style="white-space:nowrap">${createdAt}</td>
           <td>
-            <button type="button" class="btn btn-small" onclick="editLoyaltyTemplate('${t.id}')">Sửa</button>
-            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="deleteLoyaltyTemplate('${t.id}')">Xóa</button>
+            <button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(t.id)}">Sửa</button>
+            <button type="button" class="btn btn-small" style="margin-left:6px;" data-action="delete" data-id="${escapeHtml(t.id)}">Xóa</button>
           </td>
         </tr>
       `;
@@ -3034,9 +3034,6 @@
       showToast('Không thể xóa mẫu tin nhắn.', 'error');
     }
   }
-
-  window.editLoyaltyTemplate = editLoyaltyTemplate;
-  window.deleteLoyaltyTemplate = deleteLoyaltyTemplate;
 
   async function previewLoyaltyTemplate() {
     const template = getSelectedLoyaltyTemplate();
@@ -3458,6 +3455,20 @@
   document.getElementById('delete-selected-loyalty').addEventListener('click', deleteSelectedLoyaltyCustomers);
   document.getElementById('btn-add-loyalty-template').addEventListener('click', addLoyaltyTemplate);
   document.getElementById('preview-loyalty-template').addEventListener('click', previewLoyaltyTemplate);
+  const loyaltyTemplateList = document.getElementById('loyalty-template-list');
+  if (loyaltyTemplateList) {
+    loyaltyTemplateList.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      if (action === 'edit') {
+        editLoyaltyTemplate(id);
+      } else if (action === 'delete') {
+        deleteLoyaltyTemplate(id);
+      }
+    });
+  }
   document.getElementById('loyalty-offer-close').addEventListener('click', closeLoyaltyOfferModal);
   document.getElementById('loyalty-offer-save').addEventListener('click', saveLoyaltyOffer);
   document.getElementById('loyalty-reset-cancel').addEventListener('click', closeLoyaltyPasswordResetModal);
