@@ -1009,11 +1009,6 @@
                 <option value="970428">NamABank</option>
               </select>
             </div>
-            <div class="form-group span-2">
-              <label for="cfg-loyalty-message">Mẫu tin nhắn ưu đãi khách thân thiết</label>
-              <textarea id="cfg-loyalty-message" placeholder="Nhập nội dung tin nhắn mẫu..." rows="4" style="resize:vertical"></textarea>
-              <small style="color:#475569">Dùng khi admin gửi thông báo hoặc hiển thị cho khách hàng thân thiết.</small>
-            </div>
           </div>
           <button type="submit" class="btn-save" id="btn-save-config">💾 Lưu Cấu Hình</button>
         </form>
@@ -1887,9 +1882,6 @@
         const sel = document.getElementById('cfg-bank-bin');
         if (sel) sel.value = cfg.bank_bin;
       }
-      if (cfg.loyalty_message_template) {
-        document.getElementById('cfg-loyalty-message').value = cfg.loyalty_message_template;
-      }
       // Thông tin liên hệ
       if (cfg.contact_phone)   document.getElementById('cfg-phone').value   = cfg.contact_phone;
       if (cfg.contact_email)   document.getElementById('cfg-email').value   = cfg.contact_email;
@@ -1914,7 +1906,6 @@
     const bankStk   = document.getElementById('cfg-stk').value.trim();
     const bankOwner = document.getElementById('cfg-owner').value.trim();
     const bankBin  = document.getElementById('cfg-bank-bin').value;
-    const loyaltyTemplate = document.getElementById('cfg-loyalty-message').value.trim();
 
     const btnSave = document.getElementById('btn-save-config');
     btnSave.disabled    = true;
@@ -1929,7 +1920,6 @@
       if (bankStk)   configData.bank_stk       = bankStk;
       if (bankOwner) configData.bank_owner     = bankOwner;
       if (bankBin)   configData.bank_bin       = bankBin;
-      if (loyaltyTemplate) configData.loyalty_message_template = loyaltyTemplate;
 
       await setDoc(doc(db, 'config', 'settings'), configData, { merge: true });
 
