@@ -180,6 +180,24 @@
       margin-top: auto;
     }
 
+    .product-card .stock-note {
+      margin-top: 10px;
+      font-size: .95rem;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+    .product-card .stock-out { color: #b91c1c; }
+    .product-card .stock-low { color: #d97706; }
+    .product-card .stock-available { color: #0f766e; }
+
+    .cart-item-stock-warning {
+      display: block;
+      margin-top: 6px;
+      color: #b91c1c;
+      font-size: .88rem;
+      font-weight: 600;
+    }
+
     .btn-add {
       margin-top: 18px;
       padding: 12px 16px;
@@ -2428,7 +2446,16 @@
       return;
     }
 
-    grid.innerHTML = list.map(p => `
+    grid.innerHTML = list.map(p => {
+      const qty = typeof p.quantity === 'number' ? p.quantity : null;
+      const stockNote = qty === null
+        ? ''
+        : qty <= 0
+          ? '<div class="stock-note stock-out">Hết hàng</div>'
+          : qty < 5
+            ? `<div class="stock-note stock-low">Chỉ còn ${qty} sản phẩm</div>`
+            : `<div class="stock-note stock-available">Còn ${qty} sản phẩm</div>`;
+      return `
       <div class="product-card" data-id="${p.id}">
         <img src="${p.image || 'https://placehold.co/400x300?text=No+Image'}"
              alt="${p.name}"
@@ -2437,10 +2464,12 @@
           <span class="category-badge">${CAT_LABEL[p.category] || p.category}</span>
           <h3>${p.name}</h3>
           <div class="price">${formatVND(p.price)}</div>
+          ${stockNote}
           <button class="btn-add" data-id="${p.id}">+ Thêm vào giỏ</button>
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
 
     // Gắn sự kiện cho nút "Thêm vào giỏ"
     grid.querySelectorAll('.btn-add').forEach(btn => {
@@ -2551,7 +2580,12 @@
       cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
     }
     renderCart();
-    showToast(`Đã thêm: ${product.name}`);
+    if (typeof product.quantity === 'number' && cart.find(i => i.id === product.id).qty > product.quantity) {
+      const shortage = cart.find(i => i.id === product.id).qty - product.quantity;
+      showToast(`Đã thêm ${product.name}. Hiện thiếu ${shortage} sản phẩm so với tồn kho. Admin sẽ được thông báo.`, 'warning');
+    } else {
+      showToast(`Đã thêm: ${product.name}`);
+    }
   }
 
   // ==================================================
@@ -2570,6 +2604,38 @@
       return { ...item, qty };
     });
     renderCart();
+  }
+
+  function getCartStockShortages() {
+    return cart.map(item => {
+      const product = allProducts.find(p => p.id === item.id);
+      const availableQty = product && typeof product.quantity === 'number' ? product.quantity : 0;
+      const shortageQty = Math.max(0, item.qty - availableQty);
+      return {
+        productId: item.id,
+        name: item.name,
+        orderedQty: item.qty,
+        availableQty,
+        shortageQty,
+      };
+    }).filter(i => i.shortageQty > 0);
+  }
+
+  async function createRestockRequests(orderId, shortages, customerInfo) {
+    if (!shortages.length) return;
+    await Promise.all(shortages.map(item => addDoc(collection(db, 'restockRequests'), {
+      orderId,
+      productId: item.productId,
+      productName: item.name,
+      orderedQty: item.orderedQty,
+      availableQty: item.availableQty,
+      shortageQty: item.shortageQty,
+      customerName: customerInfo.name,
+      customerPhone: customerInfo.phone,
+      customerAddress: customerInfo.address,
+      status: 'requested',
+      createdAt: serverTimestamp(),
+    })));
   }
 
   // ==================================================
@@ -2592,7 +2658,11 @@
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const discount = currentLoyaltyDiscountAmount || 0;
     const finalTotal = Math.max(0, subtotal - discount);
-    listEl.innerHTML = cart.map(i => `
+    listEl.innerHTML = cart.map(i => {
+      const product = allProducts.find(p => p.id === i.id);
+      const availableQty = product && typeof product.quantity === 'number' ? product.quantity : null;
+      const shortage = availableQty !== null && i.qty > availableQty ? i.qty - availableQty : 0;
+      return `
       <li>
         <div class="cart-item-content">
           <span class="cart-item-name">${i.name}</span>
@@ -2605,13 +2675,15 @@
               <button type="button" class="qty-increase" data-id="${i.id}" aria-label="Tăng số lượng">+</button>
             </div>
           </div>
+          ${shortage > 0 ? `<span class="cart-item-stock-warning">Thiếu ${shortage} sản phẩm so với tồn kho</span>` : ''}
         </div>
         <div class="cart-item-actions">
           <span class="cart-item-price">${formatVND(i.price * i.qty)}</span>
           <button class="btn-remove" data-id="${i.id}" title="Xoá">✕</button>
         </div>
       </li>
-    `).join('');
+      `;
+    }).join('');
 
     totalEl.style.display = 'block';
     totalPriceEl.textContent = formatVND(finalTotal);
@@ -2824,8 +2896,10 @@
       return false;
     }
 
-    if (!validateCartStock()) {
-      return false;
+    const shortages = getCartStockShortages();
+    if (shortages.length) {
+      const shortageMessage = shortages.map(i => `${i.name}: thiếu ${i.shortageQty}`).join(', ');
+      showToast(`Đơn hàng có thiếu hàng: ${shortageMessage}. Admin sẽ được thông báo.`, 'warning');
     }
 
     let loyaltyVerified = false;
@@ -2867,6 +2941,8 @@
         paymentMethod:   method,
         items: cart.map(i => ({ productId: i.id, name: i.name, price: i.price, qty: i.qty })),
         total: total,
+        stockShortages: shortages,
+        hasStockShortage: shortages.length > 0,
         status: 'pending',
         source: auto ? 'auto' : 'website',
         timestamp: serverTimestamp(),
@@ -2878,12 +2954,25 @@
         orderData.loyaltyOffer = appliedLoyaltyOffer;
       }
 
+      let orderRef;
       try {
-        await addDoc(collection(db, 'orders'), orderData);
+        orderRef = await addDoc(collection(db, 'orders'), orderData);
       } catch (err) {
         console.error('Order create failed:', err);
         showToast(`Lỗi tạo đơn hàng: ${err.message}`, 'error');
         return false;
+      }
+
+      if (shortages.length && orderRef) {
+        try {
+          await createRestockRequests(orderRef.id, shortages, {
+            name,
+            phone: normalizedPhone,
+            address,
+          });
+        } catch (err) {
+          console.error('Lỗi tạo yêu cầu nhập hàng:', err);
+        }
       }
 
       showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
