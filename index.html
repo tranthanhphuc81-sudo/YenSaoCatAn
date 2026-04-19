@@ -2749,17 +2749,18 @@
     }
 
     const name            = document.getElementById('cus-name').value.trim();
-    const phone           = document.getElementById('cus-phone').value.trim();
+    const rawPhone        = document.getElementById('cus-phone').value.trim();
     const address         = document.getElementById('cus-address').value.trim();
     const method          = document.getElementById('payment-method').value;
     const loyaltyPassword = document.getElementById('loyalty-password-order').value.trim();
 
-    if (!name || !phone || !address) {
+    if (!name || !rawPhone || !address) {
       showToast('Vui lòng điền đầy đủ thông tin!', 'error');
       return false;
     }
 
-    if (!/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g, ''))) {
+    const normalizedPhone = normalizePhone(rawPhone);
+    if (!normalizedPhone || !/^0[0-9]{8,10}$/.test(normalizedPhone)) {
       showToast('Số điện thoại không hợp lệ!', 'error');
       return false;
     }
@@ -2768,9 +2769,8 @@
       return false;
     }
 
-    const normalizedPhone = normalizePhone(phone);
     let loyaltyVerified = false;
-    const customer = await loadLoyaltyCustomerByPhone(phone);
+    const customer = await loadLoyaltyCustomerByPhone(rawPhone);
 
     if (loyaltyPassword) {
       if (!customer) {
