@@ -239,14 +239,111 @@
     }
 
     #cart-list li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      padding: 18px 18px;
       border-radius: 16px;
       background: rgba(255,255,255,.92);
       border: 1px solid rgba(15,23,42,.08);
+      align-items: center;
+    }
+
+    #cart-list li .cart-item-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    #cart-list li .cart-item-name {
+      font-weight: 700;
+      color: var(--accent-dark);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #cart-list li .cart-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: .92rem;
+    }
+
+    #cart-list li .cart-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cart-qty-group {
+      display: inline-flex;
+      align-items: stretch;
+      border: 1px solid rgba(15,23,42,.12);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .cart-qty-group button {
+      width: 36px;
+      border: none;
+      background: rgba(15,23,42,.06);
+      color: var(--accent-dark);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .cart-qty-group button:hover {
+      background: rgba(15,23,42,.12);
+    }
+
+    .cart-qty-input {
+      width: 60px;
+      border: none;
+      text-align: center;
+      font-weight: 700;
+      color: var(--accent-dark);
+      background: transparent;
+      outline: none;
+      font-size: .95rem;
+      -moz-appearance: textfield;
+    }
+
+    .cart-qty-input::-webkit-outer-spin-button,
+    .cart-qty-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .cart-item-price {
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 90px;
+      text-align: right;
+    }
+
+    #cart-list li .btn-remove {
+      min-width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255,120,120,.14);
+      color: #b91c1c;
+      font-size: 1rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s, transform .2s;
+    }
+
+    #cart-list li .btn-remove:hover {
+      background: rgba(255,120,120,.24);
+      transform: translateY(-1px);
     }
 
     #cart-list li span {
@@ -2205,6 +2302,16 @@
     renderCart();
   }
 
+  function updateCartQty(id, nextQty) {
+    cart = cart.map(item => {
+      if (item.id !== id) return item;
+      const qty = Number(nextQty);
+      if (Number.isNaN(qty) || qty < 1) return item;
+      return { ...item, qty };
+    });
+    renderCart();
+  }
+
   // ==================================================
   // GIỎ HÀNG: Render danh sách + tổng tiền
   // ==================================================
@@ -2225,10 +2332,22 @@
     const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
     listEl.innerHTML = cart.map(i => `
       <li>
-        <span class="cart-item-name">${i.name}</span>
-        <span class="cart-item-qty">x${i.qty}</span>
-        <span class="cart-item-price">${formatVND(i.price * i.qty)}</span>
-        <button class="btn-remove" data-id="${i.id}" title="Xoá">✕</button>
+        <div class="cart-item-content">
+          <span class="cart-item-name">${i.name}</span>
+          <div class="cart-item-meta">
+            <span>${formatVND(i.price)} / 1 sp</span>
+            <span class="cart-item-qty-label">Số lượng:</span>
+            <div class="cart-qty-group" data-id="${i.id}">
+              <button type="button" class="qty-decrease" data-id="${i.id}" aria-label="Giảm số lượng">−</button>
+              <input type="number" min="1" class="cart-qty-input" data-id="${i.id}" value="${i.qty}" aria-label="Số lượng sản phẩm" />
+              <button type="button" class="qty-increase" data-id="${i.id}" aria-label="Tăng số lượng">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="cart-item-actions">
+          <span class="cart-item-price">${formatVND(i.price * i.qty)}</span>
+          <button class="btn-remove" data-id="${i.id}" title="Xoá">✕</button>
+        </div>
       </li>
     `).join('');
 
@@ -2238,6 +2357,47 @@
     // Gắn sự kiện xoá
     listEl.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
+    });
+
+    // Gắn sự kiện tăng/giảm số lượng
+    listEl.querySelectorAll('.qty-decrease').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        updateCartQty(id, item.qty - 1);
+      });
+    });
+
+    listEl.querySelectorAll('.qty-increase').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        updateCartQty(id, item.qty + 1);
+      });
+    });
+
+    listEl.querySelectorAll('.cart-qty-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const id = input.dataset.id;
+        let qty = Number(input.value);
+        if (!qty || qty < 1) qty = 1;
+        updateCartQty(id, qty);
+      });
+      input.addEventListener('keydown', event => {
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          const id = input.dataset.id;
+          updateCartQty(id, Number(input.value) + 1);
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          const id = input.dataset.id;
+          const qty = Math.max(1, Number(input.value) - 1);
+          updateCartQty(id, qty);
+        }
+      });
     });
 
     // Cập nhật QR nếu đang chọn chuyển khoản
