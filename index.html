@@ -2429,6 +2429,7 @@
   // ==================================================
   function updateQR() {
     const total      = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const amount     = total || 0;
     const qrImg      = document.getElementById('bi-qr');
     const qrNote     = document.getElementById('bi-qr-note');
     const qrPlaceholder = document.getElementById('qr-placeholder');
@@ -2436,7 +2437,7 @@
     if (window._bankBin && window._bankStk) {
       const owner = encodeURIComponent(window._bankOwner || '');
       const info  = encodeURIComponent('Thanh toan don hang Yen Sao Cat An');
-      qrImg.src   = `https://img.vietqr.io/image/${window._bankBin}-${window._bankStk}-compact2.png?amount=${total}&addInfo=${info}&accountName=${owner}`;
+      qrImg.src   = `https://img.vietqr.io/image/${window._bankBin}-${window._bankStk}-compact2.png?amount=${amount}&addInfo=${info}&accountName=${owner}`;
       qrImg.onload = () => {
         qrPlaceholder.classList.add('hidden');
       };
@@ -2445,6 +2446,9 @@
       };
       qrImg.style.display = 'block';
       qrNote.style.display = 'block';
+      qrNote.textContent = amount === 0
+        ? 'QR mặc định số tiền 0đ. Thanh toán bằng số tài khoản người thụ hưởng.'
+        : 'QR cập nhật theo tổng tiền giỏ hàng';
     } else {
       qrImg.style.display = 'none';
       qrNote.style.display = 'none';
