@@ -358,15 +358,26 @@
     }
 
     #bank-info .qr-shell {
+      position: relative;
       width: 100%;
-      max-width: 200px;
+      max-width: 220px;
       aspect-ratio: 1 / 1;
       padding: 16px;
-      border-radius: 24px;
+      border-radius: 28px;
       background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,240,221,.95));
       display: grid;
       place-items: center;
       border: 1px solid rgba(26,86,160,.12);
+      overflow: hidden;
+    }
+
+    #bank-info .qr-shell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(255,255,255,.75), transparent 30%),
+                  radial-gradient(circle at bottom right, rgba(26,86,160,.08), transparent 20%);
+      pointer-events: none;
     }
 
     #bank-info .qr-shell img {
@@ -374,6 +385,32 @@
       height: 100%;
       object-fit: contain;
       border-radius: 18px;
+      display: block;
+      z-index: 1;
+    }
+
+    #bank-info .qr-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      text-align: center;
+      gap: 10px;
+      color: var(--accent-dark);
+      z-index: 2;
+      background: rgba(255,255,255,.82);
+      border-radius: 18px;
+      transition: opacity .25s ease;
+    }
+
+    #bank-info .qr-placeholder.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    #bank-info .qr-placeholder .qr-icon {
+      font-size: 2rem;
       display: block;
     }
 
@@ -1607,6 +1644,11 @@
           <div class="bank-info-qr">
             <div class="qr-shell">
               <img id="bi-qr" src="" alt="VietQR" />
+              <div id="qr-placeholder" class="qr-placeholder">
+                <span class="qr-icon">📱</span>
+                <strong>QR chưa có</strong>
+                <p>Chọn chuyển khoản và thêm sản phẩm để tạo QR</p>
+              </div>
             </div>
             <p id="bi-qr-note" class="qr-note">QR cập nhật theo tổng tiền giỏ hàng</p>
           </div>
@@ -2386,15 +2428,27 @@
   // THANH TOÁN: Toggle hiển thị thông tin ngân hàng
   // ==================================================
   function updateQR() {
+    const total      = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const qrImg      = document.getElementById('bi-qr');
+    const qrNote     = document.getElementById('bi-qr-note');
+    const qrPlaceholder = document.getElementById('qr-placeholder');
+
     if (window._bankBin && window._bankStk) {
-      const total      = cart.reduce((s, i) => s + i.price * i.qty, 0);
-      const owner      = encodeURIComponent(window._bankOwner || '');
-      const info       = encodeURIComponent('Thanh toan don hang Yen Sao Cat An');
-      const qrImg      = document.getElementById('bi-qr');
-      const qrNote     = document.getElementById('bi-qr-note');
-      qrImg.src        = `https://img.vietqr.io/image/${window._bankBin}-${window._bankStk}-compact2.png?amount=${total}&addInfo=${info}&accountName=${owner}`;
-      qrImg.style.display  = 'block';
+      const owner = encodeURIComponent(window._bankOwner || '');
+      const info  = encodeURIComponent('Thanh toan don hang Yen Sao Cat An');
+      qrImg.src   = `https://img.vietqr.io/image/${window._bankBin}-${window._bankStk}-compact2.png?amount=${total}&addInfo=${info}&accountName=${owner}`;
+      qrImg.onload = () => {
+        qrPlaceholder.classList.add('hidden');
+      };
+      qrImg.onerror = () => {
+        qrPlaceholder.classList.remove('hidden');
+      };
+      qrImg.style.display = 'block';
       qrNote.style.display = 'block';
+    } else {
+      qrImg.style.display = 'none';
+      qrNote.style.display = 'none';
+      qrPlaceholder.classList.remove('hidden');
     }
   }
 
