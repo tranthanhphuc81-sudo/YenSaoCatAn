@@ -2769,15 +2769,15 @@
 
     if (loyaltyPassword) {
       if (!customer) {
-        showToast('Số điện thoại chưa đăng ký khách thân thiết.', 'error');
-        return false;
+        showToast('Số điện thoại chưa đăng ký khách thân thiết. Đơn vẫn được gửi như khách thường.', 'info');
+      } else {
+        const passwordHash = await hashText(loyaltyPassword);
+        if (passwordHash !== customer.passwordHash) {
+          showToast('Mật khẩu khách thân thiết không đúng. Đơn vẫn được gửi như khách thường.', 'info');
+        } else {
+          loyaltyVerified = true;
+        }
       }
-      const passwordHash = await hashText(loyaltyPassword);
-      if (passwordHash !== customer.passwordHash) {
-        showToast('Mật khẩu khách thân thiết không đúng!', 'error');
-        return false;
-      }
-      loyaltyVerified = true;
     }
 
     const btnSubmit = document.getElementById('btn-order');
