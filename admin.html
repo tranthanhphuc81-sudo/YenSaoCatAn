@@ -1387,7 +1387,7 @@
             <tbody id="loyalty-list">
               <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
             </tbody>
-          </table>
+          </                                                                                                                                                                                                        
         </div>
       </div>
 
@@ -3034,6 +3034,9 @@
       showToast('Không thể xóa mẫu tin nhắn.', 'error');
     }
   }
+
+  window.editLoyaltyTemplate = editLoyaltyTemplate;
+  window.deleteLoyaltyTemplate = deleteLoyaltyTemplate;
 
   async function previewLoyaltyTemplate() {
     const template = getSelectedLoyaltyTemplate();
