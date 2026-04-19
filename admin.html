@@ -2863,7 +2863,7 @@
   function getOrderActionButtons(order) {
     const status = order.status || 'pending';
     const buttons = [];
-    if (status === 'pending' || status === 'confirmed') {
+    if (status === 'pending' || status === 'confirmed' || status === 'processing') {
       buttons.push(`<button type="button" class="btn btn-save" onclick="setOrderStatus('${order.id}','shipping')">Bắt đầu giao hàng</button>`);
     }
     if (status === 'shipping') {
