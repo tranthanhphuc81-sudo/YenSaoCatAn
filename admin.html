@@ -1272,6 +1272,12 @@
     <div class="tab-panel" id="tab-orders">
       <div class="card">
         <h2>📋 Danh Sách Đơn Hàng</h2>
+        <div class="status-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+          <span class="badge" style="background:#f59e0b;color:#111">Chờ xử lý</span>
+          <span class="badge" style="background:#0ea5e9;color:#fff">Đang giao</span>
+          <span class="badge" style="background:#f97316;color:#fff">Chưa thanh toán</span>
+          <span class="badge" style="background:#22c55e;color:#fff">Hoàn thành</span>
+        </div>
         <div class="table-actions">
           <label for="order-filter">Lọc đơn:</label>
           <select id="order-filter">
@@ -1371,6 +1377,7 @@
     <div class="modal-detail">
       <h3>Chi tiết đơn hàng</h3>
       <div id="order-detail-content"></div>
+      <div id="order-detail-actions" class="modal-actions" style="justify-content:flex-end;gap:10px;"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-cancel" id="order-detail-close">Đóng</button>
       </div>
@@ -2538,9 +2545,11 @@
       const status = o.status || 'pending';
       const statusBadge = status === 'completed'
         ? '<span class="badge" style="background:#22c55e;color:#fff">Hoàn thành</span>'
-        : status === 'processing'
-          ? '<span class="badge" style="background:#0ea5e9;color:#fff">Đang xử lý</span>'
-          : '<span class="badge" style="background:#f59e0b;color:#111">Chờ xử lý</span>';
+        : status === 'shipping'
+          ? '<span class="badge" style="background:#0ea5e9;color:#fff">Đang giao</span>'
+          : status === 'unpaid'
+            ? '<span class="badge" style="background:#f97316;color:#fff">Chưa thanh toán</span>'
+            : '<span class="badge" style="background:#f59e0b;color:#111">Chờ xử lý</span>';
 
       const sourceBadge = o.source === 'auto'
         ? '<span class="badge" style="background:#8b5cf6;color:#fff">Tự động</span>'
@@ -2834,16 +2843,81 @@
       <div class="modal-row"><strong>Địa chỉ:</strong><span>${order.customerAddress || '—'}</span></div>
       <div class="modal-row"><strong>Khách thân thiết:</strong><span>${loyaltyLabel}</span></div>
       <div class="modal-row"><strong>Ưu đãi:</strong><span>${order.loyaltyOffer ? escapeHtml(order.loyaltyOffer) : '—'}</span></div>
-      <div class="modal-row"><strong>Trạng thái:</strong><span>${status === 'completed' ? 'Hoàn thành' : status === 'processing' ? 'Đang xử lý' : 'Chờ xử lý'}</span></div>
+      <div class="modal-row"><strong>Trạng thái:</strong><span>${status === 'completed' ? 'Hoàn thành' : status === 'shipping' ? 'Đang giao' : status === 'unpaid' ? 'Chưa thanh toán' : 'Chờ xử lý'}</span></div>
       <div class="modal-row"><strong>Thanh toán:</strong><span>${methodLabel}</span></div>
       <div class="modal-row"><strong>Nguồn:</strong><span>${sourceLabel}</span></div>
       <div class="modal-row"><strong>Tổng tiền:</strong><span>${formatVND(order.total || 0)}</span></div>
       <div style="margin-top:16px"><strong>Sản phẩm:</strong><ul style="padding-left:18px;margin-top:8px">${items}</ul></div>
     `;
 
+    const actionContainer = document.getElementById('order-detail-actions');
+    if (actionContainer) {
+      actionContainer.innerHTML = getOrderActionButtons(order);
+    }
+
     const modal = document.getElementById('order-detail-modal');
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function getOrderActionButtons(order) {
+    const status = order.status || 'pending';
+    const buttons = [];
+    if (status === 'pending') {
+      buttons.push(`<button type="button" class="btn btn-save" onclick="setOrderStatus('${order.id}','shipping')">Bắt đầu giao hàng</button>`);
+    }
+    if (status === 'shipping') {
+      buttons.push(`<button type="button" class="btn btn-save" onclick="setOrderStatus('${order.id}','unpaid')">Chưa thanh toán</button>`);
+    }
+    if (status === 'unpaid') {
+      buttons.push(`<button type="button" class="btn btn-save" onclick="setOrderStatus('${order.id}','completed')">Hoàn thành</button>`);
+    }
+    return buttons.join('');
+  }
+
+  async function setOrderStatus(orderId, newStatus) {
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) return;
+    const updates = { status: newStatus, updatedAt: serverTimestamp() };
+
+    if (newStatus === 'shipping' && !order.stockReduced) {
+      try {
+        await Promise.all((order.items || []).map(async item => {
+          const product = allProducts.find(p => p.id === item.productId);
+          if (!product || typeof product.quantity !== 'number') return;
+          const prevQty = product.quantity;
+          await updateDoc(doc(db, 'products', item.productId), {
+            quantity: increment(-item.qty),
+            updatedAt: serverTimestamp(),
+          });
+          await addDoc(collection(db, 'stockMovements'), {
+            productId: item.productId,
+            productName: item.name,
+            type: 'order',
+            delta: -item.qty,
+            previousQuantity: prevQty,
+            newQuantity: prevQty - item.qty,
+            orderId: orderId,
+            timestamp: serverTimestamp(),
+          });
+        }));
+        updates.stockReduced = true;
+      } catch (err) {
+        console.error('Lỗi giảm tồn kho:', err);
+        showToast('Không thể giảm tồn kho. Vui lòng thử lại.', 'error');
+        return;
+      }
+    }
+
+    try {
+      await updateDoc(doc(db, 'orders', orderId), updates);
+      showToast('✅ Đã chuyển trạng thái đơn hàng.');
+      await loadOrders();
+      showOrderDetails(orderId);
+    } catch (err) {
+      console.error('Lỗi cập nhật trạng thái đơn:', err);
+      showToast('Không thể cập nhật trạng thái. Vui lòng thử lại.', 'error');
+    }
   }
 
   let allContacts = [];
