@@ -94,7 +94,7 @@ service cloud.firestore {
 
     function validateLoyaltyCustomer() {
       let d = request.resource.data;
-      let allowed = ['name', 'phone', 'displayPhone', 'passwordHash', 'registeredAt', 'offer', 'updatedAt'];
+      let allowed = ['name', 'phone', 'displayPhone', 'passwordHash', 'registeredAt', 'offer', 'updatedAt', 'passwordResetRequired', 'resetRequestedAt'];
       return d.keys().hasOnly(allowed)
           && d.keys().hasAll(['name', 'phone', 'passwordHash', 'registeredAt'])
           && d.name is string && d.name.size() > 0 && d.name.size() <= 100
@@ -103,7 +103,9 @@ service cloud.firestore {
           && d.passwordHash is string && d.passwordHash.size() > 0
           && d.registeredAt is timestamp
           && (!('offer' in d) || (d.offer is string && d.offer.size() <= 2000))
-          && (!('updatedAt' in d) || d.updatedAt is timestamp);
+          && (!('updatedAt' in d) || d.updatedAt is timestamp)
+          && (!('passwordResetRequired' in d) || d.passwordResetRequired is bool)
+          && (!('resetRequestedAt' in d) || d.resetRequestedAt is timestamp);
     }
 
     function validateLoyaltyTemplate() {

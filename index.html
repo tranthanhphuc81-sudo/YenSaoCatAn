@@ -1819,6 +1819,7 @@
     <div class="loyalty-card">
       <h3>🎁 Đăng ký khách hàng thân thiết</h3>
       <p>Đăng ký để nhận thông báo ưu đãi qua Zalo và dùng mật khẩu thân thiết khi đặt hàng.</p>
+      <p class="form-note" style="margin-top:8px;">Nếu admin đã xác thực và yêu cầu reset mật khẩu, bạn có thể dùng form này để tạo mật khẩu thân thiết mới.</p>
       <div class="form-group">
         <label for="loyalty-name">Họ và tên *</label>
         <input type="text" id="loyalty-name" placeholder="Nguyễn Văn A" />
@@ -2239,9 +2240,13 @@
     currentLoyaltyDiscountAmount = 0;
     if (customer) {
       const offerLabel = currentLoyaltyOfferText;
-      note.textContent = offerLabel
-        ? `Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi: ${offerLabel}`
-        : 'Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi khi đặt hàng.';
+      if (customer.passwordResetRequired) {
+        note.textContent = 'Khách hàng đã được yêu cầu reset mật khẩu thân thiết. Vui lòng tạo mật khẩu mới ở phần đăng ký khách thân thiết.';
+      } else {
+        note.textContent = offerLabel
+          ? `Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi: ${offerLabel}`
+          : 'Khách thân thiết đã đăng ký. Nhập mật khẩu để nhận ưu đãi khi đặt hàng.';
+      }
     } else {
       note.textContent = 'Số điện thoại này chưa đăng ký khách hàng thân thiết. Bạn có thể đăng ký bên dưới trước khi đặt hàng.';
     }
@@ -2283,6 +2288,29 @@
       const customerRef = doc(db, 'loyaltyCustomers', normalized);
       const existing = await getDoc(customerRef);
       if (existing.exists()) {
+        const existingData = existing.data();
+        if (existingData.passwordResetRequired) {
+          if (existingData.name !== name) {
+            statusEl.textContent = 'Tên không trùng với hồ sơ khách thân thiết. Vui lòng kiểm tra lại.';
+            statusEl.style.color = '#dc2626';
+            return;
+          }
+          const passwordHash = await hashText(password);
+          await updateDoc(customerRef, {
+            passwordHash,
+            passwordResetRequired: false,
+            updatedAt: serverTimestamp(),
+          });
+          statusEl.textContent = 'Mật khẩu mới đã được đặt lại. Bạn có thể dùng mật khẩu này để nhận ưu đãi khi đặt hàng.';
+          statusEl.style.color = '#1f7a5b';
+          document.getElementById('loyalty-name').value = '';
+          document.getElementById('loyalty-phone').value = '';
+          document.getElementById('loyalty-password').value = '';
+          document.getElementById('loyalty-password-confirm').value = '';
+          updateLoyaltyOrderNote();
+          return;
+        }
+
         statusEl.textContent = 'Số điện thoại này đã đăng ký khách thân thiết.';
         statusEl.style.color = '#dc2626';
         return;

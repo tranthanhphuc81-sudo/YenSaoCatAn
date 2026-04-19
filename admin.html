@@ -1426,24 +1426,17 @@
 
   <div id="loyalty-reset-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-detail">
-      <h3>Reset mật khẩu khách thân thiết</h3>
-      <p class="form-note">Xác thực khách hàng qua Zalo/điện thoại trước khi reset mật khẩu.</p>
+      <h3>Yêu cầu reset mật khẩu thân thiết</h3>
+      <p class="form-note">Sau khi xác thực khách hàng qua Zalo/điện thoại, admin sẽ vô hiệu hoá mật khẩu cũ để khách hàng tự tạo lại mật khẩu mới.</p>
       <div class="form-group">
         <label>Khách hàng</label>
         <div id="loyalty-reset-customer" style="font-weight:700;line-height:1.5;"></div>
       </div>
-      <div class="form-group">
-        <label for="loyalty-reset-new-password">Mật khẩu mới</label>
-        <input type="password" id="loyalty-reset-new-password" placeholder="Mật khẩu mới" />
-      </div>
-      <div class="form-group">
-        <label for="loyalty-reset-confirm-password">Xác nhận mật khẩu mới</label>
-        <input type="password" id="loyalty-reset-confirm-password" placeholder="Nhập lại mật khẩu mới" />
-      </div>
+      <p class="form-note" style="margin-top:6px;color:#444;">Nhấn nút bên dưới để xoá mật khẩu cũ và bật yêu cầu đặt lại mật khẩu cho khách.</p>
       <p id="loyalty-reset-error" class="form-note" style="color:#dc2626;min-height:1.5em"></p>
       <div class="modal-actions" style="justify-content:flex-end;gap:10px;">
         <button type="button" class="btn btn-cancel" id="loyalty-reset-cancel">Hủy</button>
-        <button type="button" class="btn btn-save" id="loyalty-reset-save">Reset mật khẩu</button>
+        <button type="button" class="btn btn-save" id="loyalty-reset-save">Xác nhận reset</button>
       </div>
     </div>
   </div>
@@ -2890,31 +2883,21 @@
   }
 
   async function submitLoyaltyPasswordReset() {
-    const newPassword = document.getElementById('loyalty-reset-new-password').value.trim();
-    const confirmPassword = document.getElementById('loyalty-reset-confirm-password').value.trim();
     const errorEl = document.getElementById('loyalty-reset-error');
     errorEl.textContent = '';
     if (!activeLoyaltyResetCustomerId) return;
-    if (!newPassword || !confirmPassword) {
-      errorEl.textContent = 'Vui lòng nhập mật khẩu mới và xác nhận.';
-      return;
-    }
-    if (newPassword.length < 4) {
-      errorEl.textContent = 'Mật khẩu cần ít nhất 4 ký tự.';
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      errorEl.textContent = 'Mật khẩu mới và xác nhận không khớp.';
-      return;
-    }
 
     try {
-      const passwordHash = await hashText(newPassword);
+      const randBytes = new Uint8Array(32);
+      crypto.getRandomValues(randBytes);
+      const randomHash = Array.from(randBytes).map(b => b.toString(16).padStart(2, '0')).join('');
       await updateDoc(doc(db, 'loyaltyCustomers', activeLoyaltyResetCustomerId), {
-        passwordHash,
+        passwordHash: randomHash,
+        passwordResetRequired: true,
+        resetRequestedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      showToast('✅ Đã reset mật khẩu khách thân thiết.');
+      showToast('✅ Đã vô hiệu hoá mật khẩu cũ. Khách hàng cần tạo lại mật khẩu mới.');
       closeLoyaltyPasswordResetModal();
       await loadLoyaltyCustomers();
     } catch (err) {
