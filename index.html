@@ -2798,9 +2798,6 @@
         customerPhone:   phone,
         customerAddress: address,
         paymentMethod:   method,
-        loyaltyCustomer: loyaltyVerified,
-        loyaltyPhone:    normalizedPhone,
-        loyaltyOffer:    loyaltyVerified ? (customer.offer || loyaltyMessageTemplate || null) : null,
         items: cart.map(i => ({ productId: i.id, name: i.name, price: i.price, qty: i.qty })),
         total: total,
         status: 'pending',
@@ -2808,6 +2805,11 @@
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp(),
       };
+      if (loyaltyVerified) {
+        orderData.loyaltyCustomer = true;
+        orderData.loyaltyPhone = normalizedPhone;
+        orderData.loyaltyOffer = customer.offer || loyaltyMessageTemplate;
+      }
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
