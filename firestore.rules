@@ -158,12 +158,12 @@ service cloud.firestore {
       let old = resource.data;
       return d.quantity is number
           && d.quantity >= 0
-          && d.name == old.name
-          && d.price == old.price
-          && d.image == old.image
-          && d.category == old.category
-          && d.barcode == old.barcode
-          && (!('description' in old) || d.description == old.description)
+          && (!('name' in d) || d.name == old.name)
+          && (!('price' in d) || d.price == old.price)
+          && (!('image' in d) || d.image == old.image)
+          && (!('category' in d) || d.category == old.category)
+          && (!('barcode' in d) || d.barcode == old.barcode)
+          && (!('description' in d) || d.description == old.description)
           && (!('updatedAt' in d) || d.updatedAt is timestamp)
           && (!('location' in d) || d.location is string)
           && (!('note' in d) || d.note is string);
