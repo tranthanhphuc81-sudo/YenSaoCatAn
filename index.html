@@ -2601,6 +2601,10 @@
       discountEl.style.display = 'none';
     }
 
+    if (document.getElementById('payment-method').value === 'transfer') {
+      updateQR();
+    }
+
     // Gắn sự kiện xoá
     listEl.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
@@ -2880,10 +2884,11 @@
   // THANH TOÁN: Toggle hiển thị thông tin ngân hàng
   // ==================================================
   function updateQR() {
-    const total      = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const amount     = total || 0;
-    const qrImg      = document.getElementById('bi-qr');
-    const qrNote     = document.getElementById('bi-qr-note');
+    const totalBefore = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const discount     = currentLoyaltyDiscountAmount || 0;
+    const amount       = Math.max(0, totalBefore - discount);
+    const qrImg        = document.getElementById('bi-qr');
+    const qrNote       = document.getElementById('bi-qr-note');
     const qrPlaceholder = document.getElementById('qr-placeholder');
 
     if (window._bankBin && window._bankStk) {
@@ -2900,7 +2905,9 @@
       qrNote.style.display = 'block';
       qrNote.textContent = amount === 0
         ? 'QR mặc định số tiền 0đ. Thanh toán bằng số tài khoản người thụ hưởng.'
-        : 'QR cập nhật theo tổng tiền giỏ hàng';
+        : discount > 0
+          ? 'QR cập nhật theo tổng tiền đã giảm ưu đãi khách thân thiết'
+          : 'QR cập nhật theo tổng tiền giỏ hàng';
     } else {
       qrImg.style.display = 'none';
       qrNote.style.display = 'none';
