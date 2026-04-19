@@ -2665,7 +2665,8 @@
           <td style="white-space:nowrap">${registeredAt}</td>
           <td>
             <button type="button" class="btn btn-small" onclick="openLoyaltyOfferModal('${c.id}')">Sửa ưu đãi</button>
-            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="sendLoyaltyZalo('${c.id}')">Gửi Zalo ngay</button>
+            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="callLoyaltyCustomer('${c.id}')">Gọi</button>
+            <button type="button" class="btn btn-small" style="margin-left:6px;" onclick="openLoyaltyZalo('${c.id}')">Zalo</button>
             <button type="button" class="btn btn-small btn-secondary" style="margin-left:6px;" onclick="openLoyaltyPasswordResetModal('${c.id}')">Reset mật khẩu</button>
           </td>
         </tr>
@@ -2817,6 +2818,17 @@
       console.warn('Không thể sao chép nội dung:', err);
     }
     window.open(`https://zalo.me/${phone}`, '_blank');
+  }
+
+  function callLoyaltyCustomer(customerId) {
+    const customer = allLoyaltyCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+    const phone = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+    if (!phone) {
+      showToast('Không tìm thấy số điện thoại để gọi.', 'error');
+      return;
+    }
+    window.location.href = `tel:${phone}`;
   }
 
   let activeLoyaltyCustomerId = null;
