@@ -1366,6 +1366,33 @@
           </table>
         </div>
       </div>
+
+      <div class="card">
+        <h2>📦 Yêu cầu nhập hàng</h2>
+        <p>Danh sách các yêu cầu nhập thêm từ đơn hàng thiếu hàng. Admin có thể dùng thông tin này để bổ sung kho.</p>
+        <div class="table-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div><strong id="restock-count">0</strong> yêu cầu nhập hàng</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Sản phẩm</th>
+                <th>Đặt</th>
+                <th>Tồn kho</th>
+                <th>Thiếu</th>
+                <th>Khách hàng</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="restock-request-list">
+              <tr><td colspan="7" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-loyalty">
@@ -2727,6 +2754,7 @@
   // ==================================================
   let allOrders = [];
   let orderFilter = 'all';
+  let allRestockRequests = [];
 
   async function loadOrders() {
     try {
@@ -2734,6 +2762,7 @@
       const snap = await getDocs(q);
       allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderOrders();
+      await loadRestockRequests();
     } catch (err) {
       console.error('Lỗi tải đơn hàng:', err);
       document.getElementById('order-list').innerHTML =
@@ -2813,6 +2842,54 @@
       document.getElementById('loyalty-list').innerHTML =
         '<tr><td colspan="6" class="empty-state">Không thể tải dữ liệu khách thân thiết.</td></tr>';
     }
+  }
+
+  async function loadRestockRequests() {
+    try {
+      const q = query(collection(db, 'restockRequests'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allRestockRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderRestockRequests();
+    } catch (err) {
+      console.error('Lỗi tải yêu cầu nhập hàng:', err);
+      document.getElementById('restock-request-list').innerHTML =
+        '<tr><td colspan="7" class="empty-state">Không thể tải yêu cầu nhập hàng.</td></tr>';
+    }
+  }
+
+  function renderRestockRequests() {
+    const tbody = document.getElementById('restock-request-list');
+    const count = document.getElementById('restock-count');
+    if (!allRestockRequests.length) {
+      if (count) count.textContent = '0';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Chưa có yêu cầu nhập hàng nào.</td></tr>';
+      return;
+    }
+
+    if (count) count.textContent = allRestockRequests.length.toString();
+    tbody.innerHTML = allRestockRequests.map(r => {
+      const status = r.status || 'requested';
+      const statusBadge = status === 'requested'
+        ? '<span class="badge" style="background:#f59e0b;color:#111">Yêu cầu</span>'
+        : status === 'ordered'
+          ? '<span class="badge" style="background:#0ea5e9;color:#fff">Đã đặt</span>'
+          : status === 'fulfilled'
+            ? '<span class="badge" style="background:#22c55e;color:#fff">Đã nhập</span>'
+            : `<span class="badge" style="background:#64748b;color:#fff">${escapeHtml(status)}</span>`;
+
+      const createdAt = r.createdAt && r.createdAt.toDate ? formatDate(r.createdAt) : '-';
+      return `
+        <tr>
+          <td style="white-space:nowrap">${createdAt}</td>
+          <td>${escapeHtml(r.productName || '—')}</td>
+          <td style="white-space:nowrap">${Number(r.orderedQty || 0)}</td>
+          <td style="white-space:nowrap">${Number(r.availableQty || 0)}</td>
+          <td style="white-space:nowrap">${Number(r.shortageQty || 0)}</td>
+          <td>${escapeHtml(r.customerName || '—')}<br/><small style="color:#888">${escapeHtml(r.customerPhone || '—')}</small></td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function renderLoyaltyCustomers() {
