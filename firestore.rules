@@ -83,7 +83,7 @@ service cloud.firestore {
           && validateOrderItems(d.items)
           && d.total is number && d.total > 0
           && d.status in ['pending', 'shipping', 'unpaid', 'completed']
-          && d.source in ['auto', 'website']
+          && d.source in ['auto', 'website', 'manual']
           && d.timestamp is timestamp
           && d.createdAt is timestamp
           && (!('loyaltyCustomer' in d) || d.loyaltyCustomer is bool)

@@ -2883,20 +2883,22 @@
     if (newStatus === 'shipping' && !order.stockReduced) {
       try {
         await Promise.all((order.items || []).map(async item => {
-          const product = allProducts.find(p => p.id === item.productId);
-          if (!product || typeof product.quantity !== 'number') return;
+          const productId = item.productId || item.id;
+          const product = allProducts.find(p => p.id === productId);
+          const qty = Number(item.qty);
+          if (!product || typeof product.quantity !== 'number' || Number.isNaN(qty) || qty <= 0) return;
           const prevQty = product.quantity;
-          await updateDoc(doc(db, 'products', item.productId), {
-            quantity: increment(-item.qty),
+          await updateDoc(doc(db, 'products', productId), {
+            quantity: increment(-qty),
             updatedAt: serverTimestamp(),
           });
           await addDoc(collection(db, 'stockMovements'), {
-            productId: item.productId,
-            productName: item.name,
+            productId: productId,
+            productName: item.name || product.name || 'Sản phẩm',
             type: 'order',
-            delta: -item.qty,
+            delta: -qty,
             previousQuantity: prevQty,
-            newQuantity: prevQty - item.qty,
+            newQuantity: prevQty - qty,
             orderId: orderId,
             timestamp: serverTimestamp(),
           });
