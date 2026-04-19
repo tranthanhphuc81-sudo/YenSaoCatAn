@@ -2867,8 +2867,6 @@
     if (!customer) return;
     activeLoyaltyResetCustomerId = customerId;
     document.getElementById('loyalty-reset-customer').textContent = `${customer.name || 'Khách'} — ${customer.displayPhone || customer.phone || 'SĐT chưa có'}`;
-    document.getElementById('loyalty-reset-new-password').value = '';
-    document.getElementById('loyalty-reset-confirm-password').value = '';
     document.getElementById('loyalty-reset-error').textContent = '';
     const modal = document.getElementById('loyalty-reset-modal');
     modal.classList.add('active');
