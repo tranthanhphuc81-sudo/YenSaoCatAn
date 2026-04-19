@@ -358,7 +358,19 @@
       font-size: 1.05rem;
       font-weight: 700;
       color: var(--accent);
-      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    #cart-total .cart-total-label {
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    #cart-total .cart-total-equals {
+      opacity: .75;
     }
 
     #cart-empty {
@@ -1722,7 +1734,9 @@
         <li id="cart-empty">Chưa có sản phẩm nào.</li>
       </ul>
       <div id="cart-total" style="display:none">
-        Tổng cộng: <span id="total-price">0 ₫</span>
+        <span class="cart-total-label">Tổng cộng</span>
+        <span class="cart-total-equals">=</span>
+        <span id="total-price">0 ₫</span>
       </div>
     </section>
 
@@ -2357,6 +2371,47 @@
     // Gắn sự kiện xoá
     listEl.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
+    });
+
+    // Gắn sự kiện tăng/giảm số lượng
+    listEl.querySelectorAll('.qty-decrease').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        updateCartQty(id, item.qty - 1);
+      });
+    });
+
+    listEl.querySelectorAll('.qty-increase').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        updateCartQty(id, item.qty + 1);
+      });
+    });
+
+    listEl.querySelectorAll('.cart-qty-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const id = input.dataset.id;
+        let qty = Number(input.value);
+        if (!qty || qty < 1) qty = 1;
+        updateCartQty(id, qty);
+      });
+      input.addEventListener('keydown', event => {
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          const id = input.dataset.id;
+          updateCartQty(id, Number(input.value) + 1);
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          const id = input.dataset.id;
+          const qty = Math.max(1, Number(input.value) - 1);
+          updateCartQty(id, qty);
+        }
+      });
     });
 
     // Gắn sự kiện tăng/giảm số lượng
