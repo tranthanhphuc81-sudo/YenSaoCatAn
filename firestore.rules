@@ -95,14 +95,7 @@ service cloud.firestore {
 
     function validateStockShortages(shortages) {
       return shortages is list
-          && shortages.size() <= 50
-          && shortages.all(sh, 
-            sh.productId is string && sh.productId.size() > 0
-            && sh.name is string && sh.name.size() > 0
-            && sh.orderedQty is number && sh.orderedQty >= 0
-            && sh.availableQty is number && sh.availableQty >= 0
-            && sh.shortageQty is number && sh.shortageQty >= 0
-          );
+          && shortages.size() <= 50;
     }
 
     function validateOrder() {
