@@ -1562,6 +1562,14 @@
             <div style="font-size:.9rem;color:#64748b;margin-bottom:8px">Tổng số lượng</div>
             <div id="report-total-quantity" style="font-size:1.4rem;font-weight:700;color:#0f172a">0</div>
           </div>
+          <div class="report-summary-card" style="background:#fff7ed;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #fb923c;">
+            <div style="font-size:.9rem;color:#92400e;margin-bottom:8px">Đơn chưa thu tiền</div>
+            <div id="report-unpaid-count" style="font-size:1.4rem;font-weight:700;color:#92400e">0</div>
+          </div>
+          <div class="report-summary-card" style="background:#fff7ed;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #fb923c;">
+            <div style="font-size:.9rem;color:#92400e;margin-bottom:8px">Tổng tiền chưa thu</div>
+            <div id="report-unpaid-amount" style="font-size:1.4rem;font-weight:700;color:#92400e">0₫</div>
+          </div>
         </div>
         <div class="table-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:center;">
           <div id="report-backup-status">Chưa có backup báo cáo nào.</div>
@@ -1584,6 +1592,38 @@
             </thead>
             <tbody id="report-summary-table">
               <tr><td colspan="4" class="empty-state">Chưa có dữ liệu đơn hàng.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap" style="margin-top:16px;">
+          <h3>Doanh số theo sản phẩm</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th>Số lượng bán</th>
+                <th>Doanh thu</th>
+                <th>Đơn hàng</th>
+              </tr>
+            </thead>
+            <tbody id="report-product-table">
+              <tr><td colspan="4" class="empty-state">Chưa có dữ liệu sản phẩm.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap" style="margin-top:16px;">
+          <h3>Đơn chưa thu tiền</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="report-unpaid-list">
+              <tr><td colspan="4" class="empty-state">Chưa có đơn chưa thu tiền.</td></tr>
             </tbody>
           </table>
         </div>
@@ -3011,22 +3051,71 @@
   }
 
   function aggregateReportData() {
-    const summary = { totalRevenue: 0, totalQuantity: 0, totalOrders: 0, monthly: {} };
+    const summary = {
+      totalRevenue: 0,
+      totalQuantity: 0,
+      totalOrders: 0,
+      monthly: {},
+      productSales: {},
+      unpaidOrderCount: 0,
+      unpaidOrderAmount: 0,
+      unpaidOrders: []
+    };
     allOrders.forEach(order => {
       const ts = order.timestamp || order.createdAt;
       const orderDate = ts && ts.toDate ? ts.toDate() : new Date();
       const monthKey = getMonthKey(orderDate);
       const month = summary.monthly[monthKey] || { revenue: 0, quantity: 0, orders: 0 };
-      month.revenue += Number(order.total || 0);
-      month.orders += 1;
+      const orderTotal = Number(order.total || 0);
       const orderQuantity = Array.isArray(order.items)
         ? order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0)
         : 0;
+
+      month.revenue += orderTotal;
+      month.orders += 1;
       month.quantity += orderQuantity;
       summary.monthly[monthKey] = month;
-      summary.totalRevenue += Number(order.total || 0);
+
+      summary.totalRevenue += orderTotal;
       summary.totalOrders += 1;
       summary.totalQuantity += orderQuantity;
+
+      if ((order.status || '').toLowerCase() === 'unpaid') {
+        summary.unpaidOrderCount += 1;
+        summary.unpaidOrderAmount += orderTotal;
+        summary.unpaidOrders.push({
+          id: order.id,
+          customerName: order.customerName || 'Khách hàng',
+          total: orderTotal,
+          timestamp: orderDate,
+          status: order.status || 'unpaid'
+        });
+      }
+
+      if (Array.isArray(order.items)) {
+        const productSeen = new Set();
+        order.items.forEach(item => {
+          const key = item.productId || item.id || item.name || 'unknown-product';
+          const name = item.name || item.productName || 'Sản phẩm';
+          const qty = Number(item.qty || item.quantity || 0);
+          const price = Number(item.price || item.unitPrice || 0);
+          const revenue = qty * price;
+          if (!summary.productSales[key]) {
+            summary.productSales[key] = {
+              productName: name,
+              quantity: 0,
+              revenue: 0,
+              orderCount: 0
+            };
+          }
+          summary.productSales[key].quantity += qty;
+          summary.productSales[key].revenue += revenue;
+          if (!productSeen.has(key)) {
+            summary.productSales[key].orderCount += 1;
+            productSeen.add(key);
+          }
+        });
+      }
     });
     return summary;
   }
@@ -3036,13 +3125,19 @@
     const totalRevenueEl = document.getElementById('report-total-revenue');
     const totalOrdersEl = document.getElementById('report-total-orders');
     const totalQuantityEl = document.getElementById('report-total-quantity');
+    const unpaidCountEl = document.getElementById('report-unpaid-count');
+    const unpaidAmountEl = document.getElementById('report-unpaid-amount');
     const tableBody = document.getElementById('report-summary-table');
+    const productTable = document.getElementById('report-product-table');
+    const unpaidTable = document.getElementById('report-unpaid-list');
     const backupStatus = document.getElementById('report-backup-status');
     const warningEl = document.getElementById('report-backup-warning');
 
     if (totalRevenueEl) totalRevenueEl.textContent = formatVND(summary.totalRevenue);
     if (totalOrdersEl) totalOrdersEl.textContent = summary.totalOrders.toString();
     if (totalQuantityEl) totalQuantityEl.textContent = summary.totalQuantity.toString();
+    if (unpaidCountEl) unpaidCountEl.textContent = summary.unpaidOrderCount.toString();
+    if (unpaidAmountEl) unpaidAmountEl.textContent = formatVND(summary.unpaidOrderAmount);
 
     const sortedMonths = Object.keys(summary.monthly).sort((a, b) => b.localeCompare(a));
     if (tableBody) {
@@ -3060,6 +3155,39 @@
             </tr>
           `;
         }).join('');
+      }
+    }
+
+    if (productTable) {
+      const products = Object.values(summary.productSales);
+      if (!products.length) {
+        productTable.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có dữ liệu sản phẩm.</td></tr>';
+      } else {
+        const sortedProducts = products.sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue);
+        productTable.innerHTML = sortedProducts.map(prod => `
+          <tr>
+            <td>${escapeHtml(prod.productName)}</td>
+            <td>${prod.quantity}</td>
+            <td>${formatVND(prod.revenue)}</td>
+            <td>${prod.orderCount}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    if (unpaidTable) {
+      if (!summary.unpaidOrders.length) {
+        unpaidTable.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có đơn chưa thu tiền.</td></tr>';
+      } else {
+        const sortedUnpaid = summary.unpaidOrders.sort((a, b) => b.timestamp - a.timestamp);
+        unpaidTable.innerHTML = sortedUnpaid.map(order => `
+          <tr>
+            <td style="white-space:nowrap">${formatDate(order.timestamp)}</td>
+            <td>${escapeHtml(order.customerName)}</td>
+            <td style="font-weight:700;color:#b91c1c">${formatVND(order.total)}</td>
+            <td><span class="badge" style="background:#f97316;color:#fff">${escapeHtml(order.status)}</span></td>
+          </tr>
+        `).join('');
       }
     }
 
