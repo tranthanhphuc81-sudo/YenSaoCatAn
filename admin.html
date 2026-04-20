@@ -3175,6 +3175,7 @@
       showToast('Reset thất bại: ' + (err.message || err.code), 'error');
     }
   }
+  function renderOrders() {
     const tbody = document.getElementById('order-list');
     const filtered = allOrders.filter(o => {
       const status = o.status || 'pending';
