@@ -2652,20 +2652,30 @@
 
   async function createRestockRequests(orderId, shortages, customerInfo) {
     const validShortages = shortages.filter(item => item.productId && item.shortageQty > 0);
-    if (!validShortages.length) return;
-    await Promise.all(validShortages.map(item => addDoc(collection(db, 'restockRequests'), {
-      orderId,
-      productId: item.productId,
-      productName: item.name || 'Sản phẩm không xác định',
-      orderedQty: item.orderedQty,
-      availableQty: item.availableQty,
-      shortageQty: item.shortageQty,
-      customerName: customerInfo.name,
-      customerPhone: customerInfo.phone,
-      customerAddress: customerInfo.address,
-      status: 'requested',
-      createdAt: serverTimestamp(),
-    })));
+    if (!validShortages.length) return false;
+    console.log('Creating restock requests', validShortages);
+    try {
+      await Promise.all(validShortages.map(item => addDoc(collection(db, 'restockRequests'), {
+        orderId,
+        productId: item.productId,
+        productName: item.name || 'Sản phẩm không xác định',
+        orderedQty: item.orderedQty,
+        availableQty: item.availableQty,
+        shortageQty: item.shortageQty,
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        customerAddress: customerInfo.address,
+        status: 'requested',
+        createdAt: serverTimestamp(),
+      })));
+      return true;
+    } catch (err) {
+      console.error('createRestockRequests failed:', err);
+      showToast('Không tạo được yêu cầu nhập hàng tự động. Vui lòng kiểm tra log.', 'error');
+      return false;
+    }
+  }
+
   }
 
   // ==================================================
@@ -2965,6 +2975,7 @@
         total = Math.max(0, totalBefore - discountAmount);
       }
 
+      console.log('submitOrder shortages', shortages);
       const orderData = {
         customerName:    name,
         customerPhone:   normalizedPhone,
@@ -2994,19 +3005,26 @@
         return false;
       }
 
+      let restockCreated = false;
       if (shortages.length && orderRef) {
-        try {
-          await createRestockRequests(orderRef.id, shortages, {
-            name,
-            phone: normalizedPhone,
-            address,
-          });
-        } catch (err) {
-          console.error('Lỗi tạo yêu cầu nhập hàng:', err);
-        }
+        restockCreated = await createRestockRequests(orderRef.id, shortages, {
+          name,
+          phone: normalizedPhone,
+          address,
+        });
       }
 
-      showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
+      if (shortages.length) {
+        const shortageMessage = shortages.map(i => `${i.name}: thiếu ${i.shortageQty}`).join(', ');
+        if (restockCreated) {
+          showToast(`✅ Đặt hàng thành công. Yêu cầu nhập hàng đã được tạo: ${shortageMessage}`, 'success');
+        } else {
+          showToast(`✅ Đặt hàng thành công. Nhưng yêu cầu nhập hàng chưa được tạo: ${shortageMessage}`, 'warning');
+        }
+      } else {
+        showToast('✅ Đặt hàng thành công! Chúng tôi sẽ liên hệ sớm.', 'success');
+      }
+
       document.getElementById('order-form').reset();
       document.getElementById('bank-info').style.display = 'none';
       cart = [];
