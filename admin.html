@@ -185,18 +185,21 @@
       max-width: 55vw;
     }
 
-    .topbar .admin-info {
-      font-size: .87rem;
-      color: var(--gray);
+    .topbar-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-actions .btn-highlight,
+    .topbar-actions .admin-info {
+      flex: 0 1 auto;
     }
 
     .topbar .admin-info {
-      font-size: .82rem;
-      color: rgba(255,255,255,.7);
+      font-size: .87rem;
+      color: var(--gray);
       display: flex;
       align-items: center;
       gap: 10px;
@@ -330,12 +333,10 @@
       .main-content { padding: 24px 18px 40px; }
       .topbar { padding: 16px 18px; }
       .topbar h1 { max-width: 100%; }
-      .topbar .admin-info { width: 100%; justify-content: space-between; }
       .tab-bar { flex-wrap: wrap; }
       .tab-bar button { flex: 1 1 140px; padding: 12px 10px; }
       .card { padding: 24px; }
       .data-table th, .data-table td { padding: 12px 10px; }
-      .btn-logout, .btn-highlight { width: 100%; }
       .table-wrap { overflow-x: auto; }
       .data-table { min-width: 0; }
     }
@@ -343,8 +344,8 @@
     @media (max-width: 760px) {
       .form-grid { grid-template-columns: 1fr; }
       .form-grid .span-2 { grid-column: 1; }
-      .topbar { flex-direction: column; align-items: flex-start; }
-      .topbar .admin-info { width: 100%; justify-content: space-between; }
+      .topbar { flex-direction: column; align-items: stretch; }
+      .topbar-actions { width: 100%; justify-content: space-between; }
       .tab-bar { flex-wrap: nowrap; overflow-x: auto; }
       .tab-bar button { min-width: 120px; }
       .main-content { padding: 20px 16px 30px; }
@@ -1023,7 +1024,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <h1>🪺 Admin – Yến Sào Cát An</h1>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div class="topbar-actions">
       <a href="inventory.html" class="btn btn-highlight">Kho hàng</a>
       <div class="admin-info">
         <span id="admin-email"></span>
@@ -2084,6 +2085,9 @@
       if (cfg.background_url) {
         document.getElementById('cfg-bg').value  = cfg.background_url;
         document.body.style.backgroundImage      = `url('${cfg.background_url}')`;
+        document.body.style.backgroundRepeat     = 'no-repeat';
+        document.body.style.backgroundPosition   = 'center 80px';
+        document.body.style.backgroundSize       = '220px auto';
       }
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
