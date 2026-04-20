@@ -2631,29 +2631,36 @@
 
   function getProductQuantity(product) {
     if (!product) return null;
-    const qty = Number(product.quantity);
+    const rawQty = product.quantity;
+    const qty = Number(rawQty);
+    console.log('getProductQuantity', { productId: product.id, rawQty, rawType: typeof rawQty, qty, isFinite: Number.isFinite(qty) });
     return Number.isFinite(qty) && qty >= 0 ? qty : null;
   }
 
   function getCartStockShortages() {
-    return cart.map(item => {
+    const result = cart.map(item => {
       const product = allProducts.find(p => p.id === item.id);
       const availableQty = getProductQuantity(product);
-      const shortageQty = availableQty !== null ? Math.max(0, item.qty - availableQty) : 0;
+      const shortageQty = availableQty !== null ? Math.max(0, item.qty - availableQty) : item.qty;
       return {
         productId: item.id,
         name: item.name,
         orderedQty: item.qty,
-        availableQty: availableQty !== null ? availableQty : 0,
+        availableQty: availableQty,
         shortageQty,
       };
-    }).filter(i => i.shortageQty > 0);
+    });
+    console.log('getCartStockShortages debug', { cart, allProducts, result });
+    return result.filter(i => i.shortageQty > 0);
   }
 
   async function createRestockRequests(orderId, shortages, customerInfo) {
     const validShortages = shortages.filter(item => item.productId && item.shortageQty > 0);
-    if (!validShortages.length) return false;
-    console.log('Creating restock requests', validShortages);
+    console.log('createRestockRequests validShortages', validShortages);
+    if (!validShortages.length) {
+      console.log('No valid shortages to create restock requests.');
+      return false;
+    }
     try {
       await Promise.all(validShortages.map(item => addDoc(collection(db, 'restockRequests'), {
         orderId,
@@ -2668,6 +2675,7 @@
         status: 'requested',
         createdAt: serverTimestamp(),
       })));
+      console.log('Restock requests created successfully');
       return true;
     } catch (err) {
       console.error('createRestockRequests failed:', err);
