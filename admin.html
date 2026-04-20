@@ -563,6 +563,52 @@
       text-align: right;
     }
 
+    .status-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .status-filter {
+      border: 1px solid rgba(15,23,42,.12);
+      background: #f8fafc;
+      color: #102a43;
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .2s, color .2s, transform .2s, border-color .2s, box-shadow .2s;
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 110px;
+      flex: 1 1 auto;
+      text-align: center;
+    }
+
+    .status-filter:hover {
+      transform: translateY(-1px);
+      border-color: rgba(15,76,226,.3);
+    }
+
+    .status-filter.active {
+      box-shadow: 0 12px 28px rgba(15,23,42,.12);
+      transform: translateY(-1px);
+      color: #fff;
+    }
+
+    .status-filter.status-all { background: #64748b; color: #fff; }
+    .status-filter.status-pending { background: #f59e0b; color: #111; }
+    .status-filter.status-shipping { background: #0ea5e9; color: #fff; }
+    .status-filter.status-unpaid { background: #f97316; color: #fff; }
+    .status-filter.status-completed { background: #22c55e; color: #fff; }
+
+    .status-filter.status-all.active { background: #334155; }
+    .status-filter.status-pending.active { background: #d97706; }
+    .status-filter.status-shipping.active { background: #0369a1; }
+    .status-filter.status-unpaid.active { background: #ea580c; }
+    .status-filter.status-completed.active { background: #16a34a; }
+
     @media (max-width: 900px) {
       .table-actions {
         flex-direction: column;
@@ -575,28 +621,11 @@
         max-width: none;
       }
       .status-legend {
-        flex-direction: column;
-        align-items: flex-start;
+        justify-content: center;
       }
       .status-filter {
-        border: 1px solid rgba(15,23,42,.12);
-        background: #fff;
-        color: #102a43;
-        padding: 10px 16px;
-        border-radius: 999px;
-        cursor: pointer;
-        transition: background .2s, color .2s, transform .2s, border-color .2s;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-      .status-filter:hover {
-        transform: translateY(-1px);
-        border-color: rgba(15,76,226,.2);
-      }
-      .status-filter.active {
-        background: #0f4caf;
-        color: #fff;
-        border-color: transparent;
+        flex: 1 1 calc(50% - 10px);
+        min-width: 120px;
       }
     }
 
@@ -1457,15 +1486,15 @@
     <div class="tab-panel" id="tab-orders">
       <div class="card">
         <h2>📋 Danh Sách Đơn Hàng</h2>
-        <div class="status-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-          <button type="button" class="status-filter active" data-status="all">Tất cả</button>
-          <button type="button" class="status-filter" data-status="pending">Chờ xử lý</button>
-          <button type="button" class="status-filter" data-status="shipping">Đang giao</button>
-          <button type="button" class="status-filter" data-status="unpaid">Chưa thanh toán</button>
-          <button type="button" class="status-filter" data-status="completed">Hoàn thành</button>
+        <div class="status-legend">
+          <button type="button" class="status-filter status-all active" data-status="all">Tất cả</button>
+          <button type="button" class="status-filter status-pending" data-status="pending">Chờ xử lý</button>
+          <button type="button" class="status-filter status-shipping" data-status="shipping">Đang giao</button>
+          <button type="button" class="status-filter status-unpaid" data-status="unpaid">Chưa thanh toán</button>
+          <button type="button" class="status-filter status-completed" data-status="completed">Hoàn thành</button>
         </div>
         <div class="table-actions" style="gap:12px;flex-wrap:wrap;align-items:center;">
-          <span style="font-weight:700;color:#1f2937;">Lọc trạng thái:</span>
+          <span style="font-weight:700;color:#1f2937;">Lọc trạng thái</span>
         </div>
         <div class="table-wrap">
           <table class="data-table">
