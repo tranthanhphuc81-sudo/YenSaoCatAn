@@ -93,6 +93,18 @@ service cloud.firestore {
           && items.size() > 0 && items.size() <= 50;
     }
 
+    function validateStockShortages(shortages) {
+      return shortages is list
+          && shortages.size() <= 50
+          && shortages.every(sh => 
+            sh.productId is string && sh.productId.size() > 0
+            && sh.name is string && sh.name.size() > 0
+            && sh.orderedQty is number && sh.orderedQty >= 0
+            && sh.availableQty is number && sh.availableQty >= 0
+            && sh.shortageQty is number && sh.shortageQty >= 0
+          );
+    }
+
     function validateOrder() {
       let d = request.resource.data;
       let requiredKeys = [
@@ -100,7 +112,7 @@ service cloud.firestore {
         'paymentMethod', 'items', 'total', 'timestamp',
         'status', 'source', 'createdAt'
       ];
-      let optionalKeys = ['loyaltyCustomer', 'loyaltyPhone', 'loyaltyOffer', 'stockReduced', 'updatedAt'];
+      let optionalKeys = ['loyaltyCustomer', 'loyaltyPhone', 'loyaltyOffer', 'stockReduced', 'stockShortages', 'hasStockShortage', 'updatedAt'];
       return d.keys().hasOnly(requiredKeys.concat(optionalKeys))
           && d.keys().hasAll(requiredKeys)
           // Thông tin khách hàng
@@ -111,7 +123,7 @@ service cloud.firestore {
           && d.paymentMethod in ['cash', 'transfer']
           // Giỏ hàng hợp lệ
           && validateOrderItems(d.items)
-          && d.total is number && d.total > 0
+          && d.total is number && d.total >= 0
           && d.status in ['pending', 'shipping', 'unpaid', 'completed']
           && d.source in ['auto', 'website', 'manual']
           && d.timestamp is timestamp
@@ -119,6 +131,8 @@ service cloud.firestore {
           && (!('loyaltyCustomer' in d) || d.loyaltyCustomer is bool)
           && (!('loyaltyPhone' in d) || (d.loyaltyPhone is string && d.loyaltyPhone.size() > 0 && d.loyaltyPhone.size() <= 20))
           && (!('loyaltyOffer' in d) || (d.loyaltyOffer is string && d.loyaltyOffer.size() <= 2000))
+          && (!('stockShortages' in d) || validateStockShortages(d.stockShortages))
+          && (!('hasStockShortage' in d) || d.hasStockShortage is bool)
           && (!('stockReduced' in d) || d.stockReduced is bool);
     }
 
