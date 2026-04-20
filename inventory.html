@@ -266,6 +266,21 @@
       min-width: 78px;
       transition: transform .2s ease, box-shadow .2s ease;
     }
+    .inventory-list td.low-stock {
+      position: relative;
+    }
+    .stock-warning {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      margin-left: 8px;
+      border-radius: 999px;
+      background: rgba(239,68,68,.12);
+      color: #b91c1c;
+      font-size: .78rem;
+      font-weight: 700;
+    }
     .inventory-list button:hover {
       transform: translateY(-1px);
     }
@@ -406,38 +421,36 @@
         min-width: 0;
         flex: 1 1 auto;
       }
-      .history-list {
+      .inventory-list, .inventory-list thead, .inventory-list tbody, .inventory-list tr, .inventory-list th, .inventory-list td {
         width: 100%;
       }
-      .history-list thead {
-        display: none;
+      .inventory-list th, .inventory-list td {
+        padding: 12px 10px;
+        font-size: .88rem;
       }
-      .history-list, .history-list tbody, .history-list tr, .history-list td {
-        display: block;
-        width: 100%;
+      .inventory-list td {
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
-      .history-list tr {
-        margin-bottom: 18px;
-        padding: 18px;
-        background: #fff;
-        border-radius: 24px;
-        box-shadow: 0 18px 32px rgba(15,23,42,.06);
-        border: 1px solid rgba(148,163,184,.18);
+      .inventory-list td.image-col img {
+        width: 50px;
+        height: 50px;
       }
-      .history-list td {
-        padding: 10px 0;
-        border: none;
+      .inventory-list th.image-col, .inventory-list td.image-col,
+      .inventory-list th.barcode-col, .inventory-list td.barcode-col,
+      .inventory-list th.name-col, .inventory-list td.name-col,
+      .inventory-list th.location-col, .inventory-list td.location-col,
+      .inventory-list th.note-col, .inventory-list td.note-col {
+        width: auto;
       }
-      .history-list td::before {
-        content: attr(data-label);
-        display: block;
-        margin-bottom: 6px;
-        color: #64748b;
-        font-size: .86rem;
-        font-weight: 700;
+      .inventory-list .action-cell {
+        flex-wrap: wrap;
+        gap: 8px;
       }
-      .history-list td:last-child {
-        padding-bottom: 0;
+      .inventory-list .action-cell button {
+        min-width: 100px;
+        flex: 1 1 auto;
       }
       .preview img { width: 100%; height: auto; }
     }
@@ -954,20 +967,24 @@
         inventoryBody.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#475569;text-align:center">Chưa có sản phẩm phù hợp.</td></tr>';
         return;
       }
-      inventoryBody.innerHTML = filtered.map(item => `
-        <tr>
-          <td class="image-col">${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
-          <td class="barcode-col">${item.barcode ? `<span>${item.barcode}</span>` : '<span style="color:#94a3b8">Không có</span>'}</td>
-          <td class="name-col"><span>${item.name || 'Chưa đặt tên'}</span></td>
-          <td>${item.quantity ?? 0}</td>
-          <td class="location-col"><span>${item.location || '-'}</span></td>
-          <td class="note-col">${item.note || '-'}</td>
-          <td class="action-cell">
-            <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
-            <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
-          </td>
-        </tr>
-      `).join('');
+      inventoryBody.innerHTML = filtered.map(item => {
+        const qty = Number(item.quantity || 0);
+        const lowStock = qty > 0 && qty <= 5;
+        return `
+          <tr>
+            <td class="image-col">${item.image || item.imageUrl ? `<img src="${item.image || item.imageUrl}" alt="ảnh sản phẩm" />` : '<span style="color:#94a3b8">Chưa có</span>'}</td>
+            <td class="barcode-col">${item.barcode ? `<span>${item.barcode}</span>` : '<span style="color:#94a3b8">Không có</span>'}</td>
+            <td class="name-col"><span>${item.name || 'Chưa đặt tên'}</span></td>
+            <td class="${lowStock ? 'low-stock' : ''}">${qty}${lowStock ? '<span class="stock-warning">Gần hết</span>' : ''}</td>
+            <td class="location-col"><span>${item.location || '-'}</span></td>
+            <td class="note-col">${item.note || '-'}</td>
+            <td class="action-cell">
+              <button class="btn-view" type="button" data-id="${item.id}">Xem</button>
+              <button class="btn-select" type="button" data-id="${item.id}">Chọn</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
       inventoryBody.querySelectorAll('.btn-select').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); selectItem(btn.dataset.id); })) ;
       inventoryBody.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showInventoryProduct(btn.dataset.id); }));
       inventoryBody.querySelectorAll('tr[data-id]').forEach(row => row.addEventListener('click', () => showInventoryProduct(row.dataset.id)));
