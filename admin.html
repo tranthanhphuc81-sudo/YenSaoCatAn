@@ -71,6 +71,7 @@
     .login-box h1 {
       font-size: 1.8rem;
       color: var(--primary);
+      margin-bottom: 8px;
     }
 
     .login-box p {
@@ -98,37 +99,16 @@
     }
 
     .btn-primary {
+      width: 100%;
       padding: 14px 16px;
       border-radius: 16px;
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       box-shadow: 0 18px 40px rgba(15,76,226,.18);
+      color: var(--white);
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
     }
-
-    .login-box {
-      background: var(--white);
-      border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,.35);
-      padding: 44px 40px;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .login-box h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--red);
-      margin-bottom: 6px;
-      text-align: center;
-    }
-
-    .login-box p {
-      text-align: center;
-      color: var(--gray);
-      font-size: .88rem;
-      margin-bottom: 28px;
-    }
-
-    .form-group { margin-bottom: 16px; }
 
     .form-group label {
       display: block;
@@ -137,22 +117,6 @@
       margin-bottom: 6px;
       color: #444;
     }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 11px 14px;
-      border: 1.5px solid #ddd;
-      border-radius: 7px;
-      font-size: .97rem;
-      outline: none;
-      transition: border-color .2s;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus { border-color: var(--red); }
 
     .password-field-wrapper {
       position: relative;
@@ -178,24 +142,11 @@
 
     .hidden { display: none !important; }
 
-    .btn-primary {
-      width: 100%;
-      padding: 12px;
-      background: var(--red);
-      color: var(--white);
-      border: none;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background .2s;
-    }
-
-    .btn-primary:hover    { background: var(--red-dk); }
+    .btn-primary:hover    { background: var(--primary-dark); }
     .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
 
     #login-error {
-      color: var(--red);
+      color: var(--primary-dark);
       font-size: .87rem;
       text-align: center;
       margin-top: 10px;
@@ -374,6 +325,38 @@
     }
 
     .form-grid .span-2 { grid-column: 1 / -1; }
+
+    @media (max-width: 900px) {
+      .main-content { padding: 24px 18px 40px; }
+      .topbar { padding: 16px 18px; }
+      .topbar h1 { max-width: 100%; }
+      .topbar .admin-info { width: 100%; justify-content: space-between; }
+      .tab-bar { flex-wrap: wrap; }
+      .tab-bar button { flex: 1 1 140px; padding: 12px 10px; }
+      .card { padding: 24px; }
+      .data-table th, .data-table td { padding: 12px 10px; }
+      .btn-logout, .btn-highlight { width: 100%; }
+      .table-wrap { overflow-x: auto; }
+      .data-table { min-width: 0; }
+    }
+
+    @media (max-width: 760px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .span-2 { grid-column: 1; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .topbar .admin-info { width: 100%; justify-content: space-between; }
+      .tab-bar { flex-wrap: nowrap; overflow-x: auto; }
+      .tab-bar button { min-width: 120px; }
+      .main-content { padding: 20px 16px 30px; }
+      .btn-save, .btn-delete, .btn-logout, .btn-highlight { width: 100%; }
+      .data-table th, .data-table td { font-size: .85rem; }
+      .chat-admin-wrap { flex-direction: column; height: auto; }
+      .chat-session-list { width: 100%; max-height: 260px; border-right: none; border-bottom: 1px solid #e5e7eb; }
+      .chat-thread-input { flex-direction: column; }
+      .chat-thread-input input { width: 100%; }
+      .chat-thread-input button { width: 100%; }
+      .chat-thread-input .attach-btn { width: auto; margin-right: 0; }
+    }
 
     @media (max-width: 600px) {
       .form-grid { grid-template-columns: 1fr; }
