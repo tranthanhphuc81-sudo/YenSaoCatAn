@@ -395,8 +395,50 @@
     @media (max-width: 760px) {
       .header { padding: 20px 18px; }
       .page { padding: 20px 16px 32px; }
-      .inventory-list th, .inventory-list td { padding: 14px 12px; }
+      .inventory-list { table-layout: auto; }
+      .inventory-list th, .inventory-list td { padding: 14px 12px; min-width: 0; }
+      .inventory-list td { white-space: normal; }
       .inventory-list td.image-col img { width: 60px; height: 60px; }
+      .inventory-list .action-cell {
+        justify-content: flex-start;
+      }
+      .inventory-list .action-cell button {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .history-list {
+        width: 100%;
+      }
+      .history-list thead {
+        display: none;
+      }
+      .history-list, .history-list tbody, .history-list tr, .history-list td {
+        display: block;
+        width: 100%;
+      }
+      .history-list tr {
+        margin-bottom: 18px;
+        padding: 18px;
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 18px 32px rgba(15,23,42,.06);
+        border: 1px solid rgba(148,163,184,.18);
+      }
+      .history-list td {
+        padding: 10px 0;
+        border: none;
+      }
+      .history-list td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 6px;
+        color: #64748b;
+        font-size: .86rem;
+        font-weight: 700;
+      }
+      .history-list td:last-child {
+        padding-bottom: 0;
+      }
       .preview img { width: 100%; height: auto; }
     }
     @media (max-width: 560px) {
@@ -510,7 +552,7 @@
         <button id="refresh-history" class="btn btn-secondary">Làm mới lịch sử</button>
       </div>
       <div style="overflow-x:auto;">
-        <table class="inventory-list">
+        <table class="inventory-list history-list">
           <thead>
             <tr>
               <th>Thời gian</th>
@@ -888,14 +930,14 @@
       }
       historyBody.innerHTML = historyItems.map(item => `
         <tr>
-          <td>${formatDate(item.timestamp)}</td>
-          <td>${item.barcode || '-'}</td>
-          <td>${item.productName || '-'}</td>
-          <td>${item.type === 'out' ? 'Xuất' : 'Nhập'}</td>
-          <td>${item.delta}</td>
-          <td>${item.previousQuantity ?? '-'}</td>
-          <td>${item.newQuantity ?? '-'}</td>
-          <td>${item.note || '-'}</td>
+          <td data-label="Thời gian">${formatDate(item.timestamp)}</td>
+          <td data-label="Mã vạch">${item.barcode || '-'}</td>
+          <td data-label="Sản phẩm">${item.productName || '-'}</td>
+          <td data-label="Loại">${item.type === 'out' ? 'Xuất' : 'Nhập'}</td>
+          <td data-label="Số lượng">${item.delta}</td>
+          <td data-label="SL trước">${item.previousQuantity ?? '-'}</td>
+          <td data-label="SL sau">${item.newQuantity ?? '-'}</td>
+          <td data-label="Ghi chú">${item.note || '-'}</td>
         </tr>
       `).join('');
     }
