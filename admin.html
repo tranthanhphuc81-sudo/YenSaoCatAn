@@ -1119,6 +1119,7 @@
     <button data-tab="chat" id="tab-btn-chat"><span class="tab-icon">💬<span id="chat-unread-badge" style="display:none;background:#e74c3c;color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;vertical-align:top;margin-left:1px;"></span></span><span class="tab-label">Chat</span></button>
     <button data-tab="contacts"><span class="tab-icon">✉️</span><span class="tab-label">Tin nhắn</span></button>
     <button data-tab="orders"><span class="tab-icon">📋</span><span class="tab-label">Đơn hàng</span></button>
+    <button data-tab="reports"><span class="tab-icon">📊</span><span class="tab-label">Báo cáo</span></button>
     <button data-tab="loyalty"><span class="tab-icon">⭐</span><span class="tab-label">Khách thân thiết</span></button>
   </div>
 
@@ -1539,6 +1540,66 @@
             </thead>
             <tbody id="restock-request-list">
               <tr><td colspan="7" class="empty-state">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-reports">
+      <div class="card">
+        <h2>📊 Báo cáo</h2>
+        <div class="report-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px; margin-bottom:18px;">
+          <div class="report-summary-card" style="background:#f8fafc;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+            <div style="font-size:.9rem;color:#64748b;margin-bottom:8px">Tổng doanh thu</div>
+            <div id="report-total-revenue" style="font-size:1.4rem;font-weight:700;color:#0f172a">0₫</div>
+          </div>
+          <div class="report-summary-card" style="background:#f8fafc;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+            <div style="font-size:.9rem;color:#64748b;margin-bottom:8px">Tổng đơn hàng</div>
+            <div id="report-total-orders" style="font-size:1.4rem;font-weight:700;color:#0f172a">0</div>
+          </div>
+          <div class="report-summary-card" style="background:#f8fafc;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+            <div style="font-size:.9rem;color:#64748b;margin-bottom:8px">Tổng số lượng</div>
+            <div id="report-total-quantity" style="font-size:1.4rem;font-weight:700;color:#0f172a">0</div>
+          </div>
+        </div>
+        <div class="table-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:center;">
+          <div id="report-backup-status">Chưa có backup báo cáo nào.</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="button" class="btn-save" id="btn-backup-report">Backup báo cáo</button>
+            <button type="button" class="btn btn-danger" id="btn-reset-report">Reset báo cáo</button>
+          </div>
+        </div>
+        <p id="report-backup-warning" style="color:#b91c1c;margin-top:8px"></p>
+        <div class="table-wrap" style="margin-top:16px;">
+          <h3>Thống kê theo tháng</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tháng</th>
+                <th>Doanh thu</th>
+                <th>Đơn hàng</th>
+                <th>Số lượng</th>
+              </tr>
+            </thead>
+            <tbody id="report-summary-table">
+              <tr><td colspan="4" class="empty-state">Chưa có dữ liệu đơn hàng.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap" style="margin-top:16px;">
+          <h3>Lịch sử backup</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Doanh thu</th>
+                <th>Đơn hàng</th>
+                <th>Số lượng</th>
+              </tr>
+            </thead>
+            <tbody id="report-backup-list">
+              <tr><td colspan="4" class="empty-state">Chưa có backup báo cáo.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1998,6 +2059,8 @@
       loadProducts();
       loadPosts();
       loadOrders();
+      loadReportBackups();
+      loadReportMetadata();
       loadContacts();
       loadLoyaltyCustomers();
       loadLoyaltyTemplates();
@@ -2920,6 +2983,8 @@
   let orderFilter = 'all';
   let allRestockRequests = [];
   let restockRequestsUnsub = null;
+  let reportBackups = [];
+  let reportBackupMeta = null;
 
   async function loadOrders() {
     try {
@@ -2932,9 +2997,184 @@
       document.getElementById('order-list').innerHTML =
         '<tr><td colspan="8" class="empty-state">Không thể tải đơn hàng.</td></tr>';
     }
+    renderReports();
   }
 
-  function renderOrders() {
+  function getMonthKey(date) {
+    const d = date instanceof Date ? date : date.toDate ? date.toDate() : new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function getMonthLabel(key) {
+    const [year, month] = key.split('-');
+    return `${month}/${year}`;
+  }
+
+  function aggregateReportData() {
+    const summary = { totalRevenue: 0, totalQuantity: 0, totalOrders: 0, monthly: {} };
+    allOrders.forEach(order => {
+      const ts = order.timestamp || order.createdAt;
+      const orderDate = ts && ts.toDate ? ts.toDate() : new Date();
+      const monthKey = getMonthKey(orderDate);
+      const month = summary.monthly[monthKey] || { revenue: 0, quantity: 0, orders: 0 };
+      month.revenue += Number(order.total || 0);
+      month.orders += 1;
+      const orderQuantity = Array.isArray(order.items)
+        ? order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0)
+        : 0;
+      month.quantity += orderQuantity;
+      summary.monthly[monthKey] = month;
+      summary.totalRevenue += Number(order.total || 0);
+      summary.totalOrders += 1;
+      summary.totalQuantity += orderQuantity;
+    });
+    return summary;
+  }
+
+  function renderReports() {
+    const summary = aggregateReportData();
+    const totalRevenueEl = document.getElementById('report-total-revenue');
+    const totalOrdersEl = document.getElementById('report-total-orders');
+    const totalQuantityEl = document.getElementById('report-total-quantity');
+    const tableBody = document.getElementById('report-summary-table');
+    const backupStatus = document.getElementById('report-backup-status');
+    const warningEl = document.getElementById('report-backup-warning');
+
+    if (totalRevenueEl) totalRevenueEl.textContent = formatVND(summary.totalRevenue);
+    if (totalOrdersEl) totalOrdersEl.textContent = summary.totalOrders.toString();
+    if (totalQuantityEl) totalQuantityEl.textContent = summary.totalQuantity.toString();
+
+    const sortedMonths = Object.keys(summary.monthly).sort((a, b) => b.localeCompare(a));
+    if (tableBody) {
+      if (!sortedMonths.length) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có dữ liệu đơn hàng.</td></tr>';
+      } else {
+        tableBody.innerHTML = sortedMonths.map(key => {
+          const month = summary.monthly[key];
+          return `
+            <tr>
+              <td>${getMonthLabel(key)}</td>
+              <td>${formatVND(month.revenue)}</td>
+              <td>${month.orders}</td>
+              <td>${month.quantity}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    if (backupStatus) {
+      if (reportBackupMeta && reportBackupMeta.lastBackupAt && reportBackupMeta.lastBackupAt.toDate) {
+        backupStatus.textContent = `Backup gần nhất: ${formatDate(reportBackupMeta.lastBackupAt)} (đã backup ${reportBackupMeta.backupCount || 0} lần)`;
+      } else {
+        backupStatus.textContent = 'Chưa có backup báo cáo nào.';
+      }
+    }
+
+    if (warningEl) {
+      const lastBackup = reportBackupMeta && reportBackupMeta.lastBackupAt && reportBackupMeta.lastBackupAt.toDate ? reportBackupMeta.lastBackupAt.toDate() : null;
+      if (!lastBackup || Date.now() - lastBackup.getTime() > 14 * 24 * 60 * 60 * 1000) {
+        warningEl.textContent = '⚠️ Cảnh báo: Chưa backup báo cáo trong hơn 14 ngày.';
+      } else {
+        warningEl.textContent = '';
+      }
+    }
+  }
+
+  async function loadReportBackups() {
+    try {
+      const q = query(collection(db, 'reportBackups'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      reportBackups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderReportBackups();
+    } catch (err) {
+      console.error('Lỗi tải backup báo cáo:', err);
+      document.getElementById('report-backup-list').innerHTML =
+        '<tr><td colspan="4" class="empty-state">Không thể tải dữ liệu backup.</td></tr>';
+    }
+  }
+
+  async function loadReportMetadata() {
+    try {
+      const docRef = doc(db, 'config', 'reportBackup');
+      const snap = await getDoc(docRef);
+      reportBackupMeta = snap.exists() ? snap.data() : null;
+      renderReports();
+    } catch (err) {
+      console.error('Lỗi tải metadata backup báo cáo:', err);
+    }
+  }
+
+  function renderReportBackups() {
+    const tbody = document.getElementById('report-backup-list');
+    if (!reportBackups.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có backup.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = reportBackups.map(item => {
+      const createdAt = item.createdAt && item.createdAt.toDate ? formatDate(item.createdAt) : '-';
+      return `
+        <tr>
+          <td style="white-space:nowrap">${createdAt}</td>
+          <td>${formatVND(item.totalRevenue || 0)}</td>
+          <td>${item.totalOrders || 0}</td>
+          <td>${item.totalQuantity || 0}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function backupReportData() {
+    try {
+      const summary = aggregateReportData();
+      await addDoc(collection(db, 'reportBackups'), {
+        createdAt: serverTimestamp(),
+        totalRevenue: summary.totalRevenue,
+        totalOrders: summary.totalOrders,
+        totalQuantity: summary.totalQuantity,
+        monthCount: Object.keys(summary.monthly).length,
+      });
+      await setDoc(doc(db, 'config', 'reportBackup'), {
+        lastBackupAt: serverTimestamp(),
+        backupCount: (reportBackupMeta?.backupCount || 0) + 1,
+        lastBackupBy: auth.currentUser?.email || '',
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      showToast('✅ Backup báo cáo thành công.');
+      await loadReportBackups();
+      await loadReportMetadata();
+    } catch (err) {
+      console.error('Lỗi backup báo cáo:', err);
+      showToast('Không thể backup báo cáo: ' + err.message, 'error');
+    }
+  }
+
+  async function resetReportData() {
+    const password = prompt('Nhập mật khẩu admin để reset dữ liệu báo cáo:');
+    if (!password) return;
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      showToast('Không có tài khoản admin hợp lệ.', 'error');
+      return;
+    }
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      const snap = await getDocs(collection(db, 'reportBackups'));
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      await setDoc(doc(db, 'config', 'reportBackup'), {
+        backupCount: 0,
+        lastBackupBy: '',
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      showToast('✅ Đã reset dữ liệu báo cáo.');
+      await loadReportBackups();
+      await loadReportMetadata();
+    } catch (err) {
+      console.error('Reset report data failed:', err);
+      showToast('Reset thất bại: ' + (err.message || err.code), 'error');
+    }
+  }
     const tbody = document.getElementById('order-list');
     const filtered = allOrders.filter(o => {
       const status = o.status || 'pending';
@@ -3766,6 +4006,16 @@
       renderOrders();
     });
   });
+
+  const backupReportButton = document.getElementById('btn-backup-report');
+  if (backupReportButton) {
+    backupReportButton.addEventListener('click', backupReportData);
+  }
+
+  const resetReportButton = document.getElementById('btn-reset-report');
+  if (resetReportButton) {
+    resetReportButton.addEventListener('click', resetReportData);
+  }
 
   document.getElementById('refresh-loyalty').addEventListener('click', function () {
     loadLoyaltyCustomers();
