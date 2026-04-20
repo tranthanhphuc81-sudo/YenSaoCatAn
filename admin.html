@@ -30,7 +30,11 @@
     body {
       font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
       color: var(--text);
-      background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #eef6ff 100%);
+      background: radial-gradient(circle at top, rgba(255,255,255,.94), transparent 30%),
+                  linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #eef6ff 100%);
+      background-attachment: fixed;
+      background-position: center top;
+      background-size: cover;
       min-height: 100vh;
     }
 
@@ -190,20 +194,34 @@
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
+      width: 100%;
+      justify-content: flex-end;
     }
 
     .topbar-actions .btn-highlight,
-    .topbar-actions .admin-info {
+    .topbar-actions .btn-logout {
       flex: 0 1 auto;
+      min-width: 140px;
     }
 
-    .topbar .admin-info {
-      font-size: .87rem;
-      color: var(--gray);
+    .topbar-actions .admin-info {
+      margin-left: auto;
       display: flex;
       align-items: center;
       gap: 10px;
-      flex-shrink: 0;
+      font-size: .87rem;
+      color: var(--gray);
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .topbar-actions .admin-info span {
+      font-weight: 700;
+      color: var(--primary-dark);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 150px;
     }
 
     /* Ẩn email trên màn hình nhỏ */
@@ -349,7 +367,19 @@
       .tab-bar { flex-wrap: nowrap; overflow-x: auto; }
       .tab-bar button { min-width: 120px; }
       .main-content { padding: 20px 16px 30px; }
-      .btn-save, .btn-delete, .btn-logout, .btn-highlight { width: 100%; }
+      .btn-save, .btn-delete { width: 100%; }
+      .topbar-actions { justify-content: space-between; }
+      .topbar-actions .btn-highlight,
+      .topbar-actions .btn-logout {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 140px;
+      }
+      .topbar-actions .admin-info {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
       .data-table th, .data-table td { font-size: .85rem; }
       .chat-admin-wrap { flex-direction: column; height: auto; }
       .chat-session-list { width: 100%; max-height: 260px; border-right: none; border-bottom: 1px solid #e5e7eb; }
@@ -1026,9 +1056,9 @@
     <h1>🪺 Admin – Yến Sào Cát An</h1>
     <div class="topbar-actions">
       <a href="inventory.html" class="btn btn-highlight">Kho hàng</a>
+      <button class="btn-logout" id="btn-logout">Đăng xuất</button>
       <div class="admin-info">
         <span id="admin-email"></span>
-        <button class="btn-logout" id="btn-logout">Đăng xuất</button>
       </div>
     </div>
   </div>
@@ -2084,10 +2114,12 @@
       }
       if (cfg.background_url) {
         document.getElementById('cfg-bg').value  = cfg.background_url;
-        document.body.style.backgroundImage      = `url('${cfg.background_url}')`;
-        document.body.style.backgroundRepeat     = 'no-repeat';
-        document.body.style.backgroundPosition   = 'center 80px';
-        document.body.style.backgroundSize       = '220px auto';
+        const gradientLayers = `radial-gradient(circle at top, rgba(232,244,255,.90), transparent 28%), linear-gradient(180deg, #eef4ff 0%, #f8fbff 55%, #eef4ff 100%)`;
+        document.body.style.backgroundImage      = `url('${cfg.background_url}'), ${gradientLayers}`;
+        document.body.style.backgroundRepeat     = 'no-repeat, no-repeat, no-repeat';
+        document.body.style.backgroundPosition   = 'center 120px, center top, center top';
+        document.body.style.backgroundSize       = '220px auto, cover, cover';
+        document.body.style.backgroundAttachment = 'fixed, fixed, fixed';
       }
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
