@@ -2419,7 +2419,7 @@
       <div class="modal-row"><strong>Tên:</strong><span>${product.name || '—'}</span></div>
       <div class="modal-row"><strong>Phân loại:</strong><span>${CAT_LABEL[product.category] || product.category || '—'}</span></div>
       <div class="modal-row"><strong>Giá:</strong><span>${formatVND(product.price)}</span></div>
-      <div class="modal-row"><strong>Mô tả:</strong><span>${product.description || 'Không có'}</span></div>
+      <div class="modal-row"><strong>Mô tả:</strong><div style="max-width:600px;line-height:1.6">${product.description || 'Không có'}</div></div>
       <div class="modal-row"><strong>Mã vạch:</strong><span>${barcode || 'Chưa có'}</span></div>
       ${hasBarcode ? `
         <div class="barcode-row">
