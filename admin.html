@@ -2003,6 +2003,7 @@
       loadLoyaltyTemplates();
       listenContactMessages();
       listenChatSessions();
+      listenRestockRequests();
     } else {
       // Chưa đăng nhập → hiện login, ẩn dashboard
       document.getElementById('login-page').style.display  = 'flex';
@@ -2011,6 +2012,7 @@
       clearInterval(_presenceInterval);
       _presenceInterval = null;
       setAdminOnline(false);
+      if (restockRequestsUnsub) { restockRequestsUnsub(); restockRequestsUnsub = null; }
     }
   });
 
@@ -2917,6 +2919,7 @@
   let allOrders = [];
   let orderFilter = 'all';
   let allRestockRequests = [];
+  let restockRequestsUnsub = null;
 
   async function loadOrders() {
     try {
@@ -2924,7 +2927,6 @@
       const snap = await getDocs(q);
       allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderOrders();
-      await loadRestockRequests();
     } catch (err) {
       console.error('Lỗi tải đơn hàng:', err);
       document.getElementById('order-list').innerHTML =
@@ -3016,6 +3018,17 @@
       document.getElementById('restock-request-list').innerHTML =
         '<tr><td colspan="7" class="empty-state">Không thể tải yêu cầu nhập hàng.</td></tr>';
     }
+  }
+
+  function listenRestockRequests() {
+    if (restockRequestsUnsub) restockRequestsUnsub();
+    const q = query(collection(db, 'restockRequests'), orderBy('createdAt', 'desc'));
+    restockRequestsUnsub = onSnapshot(q, snap => {
+      allRestockRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderRestockRequests();
+    }, err => {
+      console.error('Lỗi realtime yêu cầu nhập hàng:', err);
+    });
   }
 
   function renderRestockRequests() {

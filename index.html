@@ -2468,7 +2468,7 @@
     }
 
     grid.innerHTML = list.map(p => {
-      const qty = typeof p.quantity === 'number' ? p.quantity : null;
+      const qty = getProductQuantity(p);
       const stockNote = qty === null
         ? ''
         : qty <= 0
@@ -2601,8 +2601,10 @@
       cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
     }
     renderCart();
-    if (typeof product.quantity === 'number' && cart.find(i => i.id === product.id).qty > product.quantity) {
-      const shortage = cart.find(i => i.id === product.id).qty - product.quantity;
+    const availableQty = getProductQuantity(product);
+    const currentQty = cart.find(i => i.id === product.id).qty;
+    if (availableQty !== null && currentQty > availableQty) {
+      const shortage = currentQty - availableQty;
       showToast(`Đã thêm ${product.name}. Hiện thiếu ${shortage} sản phẩm so với tồn kho. Admin sẽ được thông báo.`, 'warning');
     } else {
       showToast(`Đã thêm: ${product.name}`);
@@ -2627,27 +2629,34 @@
     renderCart();
   }
 
+  function getProductQuantity(product) {
+    if (!product) return null;
+    const qty = Number(product.quantity);
+    return Number.isFinite(qty) && qty >= 0 ? qty : null;
+  }
+
   function getCartStockShortages() {
     return cart.map(item => {
       const product = allProducts.find(p => p.id === item.id);
-      const availableQty = product && typeof product.quantity === 'number' ? product.quantity : 0;
-      const shortageQty = Math.max(0, item.qty - availableQty);
+      const availableQty = getProductQuantity(product);
+      const shortageQty = availableQty !== null ? Math.max(0, item.qty - availableQty) : 0;
       return {
         productId: item.id,
         name: item.name,
         orderedQty: item.qty,
-        availableQty,
+        availableQty: availableQty !== null ? availableQty : 0,
         shortageQty,
       };
     }).filter(i => i.shortageQty > 0);
   }
 
   async function createRestockRequests(orderId, shortages, customerInfo) {
-    if (!shortages.length) return;
-    await Promise.all(shortages.map(item => addDoc(collection(db, 'restockRequests'), {
+    const validShortages = shortages.filter(item => item.productId && item.shortageQty > 0);
+    if (!validShortages.length) return;
+    await Promise.all(validShortages.map(item => addDoc(collection(db, 'restockRequests'), {
       orderId,
       productId: item.productId,
-      productName: item.name,
+      productName: item.name || 'Sản phẩm không xác định',
       orderedQty: item.orderedQty,
       availableQty: item.availableQty,
       shortageQty: item.shortageQty,
@@ -2681,7 +2690,7 @@
     const finalTotal = Math.max(0, subtotal - discount);
     listEl.innerHTML = cart.map(i => {
       const product = allProducts.find(p => p.id === i.id);
-      const availableQty = product && typeof product.quantity === 'number' ? product.quantity : null;
+      const availableQty = getProductQuantity(product);
       const shortage = availableQty !== null && i.qty > availableQty ? i.qty - availableQty : 0;
       return `
       <li>
@@ -2886,7 +2895,8 @@
   function validateCartStock() {
     const issues = cart.filter(item => {
       const product = allProducts.find(p => p.id === item.id);
-      return product && typeof product.quantity === 'number' && product.quantity < item.qty;
+      const availableQty = getProductQuantity(product);
+      return availableQty !== null && availableQty < item.qty;
     });
     if (!issues.length) return true;
     const names = issues.map(i => `${i.name} (${i.qty})`).join(', ');
