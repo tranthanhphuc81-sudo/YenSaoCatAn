@@ -18,7 +18,7 @@
       --shadow: 0 12px 32px rgba(15,23,42,.08);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: #eef2ff; color: var(--text); }
+    body { margin: 0; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; background: radial-gradient(circle at top, rgba(232,244,255,.90), transparent 28%), linear-gradient(180deg, #eef2ff 0%, #f7fbff 55%, #eef2ff 100%); background-position: center top; background-size: cover; color: var(--text); }
     body::before { content: ''; position: fixed; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(232,244,255,.95)); z-index: 0; }
     .page { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 28px 20px 40px; }
     .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
@@ -272,6 +272,31 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    async function loadInventoryBackground() {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'settings'));
+        if (!snap.exists()) return;
+        const cfg = snap.data();
+        const imageUrl = cfg.logo_url || cfg.background_url;
+        if (!imageUrl) return;
+
+        if (cfg.logo_url) {
+          document.body.style.backgroundImage = `url('${imageUrl}'), radial-gradient(circle at top, rgba(232,244,255,.90), transparent 28%), linear-gradient(180deg, #eef2ff 0%, #f7fbff 55%, #eef2ff 100%)`;
+          document.body.style.backgroundPosition = 'center 120px, center top, center top';
+          document.body.style.backgroundSize = '160px auto, cover, cover';
+        } else {
+          document.body.style.backgroundImage = `url('${imageUrl}'), radial-gradient(circle at top, rgba(232,244,255,.90), transparent 28%)`;
+          document.body.style.backgroundPosition = 'center center, center top';
+          document.body.style.backgroundSize = 'cover, cover';
+        }
+        document.body.style.backgroundRepeat = 'no-repeat, no-repeat, no-repeat';
+      } catch (err) {
+        console.warn('Không thể tải cấu hình nền:', err);
+      }
+    }
+
+    loadInventoryBackground();
 
     function showToast(message, type = 'default') {
       const toast = document.getElementById('toast');
