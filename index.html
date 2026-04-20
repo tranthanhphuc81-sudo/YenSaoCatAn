@@ -2646,7 +2646,7 @@
         productId: item.id,
         name: item.name,
         orderedQty: item.qty,
-        availableQty: availableQty,
+        availableQty: availableQty !== null ? availableQty : 0,
         shortageQty,
       };
     });
