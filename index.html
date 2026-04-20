@@ -53,6 +53,7 @@
       max-width: 1140px;
       margin: 0 auto;
       padding: 30px 20px 60px;
+      touch-action: pan-y;
     }
 
     header {
@@ -3135,19 +3136,73 @@
 
   let newsLoaded = false;
 
-  document.querySelectorAll('.main-nav button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      Object.values(tabPages).forEach(p => p.classList.remove('active'));
-      tabPages[btn.dataset.tab].classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (btn.dataset.tab === 'news' && !newsLoaded) {
-        loadNews();
-        newsLoaded = true;
+  const tabButtons = Array.from(document.querySelectorAll('.main-nav button'));
+  const tabOrder = tabButtons.map(btn => btn.dataset.tab);
+
+  const activateTab = (tabName) => {
+    const target = tabPages[tabName];
+    if (!target) return;
+    tabButtons.forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.main-nav button[data-tab="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    Object.values(tabPages).forEach(p => p.classList.remove('active'));
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (tabName === 'news' && !newsLoaded) {
+      loadNews();
+      newsLoaded = true;
+    }
+  };
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+  });
+
+  const tabContainer = document.querySelector('.wrapper');
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchMoved = false;
+  const minSwipeDistance = 60;
+
+  const getActiveTabIndex = () => tabOrder.findIndex(name => document.querySelector(`.main-nav button[data-tab="${name}"]`).classList.contains('active'));
+
+  const handleTabSwipe = (direction) => {
+    const currentIndex = getActiveTabIndex();
+    if (currentIndex < 0) return;
+    const nextIndex = direction === 'left'
+      ? Math.min(currentIndex + 1, tabOrder.length - 1)
+      : Math.max(currentIndex - 1, 0);
+    if (nextIndex !== currentIndex) {
+      activateTab(tabOrder[nextIndex]);
+    }
+  };
+
+  if (tabContainer) {
+    tabContainer.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+      touchMoved = false;
+    });
+
+    tabContainer.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+      const dx = event.touches[0].clientX - touchStartX;
+      const dy = event.touches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 10 && Math.abs(dy) < Math.abs(dx) * 0.6) {
+        touchMoved = true;
       }
     });
-  });
+
+    tabContainer.addEventListener('touchend', (event) => {
+      if (!touchMoved) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      if (Math.abs(dx) < minSwipeDistance || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+      handleTabSwipe(dx < 0 ? 'left' : 'right');
+    });
+  }
 
   // ==================================================
   // TIN TỨC: Tải từ Firestore

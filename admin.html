@@ -239,6 +239,7 @@
       border-bottom: 2px solid #e5e5e5;
       box-shadow: 0 2px 6px rgba(0,0,0,.08);
       overflow: hidden;
+      touch-action: pan-y;
     }
 
     .tab-bar button {
@@ -1972,18 +1973,70 @@
   // ==================================================
   // CHUYỂN TAB
   // ==================================================
-  document.querySelectorAll('.tab-bar button').forEach(btn => {
+  const adminTabButtons = Array.from(document.querySelectorAll('.tab-bar button'));
+  const adminTabOrder = adminTabButtons.map(btn => btn.dataset.tab);
+  const adminMainContent = document.querySelector('.main-content');
+  let adminTouchStartX = 0;
+  let adminTouchStartY = 0;
+  let adminTouchMoved = false;
+  const adminMinSwipeDistance = 60;
+
+  const activateAdminTab = (tabName) => {
+    document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    const activeButton = document.querySelector(`.tab-bar button[data-tab="${tabName}"]`);
+    const targetPanel = document.getElementById(`tab-${tabName}`);
+    if (activeButton) activeButton.classList.add('active');
+    if (targetPanel) targetPanel.classList.add('active');
+    if (tabName === 'loyalty') {
+      loadLoyaltyCustomers();
+    }
+  };
+
+  adminTabButtons.forEach(btn => {
     btn.addEventListener('click', function () {
-      document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      this.classList.add('active');
-      const targetPanel = document.getElementById(`tab-${this.dataset.tab}`);
-      if (targetPanel) targetPanel.classList.add('active');
-      if (this.dataset.tab === 'loyalty') {
-        loadLoyaltyCustomers();
-      }
+      activateAdminTab(this.dataset.tab);
     });
   });
+
+  const getActiveAdminTabIndex = () => adminTabOrder.findIndex(name => document.querySelector(`.tab-bar button[data-tab="${name}"]`).classList.contains('active'));
+  const handleAdminSwipe = (direction) => {
+    const currentIndex = getActiveAdminTabIndex();
+    if (currentIndex < 0) return;
+    const nextIndex = direction === 'left'
+      ? Math.min(currentIndex + 1, adminTabOrder.length - 1)
+      : Math.max(currentIndex - 1, 0);
+    if (nextIndex !== currentIndex) {
+      activateAdminTab(adminTabOrder[nextIndex]);
+    }
+  };
+
+  if (adminMainContent) {
+    adminMainContent.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      adminTouchStartX = event.touches[0].clientX;
+      adminTouchStartY = event.touches[0].clientY;
+      adminTouchMoved = false;
+    });
+
+    adminMainContent.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+      const dx = event.touches[0].clientX - adminTouchStartX;
+      const dy = event.touches[0].clientY - adminTouchStartY;
+      if (Math.abs(dx) > 10 && Math.abs(dy) < Math.abs(dx) * 0.6) {
+        adminTouchMoved = true;
+      }
+    });
+
+    adminMainContent.addEventListener('touchend', (event) => {
+      if (!adminTouchMoved) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - adminTouchStartX;
+      const dy = touch.clientY - adminTouchStartY;
+      if (Math.abs(dx) < adminMinSwipeDistance || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+      handleAdminSwipe(dx < 0 ? 'left' : 'right');
+    });
+  }
 
   // ==================================================
   // TAB CẤU HÌNH: Tải dữ liệu cũ vào form
