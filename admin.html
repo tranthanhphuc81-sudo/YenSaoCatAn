@@ -578,6 +578,26 @@
         flex-direction: column;
         align-items: flex-start;
       }
+      .status-filter {
+        border: 1px solid rgba(15,23,42,.12);
+        background: #fff;
+        color: #102a43;
+        padding: 10px 16px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background .2s, color .2s, transform .2s, border-color .2s;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .status-filter:hover {
+        transform: translateY(-1px);
+        border-color: rgba(15,76,226,.2);
+      }
+      .status-filter.active {
+        background: #0f4caf;
+        color: #fff;
+        border-color: transparent;
+      }
     }
 
     /* ===== UPLOAD ẢNH NỀN ===== */
@@ -1438,18 +1458,14 @@
       <div class="card">
         <h2>📋 Danh Sách Đơn Hàng</h2>
         <div class="status-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-          <span class="badge" style="background:#f59e0b;color:#111">Chờ xử lý</span>
-          <span class="badge" style="background:#0ea5e9;color:#fff">Đang giao</span>
-          <span class="badge" style="background:#f97316;color:#fff">Chưa thanh toán</span>
-          <span class="badge" style="background:#22c55e;color:#fff">Hoàn thành</span>
+          <button type="button" class="status-filter active" data-status="all">Tất cả</button>
+          <button type="button" class="status-filter" data-status="pending">Chờ xử lý</button>
+          <button type="button" class="status-filter" data-status="shipping">Đang giao</button>
+          <button type="button" class="status-filter" data-status="unpaid">Chưa thanh toán</button>
+          <button type="button" class="status-filter" data-status="completed">Hoàn thành</button>
         </div>
-        <div class="table-actions">
-          <label for="order-filter">Lọc đơn:</label>
-          <select id="order-filter">
-            <option value="all">Tất cả</option>
-            <option value="auto">Tự động</option>
-            <option value="manual">Thủ công</option>
-          </select>
+        <div class="table-actions" style="gap:12px;flex-wrap:wrap;align-items:center;">
+          <span style="font-weight:700;color:#1f2937;">Lọc trạng thái:</span>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -2891,10 +2907,9 @@
   function renderOrders() {
     const tbody = document.getElementById('order-list');
     const filtered = allOrders.filter(o => {
+      const status = o.status || 'pending';
       if (orderFilter === 'all') return true;
-      if (orderFilter === 'auto') return o.source === 'auto';
-      if (orderFilter === 'manual') return o.source !== 'auto';
-      return true;
+      return status === orderFilter;
     });
 
     if (!filtered.length) {
@@ -3702,9 +3717,13 @@
     }
   });
 
-  document.getElementById('order-filter').addEventListener('change', function () {
-    orderFilter = this.value;
-    renderOrders();
+  document.querySelectorAll('.status-filter').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.status-filter').forEach(item => item.classList.remove('active'));
+      this.classList.add('active');
+      orderFilter = this.dataset.status || 'all';
+      renderOrders();
+    });
   });
 
   document.getElementById('refresh-loyalty').addEventListener('click', function () {
