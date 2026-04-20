@@ -30,7 +30,8 @@
     body {
       font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
       color: var(--text);
-      background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #eef6ff 100%);
+      background-color: var(--bg);
+      background-image: none;
       background-attachment: fixed;
       background-position: center top;
       background-size: cover;
@@ -2158,12 +2159,11 @@
       }
       if (cfg.background_url) {
         document.getElementById('cfg-bg').value  = cfg.background_url;
-        const gradientLayer = `linear-gradient(180deg, #eef4ff 0%, #f8fbff 55%, #eef4ff 100%)`;
-        document.body.style.backgroundImage      = `url('${cfg.background_url}'), ${gradientLayer}`;
-        document.body.style.backgroundRepeat     = 'no-repeat, no-repeat';
-        document.body.style.backgroundPosition   = 'center 120px, center top';
-        document.body.style.backgroundSize       = '220px auto, cover';
-        document.body.style.backgroundAttachment = 'fixed, fixed';
+        document.body.style.backgroundImage      = `url('${cfg.background_url}')`;
+        document.body.style.backgroundRepeat     = 'no-repeat';
+        document.body.style.backgroundPosition   = 'center 120px';
+        document.body.style.backgroundSize       = '220px auto';
+        document.body.style.backgroundAttachment = 'fixed';
       }
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
