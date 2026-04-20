@@ -3354,6 +3354,7 @@
           <td>${sourceBadge}</td>
           <td>
             <button type="button" class="btn btn-small" onclick="showOrderDetails('${o.id}')">Xem chi tiết</button>
+            <button type="button" class="btn btn-small btn-danger" style="margin-left:8px;" onclick="deleteOrder('${o.id}')">Xóa</button>
           </td>
         </tr>
       `;
@@ -3949,6 +3950,7 @@
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
   }
+  window.showOrderDetails = showOrderDetails;
 
   function getOrderActionButtons(order) {
     const status = order.status || 'pending';
@@ -3962,8 +3964,23 @@
     if (status === 'unpaid') {
       buttons.push(`<button type="button" class="btn btn-save" onclick="setOrderStatus('${order.id}','completed')">Hoàn thành</button>`);
     }
+    buttons.push(`<button type="button" class="btn btn-danger" onclick="deleteOrder('${order.id}')">Xóa đơn</button>`);
     return buttons.join('');
   }
+
+  async function deleteOrder(orderId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) return;
+    try {
+      await deleteDoc(doc(db, 'orders', orderId));
+      showToast('✅ Đã xóa đơn hàng.');
+      closeOrderDetails();
+      await loadOrders();
+    } catch (err) {
+      console.error('Lỗi xóa đơn hàng:', err);
+      showToast('Không thể xóa đơn hàng. Vui lòng thử lại.', 'error');
+    }
+  }
+  window.deleteOrder = deleteOrder;
 
   async function setOrderStatus(orderId, newStatus) {
     const order = allOrders.find(o => o.id === orderId);
@@ -4011,6 +4028,7 @@
       showToast('Không thể cập nhật trạng thái. Vui lòng thử lại.', 'error');
     }
   }
+  window.setOrderStatus = setOrderStatus;
 
   let allContacts = [];
   let contactFilter = 'all';
