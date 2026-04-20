@@ -26,6 +26,7 @@
       --accent: #1a56a0;
       --accent-dark: #0d3578;
       --success: #1f7a5b;
+      --bg-logo: none;
     }
 
     body {
@@ -48,6 +49,19 @@
       background: linear-gradient(180deg, rgba(2,34,76,.60), rgba(4,16,35,.85));
       pointer-events: none;
       z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: var(--bg-logo, none);
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: clamp(260px, 40vw, 420px) auto;
+      opacity: .12;
+      pointer-events: none;
+      z-index: -1;
     }
 
     .wrapper {
@@ -2370,6 +2384,7 @@
         const logo = document.getElementById('site-logo');
         logo.src             = cfg.logo_url;
         logo.style.display   = 'block';
+        document.documentElement.style.setProperty('--bg-logo', `url('${cfg.logo_url}')`);
       }
       if (cfg.background_url) {
         document.body.style.backgroundImage = `url('${cfg.background_url}')`;
