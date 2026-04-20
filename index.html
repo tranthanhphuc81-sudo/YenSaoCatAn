@@ -2523,7 +2523,7 @@
     document.getElementById('modal-price').textContent       = formatVND(product.price);
     const descEl = document.getElementById('modal-description');
     if (product.description) {
-      descEl.textContent   = product.description;
+      descEl.innerHTML    = product.description;
       descEl.style.display = 'block';
     } else {
       descEl.style.display = 'none';
