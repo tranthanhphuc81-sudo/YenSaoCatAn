@@ -30,8 +30,7 @@
     body {
       font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
       color: var(--text);
-      background: radial-gradient(circle at top, rgba(255,255,255,.94), transparent 30%),
-                  linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #eef6ff 100%);
+      background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #eef6ff 100%);
       background-attachment: fixed;
       background-position: center top;
       background-size: cover;
@@ -2159,12 +2158,12 @@
       }
       if (cfg.background_url) {
         document.getElementById('cfg-bg').value  = cfg.background_url;
-        const gradientLayers = `radial-gradient(circle at top, rgba(232,244,255,.90), transparent 28%), linear-gradient(180deg, #eef4ff 0%, #f8fbff 55%, #eef4ff 100%)`;
-        document.body.style.backgroundImage      = `url('${cfg.background_url}'), ${gradientLayers}`;
-        document.body.style.backgroundRepeat     = 'no-repeat, no-repeat, no-repeat';
-        document.body.style.backgroundPosition   = 'center 120px, center top, center top';
-        document.body.style.backgroundSize       = '220px auto, cover, cover';
-        document.body.style.backgroundAttachment = 'fixed, fixed, fixed';
+        const gradientLayer = `linear-gradient(180deg, #eef4ff 0%, #f8fbff 55%, #eef4ff 100%)`;
+        document.body.style.backgroundImage      = `url('${cfg.background_url}'), ${gradientLayer}`;
+        document.body.style.backgroundRepeat     = 'no-repeat, no-repeat';
+        document.body.style.backgroundPosition   = 'center 120px, center top';
+        document.body.style.backgroundSize       = '220px auto, cover';
+        document.body.style.backgroundAttachment = 'fixed, fixed';
       }
       if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
       if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
