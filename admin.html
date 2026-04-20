@@ -1562,8 +1562,16 @@
             <div style="font-size:.9rem;color:#64748b;margin-bottom:8px">Tổng số lượng</div>
             <div id="report-total-quantity" style="font-size:1.4rem;font-weight:700;color:#0f172a">0</div>
           </div>
+          <div class="report-summary-card" style="background:#ecfdf5;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #22c55e;">
+            <div style="font-size:.9rem;color:#166534;margin-bottom:8px">Đơn đã hoàn thành</div>
+            <div id="report-completed-orders" style="font-size:1.4rem;font-weight:700;color:#166534">0</div>
+          </div>
+          <div class="report-summary-card" style="background:#ecfdf5;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #22c55e;">
+            <div style="font-size:.9rem;color:#166534;margin-bottom:8px">Doanh thu hoàn thành</div>
+            <div id="report-completed-revenue" style="font-size:1.4rem;font-weight:700;color:#166534">0₫</div>
+          </div>
           <div class="report-summary-card" style="background:#fff7ed;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #fb923c;">
-            <div style="font-size:.9rem;color:#92400e;margin-bottom:8px">Đơn chưa thu tiền</div>
+            <div style="font-size:.9rem;color:#92400e;margin-bottom:8px">Đơn chưa thanh toán</div>
             <div id="report-unpaid-count" style="font-size:1.4rem;font-weight:700;color:#92400e">0</div>
           </div>
           <div class="report-summary-card" style="background:#fff7ed;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #fb923c;">
@@ -3055,6 +3063,8 @@
       totalRevenue: 0,
       totalQuantity: 0,
       totalOrders: 0,
+      completedOrders: 0,
+      completedRevenue: 0,
       monthly: {},
       productSales: {},
       unpaidOrderCount: 0,
@@ -3080,6 +3090,10 @@
       summary.totalOrders += 1;
       summary.totalQuantity += orderQuantity;
 
+      if ((order.status || '').toLowerCase() === 'completed') {
+        summary.completedOrders += 1;
+        summary.completedRevenue += orderTotal;
+      }
       if ((order.status || '').toLowerCase() === 'unpaid') {
         summary.unpaidOrderCount += 1;
         summary.unpaidOrderAmount += orderTotal;
@@ -3125,6 +3139,8 @@
     const totalRevenueEl = document.getElementById('report-total-revenue');
     const totalOrdersEl = document.getElementById('report-total-orders');
     const totalQuantityEl = document.getElementById('report-total-quantity');
+    const completedOrdersEl = document.getElementById('report-completed-orders');
+    const completedRevenueEl = document.getElementById('report-completed-revenue');
     const unpaidCountEl = document.getElementById('report-unpaid-count');
     const unpaidAmountEl = document.getElementById('report-unpaid-amount');
     const tableBody = document.getElementById('report-summary-table');
@@ -3136,6 +3152,8 @@
     if (totalRevenueEl) totalRevenueEl.textContent = formatVND(summary.totalRevenue);
     if (totalOrdersEl) totalOrdersEl.textContent = summary.totalOrders.toString();
     if (totalQuantityEl) totalQuantityEl.textContent = summary.totalQuantity.toString();
+    if (completedOrdersEl) completedOrdersEl.textContent = summary.completedOrders.toString();
+    if (completedRevenueEl) completedRevenueEl.textContent = formatVND(summary.completedRevenue);
     if (unpaidCountEl) unpaidCountEl.textContent = summary.unpaidOrderCount.toString();
     if (unpaidAmountEl) unpaidAmountEl.textContent = formatVND(summary.unpaidOrderAmount);
 
