@@ -724,6 +724,28 @@
       adminEmails: ['admin@yensaocatan.com']
     };
 
+    const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 phút
+    let inactivityTimer = null;
+
+    function clearInactivityTimer() {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+      }
+    }
+
+    function resetInactivityTimer() {
+      if (!auth.currentUser) {
+        clearInactivityTimer();
+        return;
+      }
+      clearInactivityTimer();
+      inactivityTimer = setTimeout(async () => {
+        await signOut(auth);
+        alert('Bạn đã bị đăng xuất do không hoạt động trong 15 phút.');
+      }, INACTIVITY_TIMEOUT_MS);
+    }
+
     function showLoginOverlay(show) {
       loginOverlay.style.display = show ? 'flex' : 'none';
       pageElement.style.filter = show ? 'blur(4px)' : '';
@@ -749,6 +771,7 @@
 
     onAuthStateChanged(auth, async user => {
       if (!user) {
+        clearInactivityTimer();
         currentUserEmail.textContent = '';
         signOutBtn.style.display = 'none';
         loginError.textContent = '';
@@ -766,9 +789,11 @@
         if (isAdminClaim) {
           loginError.textContent = '';
           showLoginOverlay(false);
+          resetInactivityTimer();
           return;
         }
 
+        clearInactivityTimer();
         loginError.textContent = isAllowedEmail
           ? 'Tài khoản này chưa có quyền admin. Vui lòng gán custom claim admin cho tài khoản.'
           : 'Tài khoản này không được phép truy cập trang inventory.';
@@ -795,7 +820,13 @@
       }
     });
 
+    const activityEvents = ['mousemove', 'keydown', 'click', 'touchstart'];
+    activityEvents.forEach(eventName => {
+      window.addEventListener(eventName, resetInactivityTimer);
+    });
+
     signOutBtn.addEventListener('click', async () => {
+      clearInactivityTimer();
       await signOut(auth);
     });
 
