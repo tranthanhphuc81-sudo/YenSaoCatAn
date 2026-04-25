@@ -204,6 +204,18 @@ service cloud.firestore {
           && (!('barcode' in d) || d.barcode is string);
     }
 
+    function validateReportBackup() {
+      let d = request.resource.data;
+      let allowed = ['createdAt', 'totalRevenue', 'totalOrders', 'totalQuantity', 'monthCount'];
+      return d.keys().hasOnly(allowed)
+          && d.keys().hasAll(['createdAt', 'totalRevenue', 'totalOrders', 'totalQuantity', 'monthCount'])
+          && d.createdAt is timestamp
+          && d.totalRevenue is number && d.totalRevenue >= 0
+          && d.totalOrders is number && d.totalOrders >= 0
+          && d.totalQuantity is number && d.totalQuantity >= 0
+          && d.monthCount is number && d.monthCount >= 0;
+    }
+
     function validateProductQuantityUpdate() {
       let d = request.resource.data;
       let old = resource.data;
@@ -218,6 +230,13 @@ service cloud.firestore {
           && (!('updatedAt' in d) || d.updatedAt is timestamp)
           && (!('location' in d) || d.location is string)
           && (!('note' in d) || d.note is string);
+    }
+
+    function validateProductSoftDelete() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['active', 'deletedAt'])
+          && d.active == false
+          && d.deletedAt is timestamp;
     }
 
     // ════════════════════════════════════════════════════════
@@ -254,7 +273,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow get, list:  if true;
       allow create:     if isAdmin() && validateProduct();
-      allow update:     if (isAdmin() && validateProduct()) || (request.auth != null && validateProductQuantityUpdate());
+      allow update:     if (isAdmin() && (validateProduct() || validateProductSoftDelete())) || (request.auth != null && validateProductQuantityUpdate());
       allow delete:     if isAdmin();
     }
 
@@ -263,6 +282,12 @@ service cloud.firestore {
       allow get, list: if true;
       allow create:   if request.auth != null && validateStockMovement();
       allow update, delete: if false;
+    }
+
+    match /reportBackups/{backupId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && validateReportBackup();
+      allow update, delete: if isAdmin();
     }
 
     // ─── orders/{orderId} ────────────────────────────────────
