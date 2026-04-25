@@ -1860,19 +1860,19 @@
       <p class="form-note" style="margin-top:8px;">Nếu admin đã xác thực và yêu cầu reset mật khẩu, bạn có thể dùng form này để tạo mật khẩu thân thiết mới.</p>
       <div class="form-group">
         <label for="loyalty-name">Họ và tên *</label>
-        <input type="text" id="loyalty-name" placeholder="Nguyễn Văn A" />
+        <input type="text" id="loyalty-name" name="loyalty-name" autocomplete="name" placeholder="Nguyễn Văn A" />
       </div>
       <div class="form-group">
-        <label for="loyalty-phone">Số điện thoại (*)</label>
-        <input type="tel" id="loyalty-phone" placeholder="0901 234 567" />
+        <label for="loyalty-phone">Số điện thoại *</label>
+        <input type="tel" id="loyalty-phone" name="loyalty-phone" autocomplete="tel" placeholder="0901 234 567" />
       </div>
       <div class="form-group">
         <label for="loyalty-password">Mật khẩu thân thiết *</label>
-        <input type="password" id="loyalty-password" placeholder="Tạo mật khẩu để nhận ưu đãi" />
+        <input type="password" id="loyalty-password" name="loyalty-password" autocomplete="new-password" placeholder="Tạo mật khẩu để nhận ưu đãi" />
       </div>
       <div class="form-group">
         <label for="loyalty-password-confirm">Xác nhận mật khẩu *</label>
-        <input type="password" id="loyalty-password-confirm" placeholder="Nhập lại mật khẩu" />
+        <input type="password" id="loyalty-password-confirm" name="loyalty-password-confirm" autocomplete="new-password" placeholder="Nhập lại mật khẩu" />
       </div>
       <button type="button" class="btn-submit" id="btn-loyalty-register">Đăng ký khách thân thiết</button>
       <p id="loyalty-register-status" class="form-note"></p>
