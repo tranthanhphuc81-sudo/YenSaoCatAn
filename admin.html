@@ -1843,7 +1843,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getAuth, signInWithEmailAndPassword,
-    signOut, onAuthStateChanged,
+    signOut, onAuthStateChanged, getIdTokenResult,
     EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
@@ -2104,9 +2104,25 @@
     setDoc(adminOnlineRef, { online, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
   }
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     console.info('Auth state changed', user ? user.email : null, user);
     if (user) {
+      let isAdminClaim = false;
+      try {
+        const idTokenResult = await getIdTokenResult(user, true);
+        isAdminClaim = idTokenResult.claims.admin === true;
+      } catch (err) {
+        console.error('Lỗi lấy token admin:', err);
+      }
+
+      if (!isAdminClaim) {
+        await signOut(auth);
+        document.getElementById('login-page').style.display  = 'flex';
+        document.getElementById('dashboard').style.display   = 'none';
+        document.getElementById('login-error').textContent   = 'Tài khoản chưa có quyền admin hoặc cần đăng nhập lại.';
+        return;
+      }
+
       // Đã đăng nhập → ẩn login, hiện dashboard
       document.getElementById('login-page').style.display  = 'none';
       document.getElementById('dashboard').style.display   = 'block';
