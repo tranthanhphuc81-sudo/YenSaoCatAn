@@ -2535,6 +2535,7 @@
 
     tbody.innerHTML = visibleProducts.map(p => {
       const qty = Number(p.quantity ?? 0);
+      const canDelete = qty <= 0;
       let stockLabel = '';
       if (qty <= 0) {
         stockLabel = `<span class="badge badge-out" style="margin-left:6px">Hết hàng</span>`;
@@ -2555,7 +2556,7 @@
           <td style="white-space:nowrap">${formatVND(p.price)}</td>
           <td><span class="badge">${CAT_LABEL[p.category] || p.category}</span></td>
           <td>
-            <button class="btn-delete" data-id="${p.id}">🗑 Xoá</button>
+            <button class="btn-delete" data-id="${p.id}" ${canDelete ? '' : 'disabled title="Không thể xoá sản phẩm còn tồn kho"'}>🗑 Xoá</button>
           </td>
         </tr>
       `;
@@ -2820,10 +2821,20 @@
   // TAB SẢN PHẨM: Xoá sản phẩm
   // ==================================================
   async function deleteProduct(id) {
+    const product = adminProducts.find(p => p.id === id);
+    const qty = Number(product?.quantity ?? 0);
+    if (qty > 0) {
+      showToast('❌ Không thể xóa sản phẩm còn tồn kho. Vui lòng giảm tồn kho về 0 trước.', 'error');
+      return;
+    }
+
     if (!confirm('Bạn chắc chắn muốn xoá sản phẩm này?')) return;
     try {
-      await updateDoc(doc(db, 'products', id), { active: false, deletedAt: serverTimestamp() });
-      showToast('🗑 Đã ẩn sản phẩm!');
+      if (auth.currentUser) {
+        await getIdTokenResult(auth.currentUser, true);
+      }
+      await deleteDoc(doc(db, 'products', id));
+      showToast('🗑 Đã xoá sản phẩm khỏi kho!');
       await loadProducts();
     } catch (err) {
       console.error('Lỗi xoá sản phẩm:', err);

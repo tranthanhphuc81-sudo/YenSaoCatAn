@@ -232,13 +232,6 @@ service cloud.firestore {
           && (!('note' in d) || d.note is string);
     }
 
-    function validateProductSoftDelete() {
-      let d = request.resource.data;
-      return d.keys().hasOnly(['active', 'deletedAt'])
-          && d.active == false
-          && ('deletedAt' in d);
-    }
-
     // ════════════════════════════════════════════════════════
     // RULES
     // ════════════════════════════════════════════════════════
@@ -273,7 +266,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow get, list:  if true;
       allow create:     if isAdmin() && validateProduct();
-      allow update:     if (isAdmin() && (validateProduct() || validateProductSoftDelete())) || (request.auth != null && validateProductQuantityUpdate());
+      allow update:     if isAdmin() || (request.auth != null && validateProductQuantityUpdate());
       allow delete:     if isAdmin();
     }
 
