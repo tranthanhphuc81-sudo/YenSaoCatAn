@@ -40,12 +40,14 @@ service cloud.firestore {
 
     function validateReportBackupConfig() {
       let d = request.resource.data;
-      let allowed = ['backupCount', 'lastBackupAt', 'lastBackupBy', 'updatedAt'];
+      let allowed = ['backupCount', 'lastBackupAt', 'lastBackupBy', 'updatedAt', 'restoredFrom', 'restoredAt'];
       return d.keys().hasOnly(allowed)
           && (!('backupCount' in d) || (d.backupCount is number && d.backupCount >= 0))
           && (!('lastBackupAt' in d) || d.lastBackupAt is timestamp)
           && (!('lastBackupBy' in d) || d.lastBackupBy is string)
-          && (!('updatedAt' in d) || d.updatedAt is timestamp);
+          && (!('updatedAt' in d) || d.updatedAt is timestamp)
+          && (!('restoredFrom' in d) || d.restoredFrom is string)
+          && (!('restoredAt' in d) || d.restoredAt is timestamp);
     }
 
     // ─── Validate products ───────────────────────────────────
@@ -292,6 +294,12 @@ service cloud.firestore {
     match /reportBackups/{backupId} {
       allow get, list: if isAdmin();
       allow create: if isAdmin() && validateReportBackup();
+      allow update, delete: if isAdmin();
+    }
+
+    match /orderBackups/{backupDocId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 

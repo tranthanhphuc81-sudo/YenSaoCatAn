@@ -1698,10 +1698,11 @@
                 <th>Doanh thu</th>
                 <th>Đơn hàng</th>
                 <th>Số lượng</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody id="report-backup-list">
-              <tr><td colspan="4" class="empty-state">Chưa có backup báo cáo.</td></tr>
+              <tr><td colspan="5" class="empty-state">Chưa có backup báo cáo.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1889,7 +1890,7 @@
     getFirestore,
     doc, getDoc, setDoc, updateDoc,
     collection, getDocs, addDoc, deleteDoc,
-    query, orderBy, onSnapshot, serverTimestamp, increment
+    query, where, orderBy, onSnapshot, serverTimestamp, writeBatch, increment
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 
@@ -3381,21 +3382,61 @@
           <td>${formatVND(item.totalRevenue || 0)}</td>
           <td>${item.totalOrders || 0}</td>
           <td>${item.totalQuantity || 0}</td>
+          <td><button type="button" class="btn btn-small btn-warning" onclick="restoreReportBackup('${item.id}')">⟲ Restore</button></td>
         </tr>
       `;
     }).join('');
   }
 
+  async function writeOrderBackups(backupId, orders) {
+    if (!orders || !orders.length) return;
+    const batchSize = 250;
+    let batch = writeBatch(db);
+    let opCount = 0;
+
+    for (const order of orders) {
+      const backupDoc = doc(db, 'orderBackups', `${backupId}_${order.id || 'unknown'}`);
+      batch.set(backupDoc, {
+        backupId,
+        orderId: order.id || null,
+        orderData: order,
+      });
+      opCount += 1;
+
+      if (opCount >= batchSize) {
+        await batch.commit();
+        batch = writeBatch(db);
+        opCount = 0;
+      }
+    }
+    if (opCount > 0) await batch.commit();
+  }
+
+  async function deleteAllOrderBackups(backupId) {
+    let q = collection(db, 'orderBackups');
+    if (backupId) {
+      q = query(q, where('backupId', '==', backupId));
+    }
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  }
+
   async function backupReportData() {
     try {
       const summary = aggregateReportData();
-      await addDoc(collection(db, 'reportBackups'), {
+      const backupRef = doc(collection(db, 'reportBackups'));
+      await setDoc(backupRef, {
         createdAt: serverTimestamp(),
         totalRevenue: summary.totalRevenue,
         totalOrders: summary.totalOrders,
         totalQuantity: summary.totalQuantity,
         monthCount: Object.keys(summary.monthly).length,
       });
+
+      const ordersSnap = await getDocs(collection(db, 'orders'));
+      const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      await writeOrderBackups(backupRef.id, orders);
+
       await setDoc(doc(db, 'config', 'reportBackup'), {
         lastBackupAt: serverTimestamp(),
         backupCount: (reportBackupMeta?.backupCount || 0) + 1,
@@ -3408,6 +3449,63 @@
     } catch (err) {
       console.error('Lỗi backup báo cáo:', err);
       showToast('Không thể backup báo cáo: ' + err.message, 'error');
+    }
+  }
+
+  async function restoreReportBackup(backupId) {
+    if (!confirm('Restore sẽ xóa toàn bộ đơn hàng hiện tại và khôi phục lại từ backup đã chọn. Tiếp tục?')) return;
+    const password = prompt('Nhập mật khẩu admin để xác thực restore:');
+    if (!password) return;
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      showToast('Không có tài khoản admin hợp lệ.', 'error');
+      return;
+    }
+    try {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      await getIdTokenResult(user, true);
+
+      const backupSnap = await getDocs(query(collection(db, 'orderBackups'), where('backupId', '==', backupId)));
+      if (backupSnap.empty) {
+        showToast('Không tìm thấy dữ liệu backup orders để restore.', 'error');
+        return;
+      }
+
+      const currentOrders = await getDocs(collection(db, 'orders'));
+      await Promise.all(currentOrders.docs.map(d => deleteDoc(d.ref)));
+
+      const restoreBatchSize = 250;
+      let batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of backupSnap.docs) {
+        const data = docSnap.data();
+        const orderData = data.orderData || {};
+        const orderId = data.orderId || orderData.id || docSnap.id;
+        if (!orderId) continue;
+        batch.set(doc(db, 'orders', orderId), orderData);
+        count += 1;
+        if (count >= restoreBatchSize) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      await setDoc(doc(db, 'config', 'reportBackup'), {
+        restoredFrom: backupId,
+        restoredAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+
+      showToast('✅ Đã restore dữ liệu báo cáo từ backup.');
+      await loadOrders();
+      await loadReportBackups();
+      await loadReportMetadata();
+    } catch (err) {
+      console.error('Restore report backup failed:', err);
+      showToast('Restore thất bại: ' + (err.message || err.code), 'error');
     }
   }
 
@@ -3425,6 +3523,7 @@
       await getIdTokenResult(user, true);
       const snap = await getDocs(collection(db, 'reportBackups'));
       await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      await deleteAllOrderBackups();
       await setDoc(doc(db, 'config', 'reportBackup'), {
         backupCount: 0,
         lastBackupBy: '',
@@ -4362,6 +4461,7 @@
   window.deleteLoyaltyCustomer = deleteLoyaltyCustomer;
   window.syncSelectAllLoyalty = syncSelectAllLoyalty;
   window.toggleSelectAllLoyalty = toggleSelectAllLoyalty;
+  window.restoreReportBackup = restoreReportBackup;
 
   // ==================================================
   // CHAT: Lắng nghe danh sách session
