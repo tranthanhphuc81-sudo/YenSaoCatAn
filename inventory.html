@@ -726,6 +726,7 @@
 
     const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 phút
     let inactivityTimer = null;
+    let pendingLogoutMessage = '';
 
     function clearInactivityTimer() {
       if (inactivityTimer) {
@@ -741,8 +742,8 @@
       }
       clearInactivityTimer();
       inactivityTimer = setTimeout(async () => {
+        pendingLogoutMessage = 'Bạn đã bị đăng xuất do không hoạt động trong 15 phút.';
         await signOut(auth);
-        alert('Bạn đã bị đăng xuất do không hoạt động trong 15 phút.');
       }, INACTIVITY_TIMEOUT_MS);
     }
 
@@ -774,7 +775,8 @@
         clearInactivityTimer();
         currentUserEmail.textContent = '';
         signOutBtn.style.display = 'none';
-        loginError.textContent = '';
+        loginError.textContent = pendingLogoutMessage || '';
+        pendingLogoutMessage = '';
         showLoginOverlay(true);
         return;
       }
