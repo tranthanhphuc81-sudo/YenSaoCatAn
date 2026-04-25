@@ -510,6 +510,16 @@
       color: var(--red-dk);
     }
 
+    .badge-low {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-out {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
     /* Badge hình thức thanh toán */
     .badge-cash     { background: #d1fae5; color: #065f46; }
     .badge-transfer { background: #dbeafe; color: #1e40af; }
@@ -2476,24 +2486,33 @@
       return;
     }
 
-    tbody.innerHTML = products.map(p => `
-      <tr data-id="${p.id}">
-        <td>
-          <img class="product-thumb"
-               src="${p.image || ''}"
-               alt="${p.name}"
-               onerror="this.src='https://placehold.co/52x52?text=?'" />
-        </td>
-        <td>${p.name}</td>
-        <td>${p.barcode || '-'}</td>
-        <td>${p.quantity ?? 0}</td>
-        <td style="white-space:nowrap">${formatVND(p.price)}</td>
-        <td><span class="badge">${CAT_LABEL[p.category] || p.category}</span></td>
-        <td>
-          <button class="btn-delete" data-id="${p.id}">🗑 Xoá</button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = products.map(p => {
+      const qty = Number(p.quantity ?? 0);
+      let stockLabel = '';
+      if (qty <= 0) {
+        stockLabel = `<span class="badge badge-out" style="margin-left:6px">Hết hàng</span>`;
+      } else if (qty < 5) {
+        stockLabel = `<span class="badge badge-low" style="margin-left:6px">Sắp hết</span>`;
+      }
+      return `
+        <tr data-id="${p.id}">
+          <td>
+            <img class="product-thumb"
+                 src="${p.image || ''}"
+                 alt="${p.name}"
+                 onerror="this.src='https://placehold.co/52x52?text=?'" />
+          </td>
+          <td>${p.name}</td>
+          <td>${p.barcode || '-'}</td>
+          <td>${qty}${stockLabel}</td>
+          <td style="white-space:nowrap">${formatVND(p.price)}</td>
+          <td><span class="badge">${CAT_LABEL[p.category] || p.category}</span></td>
+          <td>
+            <button class="btn-delete" data-id="${p.id}">🗑 Xoá</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     // Gắn sự kiện xoá
     tbody.querySelectorAll('.btn-delete').forEach(btn => {
