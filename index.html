@@ -2474,7 +2474,9 @@
   async function loadProducts() {
     try {
       const snap = await getDocs(collection(db, 'products'));
-      allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allProducts = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => p.active !== false);
       renderProducts(currentFilter);
     } catch (err) {
       console.error('Lỗi tải sản phẩm:', err);

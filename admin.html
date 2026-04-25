@@ -4005,7 +4005,7 @@
     if (!order) return;
     const updates = { status: newStatus, updatedAt: serverTimestamp() };
 
-    if (newStatus === 'shipping' && !order.stockReduced) {
+    if (newStatus === 'completed' && !order.stockReduced) {
       try {
         await Promise.all((order.items || []).map(async item => {
           const productId = item.productId || item.id;
