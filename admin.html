@@ -1344,6 +1344,11 @@
       <!-- Danh sách sản phẩm -->
       <div class="card">
         <h2>📦 Danh Sách Sản Phẩm</h2>
+        <div class="status-legend" style="margin-bottom:16px;gap:10px;flex-wrap:wrap;display:flex;">
+          <button type="button" class="status-filter status-all active" data-filter="all" onclick="setProductFilter('all')">Tất cả</button>
+          <button type="button" class="status-filter status-pending" data-filter="almost-out" onclick="setProductFilter('almost-out')">Sắp hết</button>
+          <button type="button" class="status-filter status-unpaid" data-filter="out-of-stock" onclick="setProductFilter('out-of-stock')">Hết hàng</button>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -2087,6 +2092,7 @@
 
   const CAT_LABEL = { yen: 'Yến Sào', sam: 'Sâm', 'us-japan': 'Mỹ / Nhật', 'food-drink': 'Food&Drink' };
   let adminProducts = [];
+  let adminProductFilter = 'all';
 
   // ==================================================
   // XÁC THỰC: Theo dõi trạng thái đăng nhập
@@ -2468,11 +2474,28 @@
       adminProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       adminProducts = adminProducts.filter(p => p.active !== false);
       renderProductTable(adminProducts);
+      updateProductFilterButtons();
     } catch (err) {
       console.error('Lỗi tải sản phẩm:', err);
       document.getElementById('product-list').innerHTML =
-        '<tr><td colspan="5" class="empty-state">Không thể tải sản phẩm.</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Không thể tải sản phẩm.</td></tr>';
     }
+  }
+
+  function setProductFilter(filter) {
+    adminProductFilter = filter;
+    renderProductTable(adminProducts);
+    updateProductFilterButtons();
+  }
+
+  function updateProductFilterButtons() {
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+      if (btn.dataset.filter === adminProductFilter) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
 
   // ==================================================
@@ -2480,13 +2503,20 @@
   // ==================================================
   function renderProductTable(products) {
     const tbody = document.getElementById('product-list');
+    const visibleProducts = products.filter(p => {
+      const qty = Number(p.quantity ?? 0);
+      if (adminProductFilter === 'all') return true;
+      if (adminProductFilter === 'almost-out') return qty > 0 && qty < 5;
+      if (adminProductFilter === 'out-of-stock') return qty <= 0;
+      return true;
+    });
 
-    if (products.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Chưa có sản phẩm nào.</td></tr>';
+    if (visibleProducts.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Không có sản phẩm phù hợp.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = products.map(p => {
+    tbody.innerHTML = visibleProducts.map(p => {
       const qty = Number(p.quantity ?? 0);
       let stockLabel = '';
       if (qty <= 0) {
