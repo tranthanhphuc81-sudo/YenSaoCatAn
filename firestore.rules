@@ -236,7 +236,7 @@ service cloud.firestore {
       let d = request.resource.data;
       return d.keys().hasOnly(['active', 'deletedAt'])
           && d.active == false
-          && d.deletedAt is timestamp;
+          && ('deletedAt' in d);
     }
 
     // ════════════════════════════════════════════════════════
