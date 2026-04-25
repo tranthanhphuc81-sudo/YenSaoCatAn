@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Đẹp - Yến Sào Cát An</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      background: #f4f7fb;
+      color: #102a43;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .page {
+      width: 100%;
+      max-width: 980px;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+      padding: 28px;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 2.4vw, 2.5rem);
+      margin-bottom: 16px;
+      color: #0f4caf;
+    }
+    p {
+      margin: 0 0 24px;
+      color: #475569;
+      line-height: 1.7;
+      max-width: 760px;
+    }
+    .grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .card {
+      background: #f8fafc;
+      border-radius: 24px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+    .card h2 {
+      font-size: 1.05rem;
+      margin: 0 0 16px;
+      color: #0f4caf;
+    }
+    .qr-wrap {
+      display: inline-flex;
+      padding: 18px;
+      background: #fff;
+      border-radius: 28px;
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+      margin-bottom: 14px;
+    }
+    .url-label {
+      word-break: break-all;
+      color: #475569;
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+    .download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #0f4caf;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.95rem;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+    }
+    .download:hover {
+      transform: translateY(-1px);
+    }
+    .note {
+      margin-top: 22px;
+      color: #64748b;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>QR Code Đẹp - Yến Sào Cát An</h1>
+    <p>Hai mã QR được tạo trên cùng một file, dùng kiểu chấm tròn và hiệu ứng bo góc. Bạn có thể tải từng mã QR xuống dễ dàng.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Admin</h2>
+        <div id="qr-admin" class="qr-wrap"></div>
+        <div class="url-label">https://tranthanhphuc81-sudo.github.io/YenSaoCatAn/admin.html</div>
+        <a id="download-admin" class="download" download="admin-qr.png">Tải QR Admin</a>
+      </div>
+      <div class="card">
+        <h2>Trang Khách</h2>
+        <div id="qr-index" class="qr-wrap"></div>
+        <div class="url-label">https://tranthanhphuc81-sudo.github.io/YenSaoCatAn/index.html</div>
+        <a id="download-index" class="download" download="index-qr.png">Tải QR Index</a>
+      </div>
+    </div>
+
+    <div class="note">Mở file này trong trình duyệt, sau đó bấm nút "Tải" để lưu ảnh QR đẹp.</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <script>
+    const qrAdmin = new QRCodeStyling({
+      width: 300,
+      height: 300,
+      data: "https://tranthanhphuc81-sudo.github.io/YenSaoCatAn/admin.html",
+      image: "",
+      dotsOptions: {
+        color: "#0f4caf",
+        type: "rounded"
+      },
+      backgroundOptions: {
+        color: "#ffffff"
+      },
+      cornersSquareOptions: {
+        type: "extra-rounded",
+        color: "#0f4caf"
+      },
+      cornersDotOptions: {
+        type: "dot",
+        color: "#0f4caf"
+      }
+    });
+
+    const qrIndex = new QRCodeStyling({
+      width: 300,
+      height: 300,
+      data: "https://tranthanhphuc81-sudo.github.io/YenSaoCatAn/index.html",
+      dotsOptions: {
+        color: "#0469d2",
+        type: "rounded"
+      },
+      backgroundOptions: {
+        color: "#ffffff"
+      },
+      cornersSquareOptions: {
+        type: "extra-rounded",
+        color: "#0469d2"
+      },
+      cornersDotOptions: {
+        type: "dot",
+        color: "#0469d2"
+      }
+    });
+
+    qrAdmin.append(document.getElementById("qr-admin"));
+    qrIndex.append(document.getElementById("qr-index"));
+
+    document.getElementById("download-admin").addEventListener("click", function (event) {
+      event.preventDefault();
+      qrAdmin.download({ name: "admin-qr", extension: "png" });
+    });
+
+    document.getElementById("download-index").addEventListener("click", function (event) {
+      event.preventDefault();
+      qrIndex.download({ name: "index-qr", extension: "png" });
+    });
+  </script>
+</body>
+</html>

@@ -721,7 +721,7 @@
     const loginError = document.getElementById('login-error');
 
     const APP_CONFIG = {
-      adminEmails: ['admin@example.com', 'owner@example.com']
+      adminEmails: ['admin@yensaocatan.com']
     };
 
     function showLoginOverlay(show) {
@@ -734,7 +734,15 @@
         loginError.textContent = '';
         await signInWithEmailAndPassword(auth, email, password);
       } catch (err) {
-        loginError.textContent = err.code === 'auth/wrong-password' ? 'Email hoặc mật khẩu không đúng.' : err.message;
+        if (err.code === 'auth/wrong-password') {
+          loginError.textContent = 'Email hoặc mật khẩu không đúng.';
+        } else if (err.code === 'auth/invalid-email') {
+          loginError.textContent = 'Email không hợp lệ.';
+        } else if (err.code === 'auth/user-not-found') {
+          loginError.textContent = 'Tài khoản không tồn tại.';
+        } else {
+          loginError.textContent = `${err.code || 'auth/error'}: ${err.message}`;
+        }
         throw err;
       }
     }
@@ -775,15 +783,15 @@
     document.getElementById('login-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-      if (!email || !password) {
+      const password = document.getElementById('login-password').value.trim();
+      if (!email || password.length === 0) {
         loginError.textContent = 'Vui lòng điền email và mật khẩu.';
         return;
       }
       try {
         await handleLogin(email, password);
       } catch (err) {
-        console.error('Đăng nhập thất bại:', err);
+        console.error('Đăng nhập thất bại:', err.code, err.message);
       }
     });
 
