@@ -2487,6 +2487,7 @@
     renderProductTable(adminProducts);
     updateProductFilterButtons();
   }
+  window.setProductFilter = setProductFilter;
 
   function updateProductFilterButtons() {
     document.querySelectorAll('[data-filter]').forEach(btn => {
