@@ -2234,6 +2234,16 @@
     setTimeout(() => { t.className = ''; }, 3000);
   }
 
+  function setTextWithLineBreaks(el, text) {
+    el.textContent = '';
+    if (!text) return;
+    const lines = text.split('\n');
+    lines.forEach((line, index) => {
+      if (index > 0) el.appendChild(document.createElement('br'));
+      el.appendChild(document.createTextNode(line));
+    });
+  }
+
   function normalizePhone(value) {
     if (!value) return '';
     let digits = value.toString().replace(/\D/g, '');
@@ -2256,8 +2266,14 @@
     const normalized = normalizePhone(phone);
     if (!normalized) return null;
     try {
-      const snap = await getDoc(doc(db, 'loyaltyCustomers', normalized));
-      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+      const hashedId = await hashText(normalized);
+      const hashedSnap = await getDoc(doc(db, 'loyaltyCustomers', hashedId));
+      if (hashedSnap.exists()) {
+        return { id: hashedSnap.id, ...hashedSnap.data() };
+      }
+
+      const rawSnap = await getDoc(doc(db, 'loyaltyCustomers', normalized));
+      return rawSnap.exists() ? { id: rawSnap.id, ...rawSnap.data() } : null;
     } catch (err) {
       console.error('Lỗi kiểm tra khách thân thiết:', err);
       return null;
@@ -2323,13 +2339,23 @@
     }
 
     try {
-      const customerRef = doc(db, 'loyaltyCustomers', normalized);
-      const existing = await getDoc(customerRef);
+      const hashedId = await hashText(normalized);
+      const hashedRef = doc(db, 'loyaltyCustomers', hashedId);
+      let existing = await getDoc(hashedRef);
+      let existingRef = hashedRef;
+      if (!existing.exists()) {
+        const rawRef = doc(db, 'loyaltyCustomers', normalized);
+        const rawExisting = await getDoc(rawRef);
+        if (rawExisting.exists()) {
+          existing = rawExisting;
+          existingRef = rawRef;
+        }
+      }
       if (existing.exists()) {
         const existingData = existing.data();
         if (existingData.passwordResetRequired) {
           const passwordHash = await hashText(password);
-          await updateDoc(customerRef, {
+          await updateDoc(existingRef, {
             passwordHash,
             passwordResetRequired: false,
             updatedAt: serverTimestamp(),
@@ -2349,7 +2375,7 @@
         return;
       }
       const passwordHash = await hashText(password);
-      await setDoc(customerRef, {
+      await setDoc(hashedRef, {
         name,
         phone: normalized,
         displayPhone: phone,
@@ -2408,8 +2434,14 @@
       // Điền thông tin liên hệ vào tab Liên hệ
       if (cfg.contact_phone) {
         const cleanPhone = cfg.contact_phone.replace(/\s/g, '');
-        document.getElementById('ct-phone').innerHTML =
-          `<a href="tel:${cleanPhone}" style="color:inherit;text-decoration:underline;">${cfg.contact_phone}</a>`;
+        const phoneEl = document.getElementById('ct-phone');
+        phoneEl.textContent = '';
+        const phoneLink = document.createElement('a');
+        phoneLink.href = `tel:${cleanPhone}`;
+        phoneLink.textContent = cfg.contact_phone;
+        phoneLink.style.color = 'inherit';
+        phoneLink.style.textDecoration = 'underline';
+        phoneEl.appendChild(phoneLink);
         const callBtn = document.getElementById('ct-call-btn');
         callBtn.href = `tel:${cleanPhone}`;
         callBtn.style.display = 'inline-flex';
@@ -2462,51 +2494,78 @@
       ? allProducts
       : allProducts.filter(p => p.category === filter);
 
+    grid.innerHTML = '';
     if (list.length === 0) {
-      grid.innerHTML = '<p style="color:#fff;text-align:center;grid-column:1/-1">Không có sản phẩm nào.</p>';
+      const empty = document.createElement('p');
+      empty.style.color = '#fff';
+      empty.style.textAlign = 'center';
+      empty.style.gridColumn = '1/-1';
+      empty.textContent = 'Không có sản phẩm nào.';
+      grid.appendChild(empty);
       return;
     }
 
-    grid.innerHTML = list.map(p => {
+    list.forEach(p => {
       const qty = getProductQuantity(p);
-      const stockNote = qty === null
-        ? ''
-        : qty <= 0
-          ? '<div class="stock-note stock-out">Hết hàng</div>'
-          : qty < 5
-            ? `<div class="stock-note stock-low">Chỉ còn ${qty} sản phẩm</div>`
-            : `<div class="stock-note stock-available">Còn ${qty} sản phẩm</div>`;
-      return `
-      <div class="product-card" data-id="${p.id}">
-        <img src="${p.image || 'https://placehold.co/400x300?text=No+Image'}"
-             alt="${p.name}"
-             onerror="this.src='https://placehold.co/400x300?text=No+Image'" />
-        <div class="card-body">
-          <span class="category-badge">${CAT_LABEL[p.category] || p.category}</span>
-          <h3>${p.name}</h3>
-          <div class="price">${formatVND(p.price)}</div>
-          ${stockNote}
-          <button class="btn-add" data-id="${p.id}">+ Thêm vào giỏ</button>
-        </div>
-      </div>
-      `;
-    }).join('');
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.dataset.id = p.id;
 
-    // Gắn sự kiện cho nút "Thêm vào giỏ"
-    grid.querySelectorAll('.btn-add').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      const img = document.createElement('img');
+      img.src = p.image || 'https://placehold.co/400x300?text=No+Image';
+      img.alt = p.name || 'Sản phẩm';
+      img.onerror = () => { img.src = 'https://placehold.co/400x300?text=No+Image'; };
+      card.appendChild(img);
+
+      const body = document.createElement('div');
+      body.className = 'card-body';
+
+      const badge = document.createElement('span');
+      badge.className = 'category-badge';
+      badge.textContent = CAT_LABEL[p.category] || p.category;
+      body.appendChild(badge);
+
+      const title = document.createElement('h3');
+      title.textContent = p.name;
+      body.appendChild(title);
+
+      const price = document.createElement('div');
+      price.className = 'price';
+      price.textContent = formatVND(p.price);
+      body.appendChild(price);
+
+      if (qty !== null) {
+        const stockNote = document.createElement('div');
+        if (qty <= 0) {
+          stockNote.className = 'stock-note stock-out';
+          stockNote.textContent = 'Hết hàng';
+        } else if (qty < 5) {
+          stockNote.className = 'stock-note stock-low';
+          stockNote.textContent = `Chỉ còn ${qty} sản phẩm`;
+        } else {
+          stockNote.className = 'stock-note stock-available';
+          stockNote.textContent = `Còn ${qty} sản phẩm`;
+        }
+        body.appendChild(stockNote);
+      }
+
+      const addButton = document.createElement('button');
+      addButton.className = 'btn-add';
+      addButton.dataset.id = p.id;
+      addButton.textContent = '+ Thêm vào giỏ';
+      addButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        const product = allProducts.find(p => p.id === btn.dataset.id);
+        const product = allProducts.find(item => item.id === addButton.dataset.id);
         if (product) addToCart(product);
       });
-    });
+      body.appendChild(addButton);
 
-    // Gắn sự kiện click thẻ → mở modal chi tiết
-    grid.querySelectorAll('.product-card').forEach(card => {
+      card.appendChild(body);
       card.addEventListener('click', () => {
-        const product = allProducts.find(p => p.id === card.dataset.id);
+        const product = allProducts.find(item => item.id === card.dataset.id);
         if (product) openProductModal(product);
       });
+      grid.appendChild(card);
     });
   }
 
@@ -2523,9 +2582,10 @@
     document.getElementById('modal-price').textContent       = formatVND(product.price);
     const descEl = document.getElementById('modal-description');
     if (product.description) {
-      descEl.innerHTML    = product.description;
       descEl.style.display = 'block';
+      setTextWithLineBreaks(descEl, product.description);
     } else {
+      descEl.textContent = '';
       descEl.style.display = 'none';
     }
     document.getElementById('modal-add-btn').dataset.id     = product.id;
@@ -2552,11 +2612,9 @@
     document.getElementById('news-modal-title').textContent = post.title || 'Tin tức';
     document.getElementById('news-modal-date').textContent = formatNewsDate(post.timestamp);
 
-    const rawContent = post.content || '';
-    const contentHtml = rawContent.trimStart().startsWith('<')
-      ? rawContent
-      : rawContent.replace(/\n/g, '<br>');
-    document.getElementById('news-modal-content').innerHTML = contentHtml;
+    const contentEl = document.getElementById('news-modal-content');
+    contentEl.textContent = '';
+    setTextWithLineBreaks(contentEl, post.content || '');
 
     document.getElementById('news-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -2704,32 +2762,92 @@
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const discount = currentLoyaltyDiscountAmount || 0;
     const finalTotal = Math.max(0, subtotal - discount);
-    listEl.innerHTML = cart.map(i => {
+    listEl.innerHTML = '';
+
+    cart.forEach(i => {
       const product = allProducts.find(p => p.id === i.id);
       const availableQty = getProductQuantity(product);
       const shortage = availableQty !== null && i.qty > availableQty ? i.qty - availableQty : 0;
-      return `
-      <li>
-        <div class="cart-item-content">
-          <span class="cart-item-name">${i.name}</span>
-          <div class="cart-item-meta">
-            <span>${formatVND(i.price)} / 1 sp</span>
-            <span class="cart-item-qty-label">Số lượng:</span>
-            <div class="cart-qty-group" data-id="${i.id}">
-              <button type="button" class="qty-decrease" data-id="${i.id}" aria-label="Giảm số lượng">−</button>
-              <input type="number" min="1" class="cart-qty-input" data-id="${i.id}" value="${i.qty}" aria-label="Số lượng sản phẩm" />
-              <button type="button" class="qty-increase" data-id="${i.id}" aria-label="Tăng số lượng">+</button>
-            </div>
-          </div>
-          ${shortage > 0 ? `<span class="cart-item-stock-warning">Thiếu ${shortage} sản phẩm so với tồn kho</span>` : ''}
-        </div>
-        <div class="cart-item-actions">
-          <span class="cart-item-price">${formatVND(i.price * i.qty)}</span>
-          <button class="btn-remove" data-id="${i.id}" title="Xoá">✕</button>
-        </div>
-      </li>
-      `;
-    }).join('');
+
+      const itemEl = document.createElement('li');
+      const contentEl = document.createElement('div');
+      contentEl.className = 'cart-item-content';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'cart-item-name';
+      nameEl.textContent = i.name;
+      contentEl.appendChild(nameEl);
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'cart-item-meta';
+
+      const priceText = document.createElement('span');
+      priceText.textContent = `${formatVND(i.price)} / 1 sp`;
+      metaEl.appendChild(priceText);
+
+      const qtyLabel = document.createElement('span');
+      qtyLabel.className = 'cart-item-qty-label';
+      qtyLabel.textContent = 'Số lượng:';
+      metaEl.appendChild(qtyLabel);
+
+      const qtyGroup = document.createElement('div');
+      qtyGroup.className = 'cart-qty-group';
+      qtyGroup.dataset.id = i.id;
+
+      const decBtn = document.createElement('button');
+      decBtn.type = 'button';
+      decBtn.className = 'qty-decrease';
+      decBtn.dataset.id = i.id;
+      decBtn.setAttribute('aria-label', 'Giảm số lượng');
+      decBtn.textContent = '−';
+      qtyGroup.appendChild(decBtn);
+
+      const qtyInput = document.createElement('input');
+      qtyInput.type = 'number';
+      qtyInput.min = '1';
+      qtyInput.className = 'cart-qty-input';
+      qtyInput.dataset.id = i.id;
+      qtyInput.value = i.qty.toString();
+      qtyInput.setAttribute('aria-label', 'Số lượng sản phẩm');
+      qtyGroup.appendChild(qtyInput);
+
+      const incBtn = document.createElement('button');
+      incBtn.type = 'button';
+      incBtn.className = 'qty-increase';
+      incBtn.dataset.id = i.id;
+      incBtn.setAttribute('aria-label', 'Tăng số lượng');
+      incBtn.textContent = '+';
+      qtyGroup.appendChild(incBtn);
+
+      metaEl.appendChild(qtyGroup);
+      contentEl.appendChild(metaEl);
+
+      if (shortage > 0) {
+        const shortageEl = document.createElement('span');
+        shortageEl.className = 'cart-item-stock-warning';
+        shortageEl.textContent = `Thiếu ${shortage} sản phẩm so với tồn kho`;
+        contentEl.appendChild(shortageEl);
+      }
+
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'cart-item-actions';
+
+      const totalPriceEl = document.createElement('span');
+      totalPriceEl.className = 'cart-item-price';
+      totalPriceEl.textContent = formatVND(i.price * i.qty);
+      actionsEl.appendChild(totalPriceEl);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn-remove';
+      removeBtn.dataset.id = i.id;
+      removeBtn.title = 'Xoá';
+      removeBtn.textContent = '✕';
+      actionsEl.appendChild(removeBtn);
+
+      itemEl.appendChild(contentEl);
+      itemEl.appendChild(actionsEl);
+      listEl.appendChild(itemEl);
+    });
 
     totalEl.style.display = 'block';
     totalPriceEl.textContent = formatVND(finalTotal);
@@ -3279,28 +3397,55 @@
       const snap = await getDocs(q);
 
       if (snap.empty) {
-        grid.innerHTML = '<p class="news-empty">Chưa có bài đăng nào.</p>';
+        const empty = document.createElement('p');
+        empty.className = 'news-empty';
+        empty.textContent = 'Chưa có bài đăng nào.';
+        grid.innerHTML = '';
+        grid.appendChild(empty);
         return;
       }
 
       allNews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      grid.innerHTML = allNews.map(p => {
-        const rawContent = p.content || '';
-        const bodyHtml = rawContent.trimStart().startsWith('<')
-          ? rawContent
-          : rawContent.replace(/\n/g, '<br>');
-        return `
-          <div class="news-card" data-id="${p.id}">
-            ${p.image ? `<img class="news-img" src="${p.image}" alt="${p.title}" onerror="this.style.display='none'" />` : ''}
-            <div class="news-body">
-              <span class="news-tag">${TAG_LABEL_NEWS[p.tag] || p.tag || 'Tin tức'}</span>
-              <div class="news-date">${formatNewsDate(p.timestamp)}</div>
-              <h3>${p.title}</h3>
-              <div class="news-body-html">${bodyHtml}</div>
-            </div>
-          </div>
-        `;
-      }).join('');
+      grid.innerHTML = '';
+      allNews.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'news-card';
+        card.dataset.id = p.id;
+
+        if (p.image) {
+          const img = document.createElement('img');
+          img.className = 'news-img';
+          img.src = p.image;
+          img.alt = p.title || 'Tin tức';
+          img.onerror = () => { img.style.display = 'none'; };
+          card.appendChild(img);
+        }
+
+        const body = document.createElement('div');
+        body.className = 'news-body';
+
+        const tag = document.createElement('span');
+        tag.className = 'news-tag';
+        tag.textContent = TAG_LABEL_NEWS[p.tag] || p.tag || 'Tin tức';
+        body.appendChild(tag);
+
+        const date = document.createElement('div');
+        date.className = 'news-date';
+        date.textContent = formatNewsDate(p.timestamp);
+        body.appendChild(date);
+
+        const title = document.createElement('h3');
+        title.textContent = p.title || 'Tin tức';
+        body.appendChild(title);
+
+        const content = document.createElement('div');
+        content.className = 'news-body-html';
+        setTextWithLineBreaks(content, p.content || '');
+        body.appendChild(content);
+
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
 
       grid.querySelectorAll('.news-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -3364,7 +3509,9 @@
   function getChatSid() {
     let id = localStorage.getItem(CHAT_KEY);
     if (!id) {
-      id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      const bytes = new Uint8Array(24);
+      window.crypto.getRandomValues(bytes);
+      id = 'g_' + Array.from(bytes).map(b => b.toString(36).padStart(2, '0')).join('').slice(0, 36);
       localStorage.setItem(CHAT_KEY, id);
     }
     return id;

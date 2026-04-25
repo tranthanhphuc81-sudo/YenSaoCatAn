@@ -4272,26 +4272,66 @@
         return;
       }
 
-      listEl.innerHTML = snap.docs.map(d => {
+      listEl.innerHTML = '';
+      snap.docs.forEach(d => {
         const s    = d.data();
         const time = s.lastTime ? (s.lastTime.toDate ? s.lastTime.toDate() : new Date(s.lastTime)) : new Date();
         const timeStr = time.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' '
                       + time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-        const isActive  = d.id === activeChatSid ? ' active' : '';
-        const unreadDot = s.unreadByAdmin ? '<span class="cs-unread-dot"></span>' : '';
-        const preview   = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
-        const displayName = s.guestName ? s.guestName : d.id.slice(0, 12) + '…';
-        const phoneRaw  = s.guestPhone || '';
-        const phone     = phoneRaw ? ` · <a href="tel:${phoneRaw.replace(/\s/g,'')}" onclick="event.stopPropagation()" style="color:#e85d04;text-decoration:none;">${phoneRaw}</a>` : '';
-        return `<div class="chat-session-item${isActive}" data-sid="${d.id}">
-          <div class="chat-session-item-info">
-            <div class="cs-name"><span>${displayName}${phone}</span>${unreadDot}</div>
-            <div class="cs-preview">${preview}</div>
-            <div class="cs-preview" style="font-size:.75rem;margin-top:2px;">${timeStr}</div>
-          </div>
-          <button class="btn-delete-session" data-delsid="${d.id}" title="Xoá cuộc trò chuyện này">&times;</button>
-        </div>`;
-      }).join('');
+        const item = document.createElement('div');
+        item.className = 'chat-session-item' + (d.id === activeChatSid ? ' active' : '');
+        item.dataset.sid = d.id;
+
+        const info = document.createElement('div');
+        info.className = 'chat-session-item-info';
+
+        const nameLine = document.createElement('div');
+        nameLine.className = 'cs-name';
+        const textSpan = document.createElement('span');
+        textSpan.textContent = s.guestName ? s.guestName : d.id.slice(0, 12) + '…';
+        nameLine.appendChild(textSpan);
+        if (s.guestPhone) {
+          const phoneLink = document.createElement('a');
+          phoneLink.href = `tel:${s.guestPhone.replace(/\s/g, '')}`;
+          phoneLink.textContent = s.guestPhone;
+          phoneLink.style.color = '#e85d04';
+          phoneLink.style.textDecoration = 'none';
+          phoneLink.addEventListener('click', event => event.stopPropagation());
+          const sep = document.createTextNode(' · ');
+          nameLine.appendChild(sep);
+          nameLine.appendChild(phoneLink);
+        }
+        if (s.unreadByAdmin) {
+          const unreadDot = document.createElement('span');
+          unreadDot.className = 'cs-unread-dot';
+          nameLine.appendChild(unreadDot);
+        }
+
+        info.appendChild(nameLine);
+
+        const preview = document.createElement('div');
+        preview.className = 'cs-preview';
+        preview.textContent = s.lastMessage ? s.lastMessage.slice(0, 40) : '(chưa có tin)';
+        info.appendChild(preview);
+
+        const timeEl = document.createElement('div');
+        timeEl.className = 'cs-preview';
+        timeEl.style.fontSize = '.75rem';
+        timeEl.style.marginTop = '2px';
+        timeEl.textContent = timeStr;
+        info.appendChild(timeEl);
+
+        item.appendChild(info);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete-session';
+        deleteBtn.dataset.delsid = d.id;
+        deleteBtn.title = 'Xoá cuộc trò chuyện này';
+        deleteBtn.textContent = '×';
+        item.appendChild(deleteBtn);
+
+        listEl.appendChild(item);
+      });
 
       // Gắn event sau khi render xong
       listEl.querySelectorAll('.chat-session-item-info').forEach(el => {
@@ -4314,9 +4354,26 @@
     document.getElementById('chat-thread-placeholder').style.display = 'none';
     const threadEl = document.getElementById('chat-thread');
     threadEl.style.display = 'flex';
-    document.getElementById('chat-thread-header').innerHTML = '💬 '
-      + (sesData && sesData.guestName  ? `<strong>${sesData.guestName}</strong>` : '<em>Khách ẩn danh</em>')
-      + (sesData && sesData.guestPhone ? ` &nbsp;📞 <a href="tel:${sesData.guestPhone}" style="color:#e85d04;text-decoration:none;">${sesData.guestPhone}</a>` : '');
+    const header = document.getElementById('chat-thread-header');
+    header.textContent = '💬 ';
+    if (sesData && sesData.guestName) {
+      const strong = document.createElement('strong');
+      strong.textContent = sesData.guestName;
+      header.appendChild(strong);
+    } else {
+      const em = document.createElement('em');
+      em.textContent = 'Khách ẩn danh';
+      header.appendChild(em);
+    }
+    if (sesData && sesData.guestPhone) {
+      header.appendChild(document.createTextNode('   📞 '));
+      const phoneLink = document.createElement('a');
+      phoneLink.href = `tel:${sesData.guestPhone}`;
+      phoneLink.style.color = '#e85d04';
+      phoneLink.style.textDecoration = 'none';
+      phoneLink.textContent = sesData.guestPhone;
+      header.appendChild(phoneLink);
+    }
 
     // Ngừng listener cũ
     if (chatThreadUnsub) chatThreadUnsub();
@@ -4335,24 +4392,49 @@
 
         let html = '';
         if (m.retracted) {
-          html += `<div class="adm-retracted">Tin nhắn đã bị thu hồi.</div>`;
+          const retracted = document.createElement('div');
+          retracted.className = 'adm-retracted';
+          retracted.textContent = 'Tin nhắn đã bị thu hồi.';
+          el.appendChild(retracted);
           el.classList.add('retracted');
         } else {
           if (m.type === 'image' && m.url) {
-            html += `<div class="adm-media"><img src="${m.url}" alt="Ảnh chat" onerror="this.style.display='none'" /></div>`;
+            const mediaWrap = document.createElement('div');
+            mediaWrap.className = 'adm-media';
+            const img = document.createElement('img');
+            img.src = m.url;
+            img.alt = 'Ảnh chat';
+            img.onerror = () => { img.style.display = 'none'; };
+            mediaWrap.appendChild(img);
+            el.appendChild(mediaWrap);
           }
           if (m.type === 'video' && m.url) {
-            html += `<div class="adm-media"><video controls src="${m.url}"></video></div>`;
+            const mediaWrap = document.createElement('div');
+            mediaWrap.className = 'adm-media';
+            const videoEl = document.createElement('video');
+            videoEl.controls = true;
+            videoEl.src = m.url;
+            mediaWrap.appendChild(videoEl);
+            el.appendChild(mediaWrap);
           }
           if (m.text) {
-            html += `<div>${m.text}</div>`;
+            const textEl = document.createElement('div');
+            textEl.textContent = m.text;
+            el.appendChild(textEl);
           }
-          if (!html) {
-            html = `<div><em>Nội dung tin nhắn trống.</em></div>`;
+          if (!m.text && m.type !== 'image' && m.type !== 'video') {
+            const emptyEl = document.createElement('div');
+            const em = document.createElement('em');
+            em.textContent = 'Nội dung tin nhắn trống.';
+            emptyEl.appendChild(em);
+            el.appendChild(emptyEl);
           }
         }
 
-        el.innerHTML  = `${html}<div class="msg-meta">${label} · ${timeStr}</div>`;
+        const meta = document.createElement('div');
+        meta.className = 'msg-meta';
+        meta.textContent = `${label} · ${timeStr}`;
+        el.appendChild(meta);
         if (!m.retracted) {
           const reactionRow = document.createElement('div');
           reactionRow.className = 'reaction-row';

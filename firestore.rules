@@ -6,9 +6,10 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // ════════════════════════════════════════════════════════
 
-    // Admin = tài khoản Firebase Auth đã đăng nhập (chỉ bạn có tài khoản)
+    // Admin = tài khoản Firebase Auth đã đăng nhập và có custom claim admin.
+    // Set claim admin bằng Firebase Admin SDK hoặc Firebase CLI.
     function isAdmin() {
-      return request.auth != null;
+      return request.auth != null && request.auth.token.admin == true;
     }
 
     // ─── Validate config/settings ───────────────────────────
@@ -253,14 +254,14 @@ service cloud.firestore {
     match /products/{productId} {
       allow get, list:  if true;
       allow create:     if isAdmin() && validateProduct();
-      allow update:     if (isAdmin() && validateProduct()) || validateProductQuantityUpdate();
+      allow update:     if (isAdmin() && validateProduct()) || (request.auth != null && validateProductQuantityUpdate());
       allow delete:     if isAdmin();
     }
 
     // ─── stockMovements/{movementId} ───────────────────────────────────────
     match /stockMovements/{movementId} {
       allow get, list: if true;
-      allow create:   if validateStockMovement();
+      allow create:   if request.auth != null && validateStockMovement();
       allow update, delete: if false;
     }
 
@@ -331,13 +332,14 @@ service cloud.firestore {
     // Khách truy cập tạo session và gửi tin nhắn (bằng sessionId lưu localStorage)
     // Admin đọc/trả lời tất cả các cuộc trò chuyện
     match /chats/{sessionId} {
-      allow read, create, update: if true;
-      allow delete:               if isAdmin();
+      allow get, create: if true;
+      allow list:       if isAdmin();
+      allow update:     if true;
+      allow delete:     if isAdmin();
 
       match /messages/{msgId} {
-        allow read, create: if true;
-        allow update: if true;
-        allow delete:       if isAdmin();
+        allow read, create, update: if true;
+        allow delete:              if isAdmin();
       }
     }
 
