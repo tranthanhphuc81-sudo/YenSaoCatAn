@@ -1,0 +1,24 @@
+# Example .gitignore when sharing this repo
+# Ignore local-only secrets and tooling artifacts
+
+# Node dependencies
+node_modules/
+
+# Local environment files
+.env
+service-account.json
+
+# Logs
+*.log
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+
+# Firebase CLI local project files
+.firebase/
+
+# Generated files or caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

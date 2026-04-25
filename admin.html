@@ -3383,6 +3383,7 @@
     try {
       const credential = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(user, credential);
+      await getIdTokenResult(user, true);
       const snap = await getDocs(collection(db, 'reportBackups'));
       await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
       await setDoc(doc(db, 'config', 'reportBackup'), {
