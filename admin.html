@@ -1201,6 +1201,14 @@
               <input type="url" id="cfg-bg" placeholder="Hoặc dán URL ảnh nền vào đây..." style="margin-top:8px" />
             </div>
             <div class="form-group">
+              <label for="cfg-accent">Màu chủ đạo</label>
+              <input type="color" id="cfg-accent" value="#1a56a0" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-accent-dark">Màu chủ đạo đậm</label>
+              <input type="color" id="cfg-accent-dark" value="#0d3578" />
+            </div>
+            <div class="form-group">
               <label for="cfg-bank-name">Tên ngân hàng</label>
               <input type="text" id="cfg-bank-name" placeholder="Vietcombank" />
             </div>
@@ -2350,9 +2358,11 @@
         document.body.style.backgroundSize       = '220px auto';
         document.body.style.backgroundAttachment = 'fixed';
       }
-      if (cfg.bank_name)      document.getElementById('cfg-bank-name').value = cfg.bank_name;
-      if (cfg.bank_stk)       document.getElementById('cfg-stk').value       = cfg.bank_stk;
-      if (cfg.bank_owner)     document.getElementById('cfg-owner').value     = cfg.bank_owner;
+      if (cfg.accent_color)      document.getElementById('cfg-accent').value      = cfg.accent_color;
+      if (cfg.accent_dark)       document.getElementById('cfg-accent-dark').value = cfg.accent_dark;
+      if (cfg.bank_name)         document.getElementById('cfg-bank-name').value = cfg.bank_name;
+      if (cfg.bank_stk)          document.getElementById('cfg-stk').value       = cfg.bank_stk;
+      if (cfg.bank_owner)        document.getElementById('cfg-owner').value     = cfg.bank_owner;
       if (cfg.bank_bin) {
         const sel = document.getElementById('cfg-bank-bin');
         if (sel) sel.value = cfg.bank_bin;
@@ -2375,12 +2385,14 @@
   document.getElementById('config-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const logoUrl  = document.getElementById('cfg-logo').value.trim();
-    const bgUrl     = document.getElementById('cfg-bg').value.trim();
-    const bankName  = document.getElementById('cfg-bank-name').value.trim();
-    const bankStk   = document.getElementById('cfg-stk').value.trim();
-    const bankOwner = document.getElementById('cfg-owner').value.trim();
-    const bankBin  = document.getElementById('cfg-bank-bin').value;
+    const logoUrl     = document.getElementById('cfg-logo').value.trim();
+    const bgUrl       = document.getElementById('cfg-bg').value.trim();
+    const accentColor = document.getElementById('cfg-accent').value.trim();
+    const accentDark  = document.getElementById('cfg-accent-dark').value.trim();
+    const bankName    = document.getElementById('cfg-bank-name').value.trim();
+    const bankStk     = document.getElementById('cfg-stk').value.trim();
+    const bankOwner   = document.getElementById('cfg-owner').value.trim();
+    const bankBin     = document.getElementById('cfg-bank-bin').value;
 
     const btnSave = document.getElementById('btn-save-config');
     btnSave.disabled    = true;
@@ -2389,12 +2401,14 @@
     try {
       // Chỉ lưu các field có giá trị (tránh ghi đè field cũ bằng chuỗi rỗng)
       const configData = {};
-      if (logoUrl)   configData.logo_url       = logoUrl;
-      if (bgUrl)     configData.background_url = bgUrl;
-      if (bankName)  configData.bank_name      = bankName;
-      if (bankStk)   configData.bank_stk       = bankStk;
-      if (bankOwner) configData.bank_owner     = bankOwner;
-      if (bankBin)   configData.bank_bin       = bankBin;
+      if (logoUrl)      configData.logo_url       = logoUrl;
+      if (bgUrl)        configData.background_url = bgUrl;
+      if (accentColor)  configData.accent_color   = accentColor;
+      if (accentDark)   configData.accent_dark    = accentDark;
+      if (bankName)     configData.bank_name      = bankName;
+      if (bankStk)      configData.bank_stk       = bankStk;
+      if (bankOwner)    configData.bank_owner     = bankOwner;
+      if (bankBin)      configData.bank_bin       = bankBin;
 
       await setDoc(doc(db, 'config', 'settings'), configData, { merge: true });
 
