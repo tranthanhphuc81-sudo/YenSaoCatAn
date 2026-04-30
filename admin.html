@@ -1201,6 +1201,10 @@
               <input type="url" id="cfg-bg" placeholder="Hoặc dán URL ảnh nền vào đây..." style="margin-top:8px" />
             </div>
             <div class="form-group">
+              <label for="cfg-body-bg">Màu nền toàn trang</label>
+              <input type="color" id="cfg-body-bg" value="#0a2d52" />
+            </div>
+            <div class="form-group">
               <label for="cfg-accent">Màu chủ đạo</label>
               <input type="color" id="cfg-accent" value="#1a56a0" />
             </div>
@@ -2370,6 +2374,7 @@
         document.body.style.backgroundSize       = '220px auto';
         document.body.style.backgroundAttachment = 'fixed';
       }
+      if (cfg.body_bg)            document.getElementById('cfg-body-bg').value     = cfg.body_bg;
       if (cfg.accent_color)        document.getElementById('cfg-accent').value        = cfg.accent_color;
       if (cfg.accent_dark)         document.getElementById('cfg-accent-dark').value   = cfg.accent_dark;
       if (cfg.text_color)          document.getElementById('cfg-text').value          = cfg.text_color;
@@ -2402,6 +2407,7 @@
 
     const logoUrl       = document.getElementById('cfg-logo').value.trim();
     const bgUrl         = document.getElementById('cfg-bg').value.trim();
+    const bodyBg        = document.getElementById('cfg-body-bg').value.trim();
     const accentColor   = document.getElementById('cfg-accent').value.trim();
     const accentDark    = document.getElementById('cfg-accent-dark').value.trim();
     const textColor     = document.getElementById('cfg-text').value.trim();
@@ -2421,6 +2427,7 @@
       const configData = {};
       if (logoUrl)      configData.logo_url       = logoUrl;
       if (bgUrl)        configData.background_url = bgUrl;
+      if (bodyBg)       configData.body_bg       = bodyBg;
       if (accentColor)  configData.accent_color   = accentColor;
       if (accentDark)   configData.accent_dark    = accentDark;
       if (textColor)    configData.text_color     = textColor;
