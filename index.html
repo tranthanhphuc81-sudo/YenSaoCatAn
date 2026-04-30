@@ -2422,6 +2422,15 @@
       if (cfg.accent_dark) {
         document.documentElement.style.setProperty('--accent-dark', cfg.accent_dark);
       }
+      if (cfg.text_color) {
+        document.documentElement.style.setProperty('--text', cfg.text_color);
+      }
+      if (cfg.surface_color) {
+        document.documentElement.style.setProperty('--surface', cfg.surface_color);
+      }
+      if (cfg.surface_strong) {
+        document.documentElement.style.setProperty('--surface-strong', cfg.surface_strong);
+      }
 
       // Điền thông tin ngân hàng (ẩn sẵn, hiện khi chọn "chuyển khoản")
       if (cfg.bank_name)   document.getElementById('bi-bank-name').textContent = cfg.bank_name;

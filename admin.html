@@ -1209,6 +1209,18 @@
               <input type="color" id="cfg-accent-dark" value="#0d3578" />
             </div>
             <div class="form-group">
+              <label for="cfg-text">Màu chữ chính</label>
+              <input type="color" id="cfg-text" value="#102a43" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-surface">Màu nền surface</label>
+              <input type="color" id="cfg-surface" value="#ffffff" />
+            </div>
+            <div class="form-group">
+              <label for="cfg-surface-strong">Màu nền surface đậm</label>
+              <input type="color" id="cfg-surface-strong" value="#ffffff" />
+            </div>
+            <div class="form-group">
               <label for="cfg-bank-name">Tên ngân hàng</label>
               <input type="text" id="cfg-bank-name" placeholder="Vietcombank" />
             </div>
@@ -2358,11 +2370,14 @@
         document.body.style.backgroundSize       = '220px auto';
         document.body.style.backgroundAttachment = 'fixed';
       }
-      if (cfg.accent_color)      document.getElementById('cfg-accent').value      = cfg.accent_color;
-      if (cfg.accent_dark)       document.getElementById('cfg-accent-dark').value = cfg.accent_dark;
-      if (cfg.bank_name)         document.getElementById('cfg-bank-name').value = cfg.bank_name;
-      if (cfg.bank_stk)          document.getElementById('cfg-stk').value       = cfg.bank_stk;
-      if (cfg.bank_owner)        document.getElementById('cfg-owner').value     = cfg.bank_owner;
+      if (cfg.accent_color)        document.getElementById('cfg-accent').value        = cfg.accent_color;
+      if (cfg.accent_dark)         document.getElementById('cfg-accent-dark').value   = cfg.accent_dark;
+      if (cfg.text_color)          document.getElementById('cfg-text').value          = cfg.text_color;
+      if (cfg.surface_color)       document.getElementById('cfg-surface').value       = cfg.surface_color;
+      if (cfg.surface_strong)      document.getElementById('cfg-surface-strong').value = cfg.surface_strong;
+      if (cfg.bank_name)           document.getElementById('cfg-bank-name').value     = cfg.bank_name;
+      if (cfg.bank_stk)            document.getElementById('cfg-stk').value           = cfg.bank_stk;
+      if (cfg.bank_owner)          document.getElementById('cfg-owner').value         = cfg.bank_owner;
       if (cfg.bank_bin) {
         const sel = document.getElementById('cfg-bank-bin');
         if (sel) sel.value = cfg.bank_bin;
@@ -2385,14 +2400,17 @@
   document.getElementById('config-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const logoUrl     = document.getElementById('cfg-logo').value.trim();
-    const bgUrl       = document.getElementById('cfg-bg').value.trim();
-    const accentColor = document.getElementById('cfg-accent').value.trim();
-    const accentDark  = document.getElementById('cfg-accent-dark').value.trim();
-    const bankName    = document.getElementById('cfg-bank-name').value.trim();
-    const bankStk     = document.getElementById('cfg-stk').value.trim();
-    const bankOwner   = document.getElementById('cfg-owner').value.trim();
-    const bankBin     = document.getElementById('cfg-bank-bin').value;
+    const logoUrl       = document.getElementById('cfg-logo').value.trim();
+    const bgUrl         = document.getElementById('cfg-bg').value.trim();
+    const accentColor   = document.getElementById('cfg-accent').value.trim();
+    const accentDark    = document.getElementById('cfg-accent-dark').value.trim();
+    const textColor     = document.getElementById('cfg-text').value.trim();
+    const surfaceColor  = document.getElementById('cfg-surface').value.trim();
+    const surfaceStrong = document.getElementById('cfg-surface-strong').value.trim();
+    const bankName      = document.getElementById('cfg-bank-name').value.trim();
+    const bankStk       = document.getElementById('cfg-stk').value.trim();
+    const bankOwner     = document.getElementById('cfg-owner').value.trim();
+    const bankBin       = document.getElementById('cfg-bank-bin').value;
 
     const btnSave = document.getElementById('btn-save-config');
     btnSave.disabled    = true;
@@ -2405,6 +2423,9 @@
       if (bgUrl)        configData.background_url = bgUrl;
       if (accentColor)  configData.accent_color   = accentColor;
       if (accentDark)   configData.accent_dark    = accentDark;
+      if (textColor)    configData.text_color     = textColor;
+      if (surfaceColor) configData.surface_color  = surfaceColor;
+      if (surfaceStrong) configData.surface_strong = surfaceStrong;
       if (bankName)     configData.bank_name      = bankName;
       if (bankStk)      configData.bank_stk       = bankStk;
       if (bankOwner)    configData.bank_owner     = bankOwner;
